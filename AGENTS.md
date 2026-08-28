@@ -1,39 +1,29 @@
 # Project Agent Instructions
 
-## Scope
+## Product scope
 
-This repository is an isolated sandbox for integrating Semantica, holaOS, Herdr, and oMLX on one personal Mac.
+Build a general-purpose, distributable, out-of-the-box Mac AI Work OS based on Semantica, holaOS, Herdr, and oMLX. The current machine is the first development environment, not the product's sole target or a source of product-specific assumptions.
 
 ## Workflow
 
-All work follows:
-
-`requirements → design → implementation → testing → commit → push`
+Follow `requirements → design → implementation → testing → commit → push`.
 
 - Do not implement before requirements and design are accepted.
-- Prefer minimal, reversible changes.
-- Every implementation change requires proportionate tests.
-- Do not claim completion from process health alone; verify the user-visible workflow.
-- Keep evidence, assumptions, and hypotheses explicitly separated.
+- Prefer minimal, reversible changes and stable public contracts.
+- Test every implementation change and verify the user-visible workflow.
+- Keep facts, assumptions, hypotheses, predictions, and opinions distinct.
+- Distribution, upgrade, uninstall, documentation, and novice-user evidence are required product work.
 
-## Isolation boundary
+## Development isolation
 
-Until a separate migration project is explicitly approved, do not connect to or modify:
+Do not use developer-specific data as a product dependency or modify MyNote, GBrain, existing automations, persistent agent memory, or production accounts without a separately approved connector or migration task. Use repository-local fixtures, test accounts, temporary databases, and synthetic data. Never commit secrets, personal paths in shipped configuration, or machine-specific credentials.
 
-- `/Users/rouice/Library/Mobile Documents/iCloud~md~obsidian/Documents/MyNote`
-- `/Users/rouice/Gbrain`
-- existing scheduled automations or agent memory
-- production email, calendar, Feishu, or other real accounts
-
-Use project-local configuration, databases, fixtures, test accounts, and synthetic data only. Never store secrets in Git.
-
-## Product roles
+## Component roles
 
 - holaOS is the default user-facing control plane.
-- Herdr is the advanced multi-agent and terminal process console.
-- Semantica is the authoritative long-term knowledge and audit layer.
+- Herdr is the optional advanced multi-agent and terminal console.
+- Semantica is authoritative for governed long-term knowledge and decision evidence.
 - oMLX is the default local inference layer.
+- Product-owned orchestration, policy, lifecycle, and health layers integrate them.
 
-## External writes
-
-File writes outside this repository, real-account actions, destructive operations, and cloud-model escalation require an explicit gate and an audit record.
+External writes, destructive actions, credential use, and cloud escalation require explicit policy, preview, approval, and audit behavior. Releases must pass clean-install, upgrade, rollback, uninstall, recovery, security, accessibility/usability, and novice-user gates on supported hardware tiers.

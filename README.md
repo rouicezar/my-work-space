@@ -1,25 +1,32 @@
-# Personal AI Work OS
+# Mac AI Work OS
 
-本仓库用于在个人 Apple Silicon Mac 上，组合 Semantica、holaOS、Herdr 与 oMLX，构建一套“可记忆、可审计、可并行、可操作真实工具”的个人 AI 工作操作系统。
+Mac AI Work OS 是一套面向普通 Mac 用户、通用且可分发的 AI 工作操作系统。它组合 Semantica、holaOS、Herdr 与 oMLX，提供统一入口、长期记忆、端到端审计、多 Agent 并行、本地优先推理，以及经过权限闸门的真实工具操作。
 
-## 已确认产品边界
+目标不是让四个上游项目“同时启动”，而是把它们产品化为一套开箱即用、部署简单、操作方便、安全可恢复的完整系统。
 
-- holaOS：默认的人机交互、应用连接、文件与自动化入口。
-- Herdr：高级开发、多 Agent、终端与后台进程控制台。
-- Semantica：经过验证的长期知识、决策、证据与审计权威层。
-- oMLX：默认本地模型、Embedding 与 Reranking 推理层。
-- 第一阶段完全独立运行，不连接或修改 MyNote、GBrain、既有自动化、真实邮件/日历/飞书账户。
-- 只有独立沙盒通过技术测试和人工验收后，才另立迁移项目。
+## 产品原则
 
-## 当前阶段
+- **开箱即用**：图形化安装和初始化，自动检测 Mac、选择兼容配置并完成健康检查。
+- **普通用户优先**：日常使用无需理解 MCP、模型端点、进程管理或知识图谱。
+- **安全默认**：最小权限、操作预览、显式批准、可撤销动作和完整审计。
+- **本地优先**：默认使用本地推理；联网和云模型路径必须可见、可控、可关闭。
+- **组件可替换**：四个项目构成默认发行版，但通过稳定契约解耦。
+- **诚实降级**：组件故障不得伪装成成功，也不得静默改变隐私或执行语义。
 
-当前处于 `requirements → design`，尚未开始安装或实现。
+## 默认组件职责
 
-- 项目需求：[docs/requirements.md](docs/requirements.md)
-- 系统设计：[docs/plans/2026-08-28-personal-ai-work-os-design.md](docs/plans/2026-08-28-personal-ai-work-os-design.md)
-- 实施计划：[docs/plans/2026-08-28-personal-ai-work-os.md](docs/plans/2026-08-28-personal-ai-work-os.md)
-- 决策与未决项：[docs/decisions.md](docs/decisions.md)
+| 组件 | 产品职责 |
+|---|---|
+| holaOS | 普通用户的统一图形入口、应用连接与任务交互 |
+| Herdr | 高级模式下的多 Agent、终端和后台进程控制台 |
+| Semantica | 经过治理的长期知识、决策、证据与审计权威层 |
+| oMLX | Apple Silicon 上的本地模型、Embedding 与 Reranking 推理层 |
 
-## 阶段闸门
+当前 Mac 仅作为首个开发与验收环境，不是产品的唯一目标用户。
 
-任何阶段只有在证据、测试结果、人工体验和剩余边界均被记录后才能关闭。脚本成功或服务启动不等于用户目标达成。
+- [产品需求](docs/product-requirements.md)
+- [产品架构设计](docs/plans/2026-08-28-mac-ai-work-os-design.md)
+- [产品实施计划](docs/plans/2026-08-28-mac-ai-work-os.md)
+- [架构决策记录](docs/decisions.md)
+
+只有当安装、初始化、核心工作流、安全、审计、恢复、升级、卸载、文档和陌生用户验收全部有直接证据时，才能宣布产品阶段完成。
