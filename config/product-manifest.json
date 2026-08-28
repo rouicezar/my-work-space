@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "product_id": "mac-ai-work-os",
+  "manifest_version": "0.1.0-dev",
+  "paths": {
+    "config": "${APP_SUPPORT}/config",
+    "state": "${APP_SUPPORT}/state",
+    "data": "${APP_SUPPORT}/data",
+    "runtimes": "${APP_SUPPORT}/runtimes",
+    "logs": "${APP_SUPPORT}/logs",
+    "backups": "${APP_SUPPORT}/backups",
+    "cache": "${CACHE}",
+    "secrets": "keychain://mac-ai-work-os"
+  },
+  "components": [
+    {
+      "id": "omlx",
+      "version": "v0.6.3",
+      "install_mode": "verified_official_artifact",
+      "runtime": "upstream_macos_app",
+      "start_order": 10,
+      "port": 8000,
+      "health_contract": "pending-adapter-verification",
+      "update_owner": "product_compatibility_gate",
+      "allow_self_update": false,
+      "data_path": "${APP_SUPPORT}/data/omlx"
+    },
+    {
+      "id": "semantica",
+      "version": "v0.6.7",
+      "install_mode": "managed_python_environment",
+      "runtime": "isolated_python",
+      "start_order": 20,
+      "port": 8765,
+      "health_contract": "pending-adapter-verification",
+      "update_owner": "product_compatibility_gate",
+      "allow_self_update": false,
+      "data_path": "${APP_SUPPORT}/data/semantica"
+    },
+    {
+      "id": "herdr",
+      "version": "v0.8.2",
+      "install_mode": "verified_release_binary",
+      "runtime": "native_binary",
+      "start_order": 30,
+      "port": null,
+      "health_contract": "pending-adapter-verification",
+      "update_owner": "product_compatibility_gate",
+      "allow_self_update": false,
+      "data_path": "${APP_SUPPORT}/data/herdr"
+    },
+    {
+      "id": "holaos",
+      "version": "latest",
+      "install_mode": "external_user_install_pending_license_clearance",
+      "runtime": "external_electron_app",
+      "start_order": 40,
+      "port": null,
+      "health_contract": "pending-adapter-verification",
+      "update_owner": "product_compatibility_gate",
+      "allow_self_update": false,
+      "data_path": "external-user-managed"
+    }
+  ],
+  "lifecycle": {
+    "install_steps": [
+      "preflight",
+      "consent",
+      "prepare_directories",
+      "acquire_artifacts",
+      "verify_artifacts",
+      "configure_components",
+      "start_components",
+      "verify_sample_workflow"
+    ],
+    "uninstall_steps": [
+      "stop_components",
+      "export_or_preserve_user_data",
+      "remove_managed_runtimes",
+      "remove_managed_configuration",
+      "finalize"
+    ]
+  }
+}
