@@ -34,6 +34,7 @@ Mac AI Work OS 是一套面向普通 Mac 用户、通用且可分发的 AI 工�
 - [生命周期契约 ADR](docs/adr/0001-lifecycle-contract.md)
 - [macOS 打包架构 ADR](docs/adr/0002-packaging-architecture.md)
 - [Swift 打包原型](prototypes/packaging/README.md)
+- [oMLX 适配器运行手册](docs/runbooks/omlx.md)
 
 ## 开发者预检
 
