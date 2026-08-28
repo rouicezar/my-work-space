@@ -29,6 +29,8 @@ Mac AI Work OS 是一套面向普通 Mac 用户、通用且可分发的 AI 工�
 - [产品实施计划](docs/plans/2026-08-28-mac-ai-work-os.md)
 - [架构决策记录](docs/decisions.md)
 - [暂定 Mac 支持矩阵](docs/support-matrix.md)
+- [上游兼容性矩阵](docs/research/upstream-matrix.md)
+- [上游许可证与分发矩阵](docs/research/license-matrix.md)
 
 ## 开发者预检
 

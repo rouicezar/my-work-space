@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "verified_at": "2026-08-28",
+  "components": [
+    {
+      "id": "semantica",
+      "repository": "https://github.com/semantica-agi/semantica",
+      "release": "v0.6.7",
+      "license": "MIT",
+      "distribution_policy": "bundle_candidate",
+      "reason": "Permissive source license and official wheel/sdist exist; transitive dependencies still require audit."
+    },
+    {
+      "id": "holaos",
+      "repository": "https://github.com/holaboss-ai/holaOS",
+      "release": "latest",
+      "license": "LicenseRef-HolaOS-Modified-Apache-2.0",
+      "distribution_policy": "external_install_only_pending_written_clearance",
+      "reason": "The license requires a commercial license for embedding in a commercially distributed product and preserves frontend branding; the rolling release has no binary assets."
+    },
+    {
+      "id": "herdr",
+      "repository": "https://github.com/herdrdev/herdr",
+      "release": "v0.8.2",
+      "license": "Apache-2.0",
+      "distribution_policy": "bundle_candidate",
+      "reason": "Permissive source license and official macOS arm64/x86_64 binaries exist; notices and transitive dependencies still require audit."
+    },
+    {
+      "id": "omlx",
+      "repository": "https://github.com/jundot/omlx",
+      "release": "v0.6.3",
+      "license": "Apache-2.0",
+      "distribution_policy": "official_dmg_first_run_candidate",
+      "reason": "Permissive source license and official macOS DMGs exist; large runtime, updater ownership, transitive code, and model licenses favor verified first-run acquisition initially."
+    }
+  ]
+}
