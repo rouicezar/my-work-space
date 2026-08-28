@@ -28,5 +28,16 @@ Mac AI Work OS 是一套面向普通 Mac 用户、通用且可分发的 AI 工�
 - [产品架构设计](docs/plans/2026-08-28-mac-ai-work-os-design.md)
 - [产品实施计划](docs/plans/2026-08-28-mac-ai-work-os.md)
 - [架构决策记录](docs/decisions.md)
+- [暂定 Mac 支持矩阵](docs/support-matrix.md)
+
+## 开发者预检
+
+当前阶段可运行只读环境检测：
+
+```bash
+./scripts/preflight.sh
+```
+
+它输出机器可读 JSON，并明确区分 `supported`、`unknown` 和 `unsupported`。当前配置阈值仍是暂定值，不代表正式兼容性承诺。
 
 只有当安装、初始化、核心工作流、安全、审计、恢复、升级、卸载、文档和陌生用户验收全部有直接证据时，才能宣布产品阶段完成。

@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "profiles": [
+    {
+      "id": "apple-silicon-16gb",
+      "label": "Apple Silicon 16 GB",
+      "minimum_memory_gib": 16,
+      "minimum_free_disk_gib": 40,
+      "recommended_model_class": "small",
+      "status": "provisional"
+    },
+    {
+      "id": "apple-silicon-32gb",
+      "label": "Apple Silicon 32 GB",
+      "minimum_memory_gib": 32,
+      "minimum_free_disk_gib": 80,
+      "recommended_model_class": "medium",
+      "status": "provisional"
+    },
+    {
+      "id": "apple-silicon-64gb",
+      "label": "Apple Silicon 64 GB or more",
+      "minimum_memory_gib": 64,
+      "minimum_free_disk_gib": 120,
+      "recommended_model_class": "large",
+      "status": "provisional"
+    }
+  ]
+}
