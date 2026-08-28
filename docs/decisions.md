@@ -11,10 +11,10 @@
 - **ADR-007 — Separate managed runtimes:** Semantica and oMLX do not share a Python environment; their dependency and upgrade constraints differ materially.
 - **ADR-008 — No embedded holaOS distribution without clearance:** until written authorization resolves its modified license, public builds may integrate only with a separately installed holaOS instance and must preserve upstream branding.
 - **ADR-009 — Coordinated ports and updates:** the product manifest, not upstream defaults, owns port allocation and compatibility approval. Component self-updates cannot silently bypass the tested manifest.
+- **ADR-010 — Native app plus helper:** a SwiftUI `.app` is the primary product; a bundled headless helper shares its manifest and lifecycle contract. A `.pkg` is added only if a proven privileged-install requirement exists.
 
 ## Pending evidence
 
-- **ADR-010 — Packaging:** native managed-services app versus signed package/launcher, subject to the holaOS distribution boundary.
 - **ADR-011 — Support matrix:** minimum/recommended Mac and model tiers from multi-environment measurements.
 - **ADR-012 — Cloud providers:** default local-only; any provider must be separately enabled and visibly audited.
 - **ADR-013 — First connector:** select a reversible connector with dedicated test accounts.

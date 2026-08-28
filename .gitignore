@@ -12,3 +12,6 @@ evidence/**/raw/
 __pycache__/
 .pytest_cache/
 .venv/
+.build/
+DerivedData/
+dist/
