@@ -69,6 +69,12 @@ class ArtifactTests(unittest.TestCase):
         data = json.loads((ROOT / "config/upstreams.json").read_text())
         self.assertEqual(data["schema_version"], 1)
 
+    def test_artifact_name_cannot_escape_download_directory(self):
+        component = load_component(ROOT / "config/upstreams.json", "omlx")
+        component["artifacts"][1]["name"] = "../escape.dmg"
+        with self.assertRaisesRegex(ArtifactError, "plain filename"):
+            select_artifact(component, platform="macos", os_major=26)
+
 
 if __name__ == "__main__":
     unittest.main()

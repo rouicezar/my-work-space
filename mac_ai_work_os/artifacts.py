@@ -74,11 +74,14 @@ def select_artifact(component: dict[str, Any], *, platform: str, os_major: int) 
     parsed = urlparse(str(item.get("url", "")))
     if parsed.scheme != "https" or parsed.netloc != "github.com":
         raise ArtifactError("artifact URL must use https://github.com")
+    name = str(item.get("name", ""))
+    if not name or Path(name).name != name or name in {".", ".."}:
+        raise ArtifactError("artifact name must be a plain filename")
     return ArtifactExpectation(
         component=component["id"],
         release=component["release"],
         artifact_id=item["id"],
-        name=item["name"],
+        name=name,
         size_bytes=size,
         sha256=digest,
         url=item["url"],
