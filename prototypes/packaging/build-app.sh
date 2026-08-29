@@ -18,6 +18,7 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 install -m 0755 "$BIN_DIRECTORY/MacAIWorkOSApp" "$APP/Contents/MacOS/MacAIWorkOSApp"
 install -m 0644 "$SCRIPT_DIR/App-Info.plist" "$APP/Contents/Info.plist"
 install -m 0644 "$REPOSITORY_ROOT/config/product-manifest.json" "$APP/Contents/Resources/product-manifest.json"
+install -m 0644 "$REPOSITORY_ROOT/config/hardware-profiles.yaml" "$APP/Contents/Resources/hardware-profiles.json"
 
 codesign --force --deep --sign - "$APP"
 codesign --verify --deep --strict --verbose=2 "$APP"
