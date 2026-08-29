@@ -24,8 +24,8 @@
       "artifact_contract": "verified-2026-08-29-macos26",
       "shallow_health_contract": "verified-2026-08-29-empty-model-runtime",
       "deep_health_contract": "pending-real-model-inference",
-      "isolation_contract": "failed-base-path-still-writes-user-home",
-      "cors_contract": "requires-explicit-safe-configuration",
+      "isolation_contract": "shallow-verified-product-home-2026-08-29-full-fs-audit-pending",
+      "cors_contract": "upstream-wildcard-contained-by-real-loopback-broker-shallow",
       "update_owner": "product_compatibility_gate",
       "allow_self_update": false,
       "data_path": "${APP_SUPPORT}/data/omlx"
@@ -73,7 +73,7 @@
       "port": 43110,
       "bind_policy": "loopback-only",
       "contract": "verified-synthetic-loopback",
-      "real_upstream_contract": "pending-pinned-omlx-regression",
+      "real_upstream_contract": "verified-pinned-omlx-shallow-2026-08-29",
       "secret_policy": "keychain-runtime-injection"
     }
   ],

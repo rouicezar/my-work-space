@@ -46,7 +46,7 @@ The real startup also found two product blockers:
 1. `--base-path /tmp/...` did not fully isolate state. oMLX still created `~/.omlx/bin/omlx-cluster-python`. The exact link and newly empty directories were removed after the test. A product wrapper must prove a fully isolated home/config strategy before installation is enabled.
 2. The server logged CORS origins as `['*']`. The product must configure and test an explicit loopback/UI origin policy instead of accepting this default.
 
-The accepted containment design is documented in [ADR 0003](../adr/0003-omlx-process-security-boundary.md). Its process specification is implemented, but the two blockers above remain open until that specification and the future product broker pass real adversarial runtime tests against the pinned artifact.
+The accepted containment design is documented in [ADR 0003](../adr/0003-omlx-process-security-boundary.md). The process specification and product broker have passed a pinned-artifact shallow regression. The known `~/.omlx` write was redirected into the product HOME and the real user's `~/.omlx` remained absent. Full filesystem auditing and deep inference are still required before the isolation contract can be considered release-ready.
 
 ## Product inference broker prototype
 
@@ -57,7 +57,7 @@ The accepted containment design is documented in [ADR 0003](../adr/0003-omlx-pro
 
 The entry requires an explicit `--audit-path`. Browser use additionally requires one or more exact `--allowed-origin` values. Do not place token values in arguments, configuration files, shell history, logs, or diagnostics.
 
-The current broker contract has passed synthetic and real-loopback HTTP tests with a controlled upstream. It has not yet passed the pinned oMLX artifact regression, streaming, cancellation, response-size, rate-limit, or sustained-concurrency gates.
+The broker contract has passed synthetic tests and a real-loopback HTTP regression against the pinned oMLX artifact. See [the evidence record](../../evidence/upstream/omlx-v0.6.3-isolation-broker-2026-08-29.md). It has not yet passed streaming, cancellation, response-size, rate-limit, deep-inference, or sustained-concurrency gates.
 
 ## Upstream risk carried into our policy
 

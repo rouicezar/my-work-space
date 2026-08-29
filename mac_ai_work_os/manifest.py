@@ -54,8 +54,8 @@ def validate_manifest(data: dict[str, Any]) -> None:
         raise ManifestError("inference broker port must be an unprivileged TCP port")
     if broker_port in ports:
         raise ManifestError("inference broker port must not collide with component ports")
-    if broker.get("real_upstream_contract") != "pending-pinned-omlx-regression":
-        raise ManifestError("real oMLX broker contract cannot be promoted without runtime evidence")
+    if broker.get("real_upstream_contract") != "verified-pinned-omlx-shallow-2026-08-29":
+        raise ManifestError("real oMLX broker contract must match reviewed runtime evidence")
 
     for item in components:
         if item.get("update_owner") != "product_compatibility_gate":

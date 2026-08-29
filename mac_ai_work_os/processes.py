@@ -86,6 +86,7 @@ def omlx_process_spec(
             "HF_HOME": str(cache_path / "huggingface"),
             "TMPDIR": str(runtime_path / "tmp"),
             "NO_PROXY": "127.0.0.1,localhost,::1",
+            "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
         },
         secret_environment_names=("OMLX_API_KEY",),
         working_directory=runtime_path,

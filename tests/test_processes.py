@@ -17,6 +17,7 @@ class OMLXProcessSpecTests(unittest.TestCase):
         self.assertEqual(spec.environment["XDG_CACHE_HOME"], str(component / "cache" / "xdg"))
         self.assertEqual(spec.environment["HF_HOME"], str(component / "cache" / "huggingface"))
         self.assertEqual(spec.environment["TMPDIR"], str(component / "runtime" / "tmp"))
+        self.assertEqual(spec.environment["PATH"], "/usr/bin:/bin:/usr/sbin:/sbin")
         self.assertFalse(spec.inherit_parent_environment)
         self.assertIn(str(component / "data"), spec.arguments)
         self.assertIn(str(component / "models"), spec.arguments)

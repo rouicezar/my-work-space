@@ -26,13 +26,13 @@ class ProductManifestTests(unittest.TestCase):
         ports.extend(item["port"] for item in self.manifest["product_services"])
         self.assertEqual(len(ports), len(set(ports)))
 
-    def test_inference_broker_is_loopback_keychain_and_honestly_pending_real_upstream(self):
+    def test_inference_broker_is_loopback_keychain_and_pinned_to_reviewed_evidence(self):
         broker = self.manifest["product_services"][0]
         self.assertEqual(broker["id"], "inference-broker")
         self.assertEqual(broker["bind_policy"], "loopback-only")
         self.assertEqual(broker["secret_policy"], "keychain-runtime-injection")
         self.assertEqual(broker["contract"], "verified-synthetic-loopback")
-        self.assertEqual(broker["real_upstream_contract"], "pending-pinned-omlx-regression")
+        self.assertEqual(broker["real_upstream_contract"], "verified-pinned-omlx-shallow-2026-08-29")
 
     def test_self_update_bypass_is_rejected(self):
         invalid = copy.deepcopy(self.manifest)
@@ -70,7 +70,10 @@ class ProductManifestTests(unittest.TestCase):
         self.assertTrue(omlx["artifact_contract"].startswith("verified-"))
         self.assertTrue(omlx["shallow_health_contract"].startswith("verified-"))
         self.assertEqual(omlx["deep_health_contract"], "pending-real-model-inference")
-        self.assertEqual(omlx["isolation_contract"], "failed-base-path-still-writes-user-home")
+        self.assertEqual(
+            omlx["isolation_contract"],
+            "shallow-verified-product-home-2026-08-29-full-fs-audit-pending",
+        )
         self.assertEqual(omlx["health_contract"], "pending-adapter-verification")
 
 
