@@ -23,7 +23,16 @@ class ProductManifestTests(unittest.TestCase):
 
     def test_ports_do_not_collide(self):
         ports = [item["port"] for item in self.manifest["components"] if item["port"]]
+        ports.extend(item["port"] for item in self.manifest["product_services"])
         self.assertEqual(len(ports), len(set(ports)))
+
+    def test_inference_broker_is_loopback_keychain_and_honestly_pending_real_upstream(self):
+        broker = self.manifest["product_services"][0]
+        self.assertEqual(broker["id"], "inference-broker")
+        self.assertEqual(broker["bind_policy"], "loopback-only")
+        self.assertEqual(broker["secret_policy"], "keychain-runtime-injection")
+        self.assertEqual(broker["contract"], "verified-synthetic-loopback")
+        self.assertEqual(broker["real_upstream_contract"], "pending-pinned-omlx-regression")
 
     def test_self_update_bypass_is_rejected(self):
         invalid = copy.deepcopy(self.manifest)

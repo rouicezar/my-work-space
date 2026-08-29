@@ -41,6 +41,22 @@ def validate_manifest(data: dict[str, Any]) -> None:
     if any(not isinstance(port, int) or not 1024 <= port <= 65535 for port in ports):
         raise ManifestError("component ports must be unprivileged TCP ports")
 
+    services = data.get("product_services")
+    if not isinstance(services, list) or [item.get("id") for item in services] != ["inference-broker"]:
+        raise ManifestError("inference-broker product service is required")
+    broker = services[0]
+    if broker.get("bind_policy") != "loopback-only":
+        raise ManifestError("inference broker must be loopback-only")
+    if broker.get("secret_policy") != "keychain-runtime-injection":
+        raise ManifestError("inference broker secrets must be injected from Keychain")
+    broker_port = broker.get("port")
+    if not isinstance(broker_port, int) or not 1024 <= broker_port <= 65535:
+        raise ManifestError("inference broker port must be an unprivileged TCP port")
+    if broker_port in ports:
+        raise ManifestError("inference broker port must not collide with component ports")
+    if broker.get("real_upstream_contract") != "pending-pinned-omlx-regression":
+        raise ManifestError("real oMLX broker contract cannot be promoted without runtime evidence")
+
     for item in components:
         if item.get("update_owner") != "product_compatibility_gate":
             raise ManifestError(f"{item['id']} bypasses the product update gate")

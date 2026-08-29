@@ -67,6 +67,16 @@
       "data_path": "external-user-managed"
     }
   ],
+  "product_services": [
+    {
+      "id": "inference-broker",
+      "port": 43110,
+      "bind_policy": "loopback-only",
+      "contract": "verified-synthetic-loopback",
+      "real_upstream_contract": "pending-pinned-omlx-regression",
+      "secret_policy": "keychain-runtime-injection"
+    }
+  ],
   "lifecycle": {
     "install_steps": [
       "preflight",

@@ -48,6 +48,17 @@ The real startup also found two product blockers:
 
 The accepted containment design is documented in [ADR 0003](../adr/0003-omlx-process-security-boundary.md). Its process specification is implemented, but the two blockers above remain open until that specification and the future product broker pass real adversarial runtime tests against the pinned artifact.
 
+## Product inference broker prototype
+
+`scripts/omlx_broker.py` is the runnable development entry for the loopback-only broker described in [ADR 0004](../adr/0004-local-inference-broker.md). The production launcher must obtain both tokens from Keychain and inject them only into the child environment:
+
+- `MAC_AI_WORK_OS_BROKER_TOKEN`: authenticates native UI and agent calls to the broker;
+- `OMLX_API_KEY`: a different token used only from broker to oMLX.
+
+The entry requires an explicit `--audit-path`. Browser use additionally requires one or more exact `--allowed-origin` values. Do not place token values in arguments, configuration files, shell history, logs, or diagnostics.
+
+The current broker contract has passed synthetic and real-loopback HTTP tests with a controlled upstream. It has not yet passed the pinned oMLX artifact regression, streaming, cancellation, response-size, rate-limit, or sustained-concurrency gates.
+
 ## Upstream risk carried into our policy
 
 Upstream reports show that status/model endpoints can remain responsive while actual generation is wedged. The deep probe exists to detect that class of failure. It is not a substitute for sustained-load, cancellation, memory-pressure, or restart testing.
