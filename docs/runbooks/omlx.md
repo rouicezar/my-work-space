@@ -46,6 +46,8 @@ The real startup also found two product blockers:
 1. `--base-path /tmp/...` did not fully isolate state. oMLX still created `~/.omlx/bin/omlx-cluster-python`. The exact link and newly empty directories were removed after the test. A product wrapper must prove a fully isolated home/config strategy before installation is enabled.
 2. The server logged CORS origins as `['*']`. The product must configure and test an explicit loopback/UI origin policy instead of accepting this default.
 
+The accepted containment design is documented in [ADR 0003](../adr/0003-omlx-process-security-boundary.md). Its process specification is implemented, but the two blockers above remain open until that specification and the future product broker pass real adversarial runtime tests against the pinned artifact.
+
 ## Upstream risk carried into our policy
 
 Upstream reports show that status/model endpoints can remain responsive while actual generation is wedged. The deep probe exists to detect that class of failure. It is not a substitute for sustained-load, cancellation, memory-pressure, or restart testing.
