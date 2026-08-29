@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 
 from mac_ai_work_os.manifest import ManifestError, load_manifest, ordered_components, validate_manifest
+from mac_ai_work_os.broker import BrokerPolicy
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -33,6 +34,20 @@ class ProductManifestTests(unittest.TestCase):
         self.assertEqual(broker["secret_policy"], "keychain-runtime-injection")
         self.assertEqual(broker["contract"], "verified-synthetic-loopback")
         self.assertEqual(broker["real_upstream_contract"], "verified-pinned-omlx-shallow-2026-08-29")
+        defaults = BrokerPolicy("x" * 32)
+        self.assertEqual(broker["max_request_bytes"], defaults.max_body_bytes)
+        self.assertEqual(broker["max_response_bytes"], defaults.max_response_bytes)
+        self.assertEqual(broker["max_concurrent_requests"], defaults.max_concurrent_requests)
+        self.assertEqual(broker["max_concurrent_inference"], defaults.max_concurrent_inference)
+        self.assertEqual(
+            broker["inference_requests_per_minute"], defaults.inference_requests_per_minute
+        )
+
+    def test_inference_broker_resource_limits_fail_closed(self):
+        invalid = copy.deepcopy(self.manifest)
+        invalid["product_services"][0]["max_concurrent_inference"] = 17
+        with self.assertRaisesRegex(ManifestError, "cannot exceed"):
+            validate_manifest(invalid)
 
     def test_self_update_bypass_is_rejected(self):
         invalid = copy.deepcopy(self.manifest)

@@ -56,6 +56,18 @@ def validate_manifest(data: dict[str, Any]) -> None:
         raise ManifestError("inference broker port must not collide with component ports")
     if broker.get("real_upstream_contract") != "verified-pinned-omlx-shallow-2026-08-29":
         raise ManifestError("real oMLX broker contract must match reviewed runtime evidence")
+    positive_limits = {
+        "max_request_bytes",
+        "max_response_bytes",
+        "max_concurrent_requests",
+        "max_concurrent_inference",
+        "inference_requests_per_minute",
+        "upstream_timeout_seconds",
+    }
+    if any(not isinstance(broker.get(name), int) or broker[name] < 1 for name in positive_limits):
+        raise ManifestError("inference broker resource limits must be positive integers")
+    if broker["max_concurrent_inference"] > broker["max_concurrent_requests"]:
+        raise ManifestError("inference concurrency cannot exceed total broker concurrency")
 
     for item in components:
         if item.get("update_owner") != "product_compatibility_gate":

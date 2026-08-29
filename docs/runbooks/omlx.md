@@ -57,7 +57,7 @@ The accepted containment design is documented in [ADR 0003](../adr/0003-omlx-pro
 
 The entry requires an explicit `--audit-path`. Browser use additionally requires one or more exact `--allowed-origin` values. Do not place token values in arguments, configuration files, shell history, logs, or diagnostics.
 
-The broker contract has passed synthetic tests and a real-loopback HTTP regression against the pinned oMLX artifact. See [the evidence record](../../evidence/upstream/omlx-v0.6.3-isolation-broker-2026-08-29.md). It has not yet passed streaming, cancellation, response-size, rate-limit, deep-inference, or sustained-concurrency gates.
+The broker contract has passed synthetic tests and a real-loopback HTTP regression against the pinned oMLX artifact. See [the evidence record](../../evidence/upstream/omlx-v0.6.3-isolation-broker-2026-08-29.md). Synthetic gates now cover request/response bounds, total and inference concurrency, rate limiting, upstream timeout/unavailability, invalid content types and explicit streaming rejection. Real-model streaming, cancellation, pressure, and sustained-concurrency gates remain pending.
 
 ## Upstream risk carried into our policy
 
