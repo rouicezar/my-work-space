@@ -24,6 +24,7 @@ struct ManifestOverview: View {
     @State private var result: Result<ProductManifest, Error>?
     @State private var supervisorState: SupervisorViewState = .loading
     @State private var installationState: InstallationViewState = .loading
+    @State private var modelState: ModelViewState = .loading
 
     var body: some View {
         ScrollView {
@@ -35,6 +36,7 @@ struct ManifestOverview: View {
 
             supervisorSection
             installationSection
+            modelSection
 
             switch result {
             case .success(let manifest):
@@ -72,6 +74,47 @@ struct ManifestOverview: View {
             loadManifest()
             await loadSupervisorPreflight()
             await loadInstallationPlan()
+            await loadModelPlan()
+        }
+    }
+
+    @ViewBuilder
+    private var modelSection: some View {
+        GroupBox("Local model") {
+            VStack(alignment: .leading, spacing: 8) {
+                switch modelState {
+                case .loading:
+                    ProgressView("Verifying existing model cache…")
+                case .unavailable(let message):
+                    Label("No verified reusable model", systemImage: "externaldrive.badge.questionmark")
+                        .foregroundStyle(.orange)
+                    Text(message).font(.callout).foregroundStyle(.secondary)
+                case .planned(let plan):
+                    Label("Verified existing \(plan.repository)", systemImage: "checkmark.seal.fill")
+                        .foregroundStyle(.green)
+                    Text("Reuse \(byteCount(plan.sizeBytes)) without downloading or copying model weights.")
+                    Text("License: \(plan.license) · \(plan.quantizationBits)-bit · revision \(plan.revision.prefix(12))")
+                        .font(.caption).foregroundStyle(.secondary)
+                    Text("The source cache remains externally owned and will not be deleted by this product.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    Button("Approve existing model reference") {
+                        Task { await linkModel(plan) }
+                    }
+                    .buttonStyle(.borderedProminent)
+                case .linking:
+                    ProgressView("Creating verified zero-copy model reference…")
+                case .linked(let path):
+                    Label("Existing model linked without copying", systemImage: "link.circle.fill")
+                        .foregroundStyle(.green)
+                    Text(path).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
+                case .failed(let message):
+                    Label("Model reference failed safely", systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                    Text(message).font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
+                    Button("Verify again") { Task { await loadModelPlan() } }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -92,7 +135,11 @@ struct ManifestOverview: View {
                         systemImage: plan.alreadyActive ? "checkmark.circle.fill" : "arrow.down.circle"
                     )
                     .foregroundStyle(plan.alreadyActive ? .green : .primary)
-                    Text("Download: \(byteCount(plan.artifactSizeBytes - plan.downloadedBytes)) remaining of \(byteCount(plan.artifactSizeBytes))")
+                    if plan.cachedArtifactVerified {
+                        Text("Verified installer cached · no download required")
+                    } else {
+                        Text("Download: \(byteCount(plan.artifactSizeBytes - plan.downloadedBytes)) remaining of \(byteCount(plan.artifactSizeBytes))")
+                    }
                     Text("Destination: \(plan.productRoot)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -221,6 +268,9 @@ struct ManifestOverview: View {
                       plan.artifactSHA256.count == 64 else {
                     return .unavailable("Supervisor returned an invalid installation plan.")
                 }
+                if let blocker = plan.cacheBlocker {
+                    return .unavailable("Cached installer requires repair: \(blocker).")
+                }
                 return .planned(plan)
             } catch {
                 return .unavailable(String(describing: error))
@@ -254,6 +304,64 @@ struct ManifestOverview: View {
         }.value
     }
 
+    @MainActor
+    private func loadModelPlan() async {
+        guard let context = modelContext() else {
+            modelState = .unavailable("The pinned model catalog or standard Hugging Face cache is missing.")
+            return
+        }
+        modelState = .loading
+        modelState = await Task.detached { () -> ModelViewState in
+            do {
+                let client = try SupervisorClient(executableURL: context.supervisor)
+                let plan = try client.modelPlan(
+                    rootURL: context.root,
+                    cacheRootURL: context.cacheRoot,
+                    catalogURL: context.catalog
+                )
+                guard plan.schemaVersion == 1, plan.approvalRequired,
+                      plan.revision.count == 40, plan.sizeBytes > 0 else {
+                    return .failed("Supervisor returned an invalid model plan.")
+                }
+                if !plan.availableVerified {
+                    return .unavailable("Pinned model is not reusable: \(plan.unavailableReason ?? "unknown reason").")
+                }
+                return .planned(plan)
+            } catch {
+                return .unavailable(String(describing: error))
+            }
+        }.value
+    }
+
+    @MainActor
+    private func linkModel(_ plan: ModelPlanPayload) async {
+        guard let context = modelContext() else {
+            modelState = .failed("The model context is no longer available.")
+            return
+        }
+        modelState = .linking
+        modelState = await Task.detached { () -> ModelViewState in
+            do {
+                let client = try SupervisorClient(executableURL: context.supervisor)
+                let linked = try client.linkModel(
+                    rootURL: context.root,
+                    cacheRootURL: context.cacheRoot,
+                    catalogURL: context.catalog,
+                    approvedRevision: plan.revision
+                )
+                guard linked.schemaVersion == 1,
+                      linked.reference.revision == plan.revision,
+                      linked.reference.storageMode == "external-reference",
+                      linked.reference.sourceOwnership == "external-cache-not-product-owned" else {
+                    return .failed("Supervisor returned an invalid model reference.")
+                }
+                return .linked(linked.reference.linkPath)
+            } catch {
+                return .failed(String(describing: error))
+            }
+        }.value
+    }
+
     private func installationContext() -> InstallationContext? {
         guard let supervisor = supervisorExecutableURL(),
               let upstreams = Bundle.main.url(forResource: "upstreams", withExtension: "json")
@@ -267,9 +375,31 @@ struct ManifestOverview: View {
         )
     }
 
+    private func modelContext() -> ModelContext? {
+        guard let installation = installationContext(),
+              let catalog = Bundle.main.url(forResource: "models", withExtension: "json")
+                ?? developmentModelsURL()
+        else { return nil }
+        let cache = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".cache/huggingface/hub", isDirectory: true)
+        guard FileManager.default.fileExists(atPath: cache.path) else { return nil }
+        return ModelContext(
+            supervisor: installation.supervisor,
+            root: installation.root,
+            cacheRoot: cache,
+            catalog: catalog
+        )
+    }
+
     private func developmentUpstreamsURL() -> URL? {
         let url = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("config/upstreams.json")
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
+    }
+
+    private func developmentModelsURL() -> URL? {
+        let url = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("config/models.json")
         return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
 
@@ -335,11 +465,27 @@ private struct InstallationContext: Sendable {
     let root: URL
 }
 
+private struct ModelContext: Sendable {
+    let supervisor: URL
+    let root: URL
+    let cacheRoot: URL
+    let catalog: URL
+}
+
 private enum InstallationViewState: Sendable {
     case loading
     case unavailable(String)
     case planned(InstallationPlanPayload)
     case installing(String)
     case installed(String)
+    case failed(String)
+}
+
+private enum ModelViewState: Sendable {
+    case loading
+    case unavailable(String)
+    case planned(ModelPlanPayload)
+    case linking
+    case linked(String)
     case failed(String)
 }

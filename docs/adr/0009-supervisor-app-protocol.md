@@ -31,3 +31,12 @@ The first-run installation flow adds three commands without introducing a second
 - `install-omlx` requires the caller to echo the exact SHA-256 shown in the approved plan. A mismatch fails before download or mutation. It delegates directly to `OMLXInstaller`, whose journal remains the sole recovery authority.
 
 The approval digest binds the UI action to the exact pinned artifact; it is not treated as an authentication secret. The native app must show the plan and receive an explicit user action before invoking installation. The long-running command is executed off the main thread. Current step/recovery state comes only from the lifecycle journal; byte progress uses the existing downloader callback when the protocol gains bounded progress events.
+
+## Existing-model commands
+
+Model reuse follows the same plan-and-approve boundary and delegates to the existing model implementation:
+
+- `model-plan` loads the pinned product catalog and verifies every required file by size and SHA-256, plus architecture and quantization metadata. Missing or invalid cache content is returned as an unavailable plan, not as an empty success.
+- `link-model` requires the exact immutable 40-character revision shown in the approved plan. It delegates to `link_external_model` and creates only a product-owned directory link and private state record.
+
+The plan states the model license, total catalogued bytes, source path and external ownership. The product must never delete or mutate the external cache during uninstall or recovery. A missing external snapshot is a broken reference requiring relink or a separately approved managed download; it never silently downloads another model.

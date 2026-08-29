@@ -10,12 +10,20 @@ from unittest.mock import patch
 
 from scripts import preflight, supervisor
 from mac_ai_work_os.installer import ActiveBundle
+from mac_ai_work_os.models import ModelDefinition, ModelFile, ModelReference
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class SupervisorProtocolTests(unittest.TestCase):
+    def model(self):
+        return ModelDefinition(
+            id="fixture-model", repository="test/model", revision="a" * 40,
+            license="Apache-2.0", license_url="https://example.test/license",
+            model_type="fixture", architecture="Fixture", quantization_bits=4,
+            files={"weights.bin": ModelFile(10, "b" * 64)},
+        )
     def write_upstreams(self, directory: Path) -> Path:
         manifest = directory / "upstreams.json"
         payload = b"fixture"
@@ -121,8 +129,44 @@ class SupervisorProtocolTests(unittest.TestCase):
             payload = response["payload"]
             self.assertEqual(payload["artifact_size_bytes"], 7)
             self.assertEqual(payload["downloaded_bytes"], 3)
+            self.assertFalse(payload["cached_artifact_verified"])
+            self.assertIsNone(payload["cache_blocker"])
             self.assertTrue(payload["approval_required"])
             self.assertFalse((root / "state/operations/omlx-install/operation.json").exists())
+
+    def test_installation_plan_blocks_unverified_complete_cache(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "Product"
+            upstreams = self.write_upstreams(base)
+            cached = root / "cache/downloads/omlx.dmg"
+            cached.parent.mkdir(parents=True)
+            cached.write_bytes(b"invalid")
+            args = supervisor.parser().parse_args([
+                "--request-id", str(uuid.uuid4()), "installation-plan", "--root", str(root),
+                "--os-major", "26", "--upstreams", str(upstreams),
+            ])
+            payload = supervisor.run(args)["payload"]
+            self.assertFalse(payload["cached_artifact_verified"])
+            self.assertEqual(payload["cache_blocker"], "DESTINATION_INVALID")
+            self.assertEqual(payload["downloaded_bytes"], 0)
+
+    def test_installation_plan_reuses_only_verified_complete_cache(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "Product"
+            upstreams = self.write_upstreams(base)
+            cached = root / "cache/downloads/omlx.dmg"
+            cached.parent.mkdir(parents=True)
+            cached.write_bytes(b"fixture")
+            args = supervisor.parser().parse_args([
+                "--request-id", str(uuid.uuid4()), "installation-plan", "--root", str(root),
+                "--os-major", "26", "--upstreams", str(upstreams),
+            ])
+            payload = supervisor.run(args)["payload"]
+            self.assertTrue(payload["cached_artifact_verified"])
+            self.assertIsNone(payload["cache_blocker"])
+            self.assertEqual(payload["downloaded_bytes"], 7)
 
     def test_installation_plan_does_not_trust_stale_active_record(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -196,6 +240,67 @@ class SupervisorProtocolTests(unittest.TestCase):
             response = json.loads(output.call_args.args[0])
             self.assertEqual(response["error"]["code"], "SUPERVISOR_COMMAND_FAILED")
             self.assertNotIn("secret detail", response["error"]["message"])
+
+    def test_model_plan_verifies_existing_cache_without_linking(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            catalog = base / "models.json"
+            catalog.write_text("{}", encoding="utf-8")
+            cache = base / "cache"
+            cache.mkdir()
+            snapshot = cache / "snapshot"
+            snapshot.mkdir()
+            args = supervisor.parser().parse_args([
+                "--request-id", str(uuid.uuid4()), "model-plan", "--root", str(base / "Product"),
+                "--cache-root", str(cache), "--catalog", str(catalog), "--model-id", "fixture-model",
+            ])
+            with patch.object(supervisor, "load_model", return_value=self.model()), \
+                 patch.object(supervisor, "huggingface_snapshot", return_value=snapshot), \
+                 patch.object(supervisor, "verify_snapshot", return_value=snapshot):
+                response = supervisor.run(args)
+            self.assertTrue(response["payload"]["available_verified"])
+            self.assertEqual(response["payload"]["size_bytes"], 10)
+            self.assertFalse((base / "Product").exists())
+
+    def test_model_plan_reports_missing_as_data_not_false_success(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            catalog = base / "models.json"
+            catalog.write_text("{}", encoding="utf-8")
+            cache = base / "cache"
+            cache.mkdir()
+            args = supervisor.parser().parse_args([
+                "--request-id", str(uuid.uuid4()), "model-plan", "--root", str(base / "Product"),
+                "--cache-root", str(cache), "--catalog", str(catalog),
+            ])
+            failure = RuntimeError("missing")
+            failure.code = "SNAPSHOT_MISSING"
+            with patch.object(supervisor, "load_model", return_value=self.model()), \
+                 patch.object(supervisor, "verify_snapshot", side_effect=failure):
+                response = supervisor.run(args)
+            self.assertFalse(response["payload"]["available_verified"])
+            self.assertEqual(response["payload"]["unavailable_reason"], "SNAPSHOT_MISSING")
+
+    def test_model_link_requires_revision_approval_and_delegates(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            catalog = base / "models.json"
+            catalog.write_text("{}", encoding="utf-8")
+            cache = base / "cache"
+            cache.mkdir()
+            common = ["--request-id", str(uuid.uuid4()), "link-model", "--root", str(base / "Product"),
+                      "--cache-root", str(cache), "--catalog", str(catalog)]
+            with patch.object(supervisor, "load_model", return_value=self.model()):
+                with self.assertRaises(ValueError):
+                    supervisor.run(supervisor.parser().parse_args([*common, "--approve-revision", "c" * 40]))
+                reference = ModelReference(1, "fixture-model", "test/model", "a" * 40,
+                                           str(cache / "snapshot"), str(base / "Product/model"),
+                                           "external-reference", "external-cache-not-product-owned", "now")
+                with patch.object(supervisor, "link_external_model", return_value=reference) as link:
+                    response = supervisor.run(supervisor.parser().parse_args([
+                        *common, "--approve-revision", "a" * 40]))
+            link.assert_called_once()
+            self.assertEqual(response["payload"]["reference"]["storage_mode"], "external-reference")
 
 
 if __name__ == "__main__":

@@ -17,14 +17,22 @@ if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from scripts import preflight
-from mac_ai_work_os.artifacts import load_component, select_artifact
+from mac_ai_work_os.artifacts import load_component, select_artifact, verify_file
 from mac_ai_work_os.downloads import ResumableDownloader
 from mac_ai_work_os.installer import OMLXInstallLayout, OMLXInstaller
 from mac_ai_work_os.lifecycle import LifecycleJournal
+from mac_ai_work_os.models import (
+    huggingface_snapshot,
+    link_external_model,
+    load_model,
+    verify_snapshot,
+)
 
 
 SCHEMA_VERSION = 1
 DEFAULT_UPSTREAMS = REPOSITORY_ROOT / "config/upstreams.json"
+DEFAULT_MODELS = REPOSITORY_ROOT / "config/models.json"
+DEFAULT_MODEL_ID = "qwen3-0.6b-4bit-alpha"
 
 
 class ProtocolArgumentParser(argparse.ArgumentParser):
@@ -71,6 +79,14 @@ def parser() -> argparse.ArgumentParser:
             command.add_argument("--upstreams", type=Path, default=DEFAULT_UPSTREAMS)
         if name == "install-omlx":
             command.add_argument("--approve-artifact-sha256", required=True)
+    for name in ("model-plan", "link-model"):
+        command = commands.add_parser(name)
+        command.add_argument("--root", type=Path, required=True)
+        command.add_argument("--cache-root", type=Path, required=True)
+        command.add_argument("--catalog", type=Path, default=DEFAULT_MODELS)
+        command.add_argument("--model-id", default=DEFAULT_MODEL_ID)
+        if name == "link-model":
+            command.add_argument("--approve-revision", required=True)
     return result
 
 
@@ -101,6 +117,54 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         )
     if args.command in {"installation-plan", "installation-status", "install-omlx"}:
         _validate_product_root(args.root)
+    if args.command in {"model-plan", "link-model"}:
+        _validate_product_root(args.root)
+        if not args.cache_root.is_absolute() or not args.cache_root.is_dir():
+            raise ValueError("model cache root must be an existing absolute directory")
+        if not args.catalog.is_absolute() or not args.catalog.is_file():
+            raise ValueError("model catalog must be an existing absolute file")
+        model = load_model(args.catalog, args.model_id)
+        snapshot = huggingface_snapshot(args.cache_root, model)
+        if args.command == "model-plan":
+            try:
+                verified = verify_snapshot(args.cache_root, model)
+                available = True
+                reason = None
+            except Exception as exc:
+                verified = snapshot
+                available = False
+                reason = getattr(exc, "code", "MODEL_UNAVAILABLE")
+            return envelope(
+                command=args.command,
+                request_id=request_id,
+                status="ok",
+                payload={
+                    "schema_version": 1,
+                    "model_id": model.id,
+                    "repository": model.repository,
+                    "revision": model.revision,
+                    "license": model.license,
+                    "quantization_bits": model.quantization_bits,
+                    "size_bytes": sum(item.size_bytes for item in model.files.values()),
+                    "source_path": str(verified),
+                    "available_verified": available,
+                    "unavailable_reason": reason,
+                    "approval_required": True,
+                },
+            )
+        if args.approve_revision != model.revision:
+            raise ValueError("model approval does not match selected revision")
+        reference = link_external_model(
+            product_root=args.root,
+            cache_root=args.cache_root,
+            model=model,
+        )
+        return envelope(
+            command=args.command,
+            request_id=request_id,
+            status="ok",
+            payload={"schema_version": 1, "reference": asdict(reference)},
+        )
     if args.command == "installation-status":
         journal = LifecycleJournal(OMLXInstallLayout(args.root).operations)
         state = journal.load_optional()
@@ -128,7 +192,15 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         if args.command == "installation-plan":
             cached = layout.downloads / expected.name
             partial = layout.downloads / f"{expected.name}.part"
-            cached_bytes = cached.stat().st_size if cached.is_file() and not cached.is_symlink() else 0
+            cached_bytes = 0
+            cached_verified = False
+            cache_blocker = None
+            if cached.is_file() and not cached.is_symlink():
+                cached_verified = verify_file(cached, expected).valid
+                if cached_verified:
+                    cached_bytes = expected.size_bytes
+                else:
+                    cache_blocker = "DESTINATION_INVALID"
             partial_bytes = (
                 partial.stat().st_size if partial.is_file() and not partial.is_symlink() else 0
             )
@@ -145,6 +217,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                     "artifact_size_bytes": expected.size_bytes,
                     "artifact_sha256": expected.sha256,
                     "downloaded_bytes": min(max(cached_bytes, partial_bytes), expected.size_bytes),
+                    "cached_artifact_verified": cached_verified,
+                    "cache_blocker": cache_blocker,
                     "product_root": str(args.root),
                     "already_active": active,
                     "approval_required": True,
@@ -199,7 +273,10 @@ def main(argv: list[str] | None = None) -> int:
     command = next(
         (
             item
-            for item in ("preflight", "installation-plan", "installation-status", "install-omlx")
+            for item in (
+                "preflight", "installation-plan", "installation-status", "install-omlx",
+                "model-plan", "link-model",
+            )
             if item in raw
         ),
         "unknown",

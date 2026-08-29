@@ -11,6 +11,7 @@ class PackagingScriptTests(unittest.TestCase):
     def test_app_bundle_includes_pinned_upstream_manifest(self):
         script = (ROOT / "prototypes/packaging/build-app.sh").read_text(encoding="utf-8")
         self.assertIn('config/upstreams.json" "$APP/Contents/Resources/upstreams.json', script)
+        self.assertIn('config/models.json" "$APP/Contents/Resources/models.json', script)
 
     def test_supervisor_build_rejects_relative_output_before_tool_download(self):
         result = subprocess.run(

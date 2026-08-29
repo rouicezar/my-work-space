@@ -79,6 +79,8 @@ public struct InstallationPlanPayload: Decodable, Sendable {
     public let artifactSizeBytes: Int64
     public let artifactSHA256: String
     public let downloadedBytes: Int64
+    public let cachedArtifactVerified: Bool
+    public let cacheBlocker: String?
     public let productRoot: String
     public let alreadyActive: Bool
     public let approvalRequired: Bool
@@ -90,6 +92,8 @@ public struct InstallationPlanPayload: Decodable, Sendable {
         case artifactSizeBytes = "artifact_size_bytes"
         case artifactSHA256 = "artifact_sha256"
         case downloadedBytes = "downloaded_bytes"
+        case cachedArtifactVerified = "cached_artifact_verified"
+        case cacheBlocker = "cache_blocker"
         case productRoot = "product_root"
         case alreadyActive = "already_active"
         case approvalRequired = "approval_required"
@@ -142,6 +146,58 @@ public struct InstalledBundle: Decodable, Sendable {
         case release
         case appPath = "app_path"
         case shortVersion = "short_version"
+    }
+}
+
+public struct ModelPlanPayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let modelID: String
+    public let repository: String
+    public let revision: String
+    public let license: String
+    public let quantizationBits: Int
+    public let sizeBytes: Int64
+    public let sourcePath: String
+    public let availableVerified: Bool
+    public let unavailableReason: String?
+    public let approvalRequired: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case modelID = "model_id"
+        case repository, revision, license
+        case quantizationBits = "quantization_bits"
+        case sizeBytes = "size_bytes"
+        case sourcePath = "source_path"
+        case availableVerified = "available_verified"
+        case unavailableReason = "unavailable_reason"
+        case approvalRequired = "approval_required"
+    }
+}
+
+public struct ModelLinkPayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let reference: ModelReferencePayload
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case reference
+    }
+}
+
+public struct ModelReferencePayload: Decodable, Sendable {
+    public let modelID: String
+    public let revision: String
+    public let linkPath: String
+    public let storageMode: String
+    public let sourceOwnership: String
+
+    enum CodingKeys: String, CodingKey {
+        case modelID = "model_id"
+        case revision
+        case linkPath = "link_path"
+        case storageMode = "storage_mode"
+        case sourceOwnership = "source_ownership"
     }
 }
 
@@ -246,6 +302,35 @@ public struct SupervisorClient: Sendable {
             arguments: ["--root", rootURL.path, "--os-major", String(osMajor),
                         "--upstreams", upstreamsURL.path,
                         "--approve-artifact-sha256", approvedArtifactSHA256],
+            requestID: requestID
+        )
+    }
+
+    public func modelPlan(
+        rootURL: URL,
+        cacheRootURL: URL,
+        catalogURL: URL,
+        requestID: UUID = UUID()
+    ) throws -> ModelPlanPayload {
+        try request(
+            command: "model-plan",
+            arguments: ["--root", rootURL.path, "--cache-root", cacheRootURL.path,
+                        "--catalog", catalogURL.path],
+            requestID: requestID
+        )
+    }
+
+    public func linkModel(
+        rootURL: URL,
+        cacheRootURL: URL,
+        catalogURL: URL,
+        approvedRevision: String,
+        requestID: UUID = UUID()
+    ) throws -> ModelLinkPayload {
+        try request(
+            command: "link-model",
+            arguments: ["--root", rootURL.path, "--cache-root", cacheRootURL.path,
+                        "--catalog", catalogURL.path, "--approve-revision", approvedRevision],
             requestID: requestID
         )
     }
