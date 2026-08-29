@@ -6,11 +6,13 @@ let package = Package(
     platforms: [.macOS(.v15)],
     products: [
         .library(name: "LifecycleContract", targets: ["LifecycleContract"]),
+        .library(name: "RuntimeSecurity", targets: ["RuntimeSecurity"]),
         .executable(name: "mac-ai-work-os-launcher", targets: ["MacAIWorkOSLauncher"]),
         .executable(name: "MacAIWorkOSApp", targets: ["MacAIWorkOSApp"]),
     ],
     targets: [
         .target(name: "LifecycleContract"),
+        .target(name: "RuntimeSecurity"),
         .executableTarget(
             name: "MacAIWorkOSLauncher",
             dependencies: ["LifecycleContract"]
@@ -22,6 +24,10 @@ let package = Package(
         .testTarget(
             name: "LifecycleContractTests",
             dependencies: ["LifecycleContract"]
+        ),
+        .testTarget(
+            name: "RuntimeSecurityTests",
+            dependencies: ["RuntimeSecurity"]
         ),
     ]
 )
