@@ -33,7 +33,10 @@ class ProductManifestTests(unittest.TestCase):
         self.assertEqual(broker["bind_policy"], "loopback-only")
         self.assertEqual(broker["secret_policy"], "keychain-runtime-injection")
         self.assertEqual(broker["contract"], "verified-synthetic-loopback")
-        self.assertEqual(broker["real_upstream_contract"], "verified-pinned-omlx-shallow-2026-08-29")
+        self.assertEqual(
+            broker["real_upstream_contract"],
+            "verified-pinned-omlx-qwen3-generation-2026-08-29",
+        )
         defaults = BrokerPolicy("x" * 32)
         self.assertEqual(broker["max_request_bytes"], defaults.max_body_bytes)
         self.assertEqual(broker["max_response_bytes"], defaults.max_response_bytes)
@@ -80,11 +83,18 @@ class ProductManifestTests(unittest.TestCase):
             "external_user_install_pending_license_clearance",
         )
 
-    def test_omlx_evidence_is_layered_and_does_not_claim_deep_readiness(self):
+    def test_omlx_evidence_is_layered_and_keeps_overall_health_pending(self):
         omlx = next(item for item in self.manifest["components"] if item["id"] == "omlx")
         self.assertTrue(omlx["artifact_contract"].startswith("verified-"))
         self.assertTrue(omlx["shallow_health_contract"].startswith("verified-"))
-        self.assertEqual(omlx["deep_health_contract"], "pending-real-model-inference")
+        self.assertEqual(
+            omlx["deep_health_contract"],
+            "verified-qwen3-0.6b-4bit-generation-2026-08-29",
+        )
+        self.assertEqual(
+            omlx["model_storage_contract"],
+            "verified-pinned-external-reference-2026-08-29",
+        )
         self.assertEqual(
             omlx["isolation_contract"],
             "shallow-verified-product-home-2026-08-29-full-fs-audit-pending",

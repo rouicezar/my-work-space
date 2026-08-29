@@ -37,6 +37,7 @@ def omlx_process_spec(
     *,
     executable: Path,
     app_support: Path,
+    cache_root: Path | None = None,
     host: str = "127.0.0.1",
     port: int = 8000,
 ) -> ProcessSpec:
@@ -53,15 +54,16 @@ def omlx_process_spec(
         raise ProcessPolicyError("oMLX may only bind to a loopback address")
     if not 1024 <= port <= 65535:
         raise ProcessPolicyError("oMLX port must be between 1024 and 65535")
-    if not executable.is_absolute() or not app_support.is_absolute():
-        raise ProcessPolicyError("oMLX executable and app-support paths must be absolute")
+    resolved_cache_root = cache_root or (app_support / "cache")
+    if not executable.is_absolute() or not app_support.is_absolute() or not resolved_cache_root.is_absolute():
+        raise ProcessPolicyError("oMLX executable, app-support, and cache paths must be absolute")
 
-    root = app_support / "components" / "omlx"
-    isolated_home = root / "home"
-    base_path = root / "data"
-    model_path = root / "models"
-    cache_path = root / "cache"
-    runtime_path = root / "runtime"
+    data_path = app_support / "data" / "omlx"
+    isolated_home = app_support / "state" / "homes" / "omlx"
+    base_path = data_path
+    model_path = data_path / "models"
+    cache_path = resolved_cache_root / "omlx"
+    runtime_path = app_support / "state" / "runtime" / "omlx"
 
     return ProcessSpec(
         executable=executable,

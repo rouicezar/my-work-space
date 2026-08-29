@@ -11,16 +11,19 @@ class OMLXProcessSpecTests(unittest.TestCase):
         self.executable = Path("/Applications/oMLX.app/Contents/MacOS/omlx-cli")
 
     def test_spec_isolates_home_data_models_cache_and_temp(self):
-        spec = omlx_process_spec(executable=self.executable, app_support=self.root)
-        component = self.root / "components" / "omlx"
-        self.assertEqual(spec.environment["HOME"], str(component / "home"))
-        self.assertEqual(spec.environment["XDG_CACHE_HOME"], str(component / "cache" / "xdg"))
-        self.assertEqual(spec.environment["HF_HOME"], str(component / "cache" / "huggingface"))
-        self.assertEqual(spec.environment["TMPDIR"], str(component / "runtime" / "tmp"))
+        cache = self.root / "Caches"
+        spec = omlx_process_spec(
+            executable=self.executable, app_support=self.root, cache_root=cache
+        )
+        data = self.root / "data" / "omlx"
+        self.assertEqual(spec.environment["HOME"], str(self.root / "state" / "homes" / "omlx"))
+        self.assertEqual(spec.environment["XDG_CACHE_HOME"], str(cache / "omlx" / "xdg"))
+        self.assertEqual(spec.environment["HF_HOME"], str(cache / "omlx" / "huggingface"))
+        self.assertEqual(spec.environment["TMPDIR"], str(self.root / "state" / "runtime" / "omlx" / "tmp"))
         self.assertEqual(spec.environment["PATH"], "/usr/bin:/bin:/usr/sbin:/sbin")
         self.assertFalse(spec.inherit_parent_environment)
-        self.assertIn(str(component / "data"), spec.arguments)
-        self.assertIn(str(component / "models"), spec.arguments)
+        self.assertIn(str(data), spec.arguments)
+        self.assertIn(str(data / "models"), spec.arguments)
 
     def test_spec_is_loopback_and_disables_upstream_caches(self):
         spec = omlx_process_spec(executable=self.executable, app_support=self.root)

@@ -54,7 +54,10 @@ def validate_manifest(data: dict[str, Any]) -> None:
         raise ManifestError("inference broker port must be an unprivileged TCP port")
     if broker_port in ports:
         raise ManifestError("inference broker port must not collide with component ports")
-    if broker.get("real_upstream_contract") != "verified-pinned-omlx-shallow-2026-08-29":
+    if (
+        broker.get("real_upstream_contract")
+        != "verified-pinned-omlx-qwen3-generation-2026-08-29"
+    ):
         raise ManifestError("real oMLX broker contract must match reviewed runtime evidence")
     positive_limits = {
         "max_request_bytes",
@@ -78,6 +81,12 @@ def validate_manifest(data: dict[str, Any]) -> None:
             raise ManifestError(
                 f"{item['id']} health contract cannot be promoted without adapter evidence"
             )
+
+    omlx = next(item for item in components if item["id"] == "omlx")
+    if omlx.get("deep_health_contract") != "verified-qwen3-0.6b-4bit-generation-2026-08-29":
+        raise ManifestError("oMLX deep health contract must match reviewed generation evidence")
+    if omlx.get("model_storage_contract") != "verified-pinned-external-reference-2026-08-29":
+        raise ManifestError("oMLX model storage contract must match reviewed reference evidence")
 
     paths = data.get("paths", {})
     required_paths = {"config", "state", "data", "runtimes", "logs", "backups", "cache", "secrets"}

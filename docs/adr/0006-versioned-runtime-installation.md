@@ -17,3 +17,5 @@ An existing active record is unchanged until the new bundle has passed every gat
 ## Boundaries
 
 The implementation currently covers installation transaction semantics. Disk-space reservation, download progress persistence, launch supervision, rollback selection, old-version retention, quarantine repair, uninstall and a real clean-machine install remain separate gates.
+
+`scripts/install_omlx.py` is the structured development entry. It requires an explicit absolute product root and OS major, emits JSON, and never installs into `/Applications`. The native app will call a bundled helper through a versioned protocol rather than expose this developer command to ordinary users.

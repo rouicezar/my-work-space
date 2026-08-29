@@ -9,7 +9,7 @@ The signed oMLX `v0.6.3` application passed artifact and shallow runtime checks,
 ## Decision
 
 - Launch oMLX with a product-owned process specification rather than inheriting the interactive user's environment.
-- Set `HOME`, `XDG_CACHE_HOME`, `HF_HOME`, and `TMPDIR` to component-specific paths under product Application Support.
+- Set `HOME` and `TMPDIR` to component-specific state paths, the oMLX base/model paths to `${APP_SUPPORT}/data/omlx`, and `XDG_CACHE_HOME`/`HF_HOME` beneath the resolved product cache root. These locations match the product manifest storage classes.
 - Also pass explicit base, model, host, port, cache, and memory-guard arguments. Environment isolation and CLI paths are independent layers.
 - Reject non-loopback bind addresses and privileged ports before process creation.
 - Obtain `OMLX_API_KEY` from Keychain at spawn time. Never place the value in the manifest, arguments, journal, diagnostics, or serializable process specification.
