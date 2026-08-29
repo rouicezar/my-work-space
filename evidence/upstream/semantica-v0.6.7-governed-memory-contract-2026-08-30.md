@@ -51,3 +51,19 @@ runtime test. A separate managed environment, exact dependency lock, real
 AgentContext storage/retrieval/save/load execution, crash recovery, concurrent
 mutation, backup/restore, and oMLX embedding compatibility remain required
 before the Semantica adapter can be promoted from contract candidate.
+
+## Real-runtime discovery after contract commit
+
+Installing the exact source into an isolated Python 3.12 environment resolved
+135 packages and occupied approximately 1.6 GB. Constructing upstream
+`VectorStore(backend="inmemory")` then attempted an unprompted Hugging Face
+FastEmbed model download. The test was interrupted before completion. This path
+is prohibited for the product because model acquisition must be visible,
+approved, pinned, integrity checked, and recoverable.
+
+Real `AgentContext` compatibility is therefore tested with an explicitly
+injected no-network vector boundary. That validates upstream memory lifecycle
+behavior but does not count as embedding compatibility. Production retrieval
+must use a separately verified oMLX embedding route or another explicitly
+approved local adapter; upstream automatic model initialization is not an
+allowed fallback.
