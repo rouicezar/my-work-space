@@ -20,6 +20,14 @@ The repository already has authoritative Python implementations for hardware pre
 
 During development the protocol entry is a Python executable that calls the existing implementations. ADR 0010 freezes the same entry as a self-contained helper and embeds it in the app; the explicit environment override remains development-only. Absence remains an explicit unavailable state and never triggers a second native implementation.
 
-## Initial command
+## Installation commands
 
-`preflight` is the first read-only command. It delegates to the existing preflight implementation and returns its unchanged report inside the protocol envelope. Installation, model linking, lifecycle and health commands will join only after their consent, progress, recovery and cancellation semantics are specified.
+`preflight` delegates to the existing preflight implementation and returns its unchanged report inside the protocol envelope.
+
+The first-run installation flow adds three commands without introducing a second installer or lifecycle state machine:
+
+- `installation-plan` selects the pinned artifact and reports its exact release, byte size, SHA-256, reusable download bytes and destination. It does not begin an operation.
+- `installation-status` reads the existing lifecycle journal and reports absence honestly without creating state.
+- `install-omlx` requires the caller to echo the exact SHA-256 shown in the approved plan. A mismatch fails before download or mutation. It delegates directly to `OMLXInstaller`, whose journal remains the sole recovery authority.
+
+The approval digest binds the UI action to the exact pinned artifact; it is not treated as an authentication secret. The native app must show the plan and receive an explicit user action before invoking installation. The long-running command is executed off the main thread. Current step/recovery state comes only from the lifecycle journal; byte progress uses the existing downloader callback when the protocol gains bounded progress events.

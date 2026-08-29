@@ -24,6 +24,7 @@ install -m 0755 "$BIN_DIRECTORY/MacAIWorkOSApp" "$APP/Contents/MacOS/MacAIWorkOS
 install -m 0644 "$SCRIPT_DIR/App-Info.plist" "$APP/Contents/Info.plist"
 install -m 0644 "$REPOSITORY_ROOT/config/product-manifest.json" "$APP/Contents/Resources/product-manifest.json"
 install -m 0644 "$REPOSITORY_ROOT/config/hardware-profiles.yaml" "$APP/Contents/Resources/hardware-profiles.json"
+install -m 0644 "$REPOSITORY_ROOT/config/upstreams.json" "$APP/Contents/Resources/upstreams.json"
 "$SCRIPT_DIR/build-supervisor.sh" "$APP/Contents/Helpers/Supervisor"
 
 codesign --force --deep --sign - "$APP"

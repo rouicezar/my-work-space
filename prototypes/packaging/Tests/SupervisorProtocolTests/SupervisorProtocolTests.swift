@@ -103,3 +103,22 @@ import Testing
         )
     }
 }
+
+@Test func installationPlanBindsExactArtifactAndDestination() throws {
+    let temporary = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(at: temporary, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: temporary) }
+    let executable = temporary.appendingPathComponent("fixture-supervisor")
+    let response = #"{"schema_version":1,"command":"installation-plan","request_id":"00000000-0000-0000-0000-000000000001","status":"ok","payload":{"schema_version":1,"component":"omlx","release":"v0.6.3","artifact_name":"omlx.dmg","artifact_size_bytes":807057789,"artifact_sha256":"abc","downloaded_bytes":42,"product_root":"/tmp/Product","already_active":false,"approval_required":true},"error":null,"emitted_at":"2026-08-29T00:00:00+00:00"}"#
+    try "#!/bin/sh\nprintf '%s' '\(response)'\n".write(to: executable, atomically: true, encoding: .utf8)
+    try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
+    let payload = try SupervisorClient(executableURL: executable).installationPlan(
+        rootURL: temporary.appendingPathComponent("Product"), osMajor: 26,
+        upstreamsURL: temporary.appendingPathComponent("upstreams.json"),
+        requestID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+    )
+    #expect(payload.release == "v0.6.3")
+    #expect(payload.artifactSizeBytes == 807057789)
+    #expect(payload.approvalRequired)
+}

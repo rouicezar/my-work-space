@@ -23,15 +23,18 @@ struct MacAIWorkOSPrototypeApp: App {
 struct ManifestOverview: View {
     @State private var result: Result<ProductManifest, Error>?
     @State private var supervisorState: SupervisorViewState = .loading
+    @State private var installationState: InstallationViewState = .loading
 
     var body: some View {
+        ScrollView {
         VStack(alignment: .leading, spacing: 18) {
             Text("Mac AI Work OS")
                 .font(.largeTitle.bold())
-            Text("Packaging architecture prototype")
+            Text("Alpha setup assistant")
                 .foregroundStyle(.secondary)
 
             supervisorSection
+            installationSection
 
             switch result {
             case .success(let manifest):
@@ -50,7 +53,7 @@ struct ManifestOverview: View {
                     }
                     .accessibilityElement(children: .combine)
                 }
-                Text("No component is installed or started by this prototype.")
+                Text("Components are installed only after an explicit first-run approval.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             case .failure(let error):
@@ -64,9 +67,61 @@ struct ManifestOverview: View {
             Spacer()
         }
         .padding(24)
+        }
         .task {
             loadManifest()
             await loadSupervisorPreflight()
+            await loadInstallationPlan()
+        }
+    }
+
+    @ViewBuilder
+    private var installationSection: some View {
+        GroupBox("Local inference setup") {
+            VStack(alignment: .leading, spacing: 8) {
+                switch installationState {
+                case .loading:
+                    ProgressView("Preparing exact installation plan…")
+                case .unavailable(let message):
+                    Label("Installation plan unavailable", systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                    Text(message).font(.callout).foregroundStyle(.secondary)
+                case .planned(let plan):
+                    Label(
+                        plan.alreadyActive ? "oMLX is already active" : "oMLX \(plan.release) is ready to install",
+                        systemImage: plan.alreadyActive ? "checkmark.circle.fill" : "arrow.down.circle"
+                    )
+                    .foregroundStyle(plan.alreadyActive ? .green : .primary)
+                    Text("Download: \(byteCount(plan.artifactSizeBytes - plan.downloadedBytes)) remaining of \(byteCount(plan.artifactSizeBytes))")
+                    Text("Destination: \(plan.productRoot)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                    if !plan.alreadyActive {
+                        Button("Approve and install oMLX") {
+                            Task { await install(plan) }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .accessibilityHint("Downloads the pinned oMLX artifact and installs it into the displayed destination")
+                    }
+                case .installing(let step):
+                    ProgressView(step)
+                    Text("Closing the app does not corrupt completed steps; reopening can resume the operation.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                case .installed(let release):
+                    Label("oMLX \(release) installed", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                case .failed(let message):
+                    Label("Installation stopped safely", systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                    Text(message).font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
+                    Button("Review plan and resume") {
+                        Task { await loadInstallationPlan() }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -145,6 +200,83 @@ struct ManifestOverview: View {
         supervisorState = outcome
     }
 
+    @MainActor
+    private func loadInstallationPlan() async {
+        guard let context = installationContext() else {
+            installationState = .unavailable("Supervisor or pinned upstream manifest is missing.")
+            return
+        }
+        installationState = .loading
+        installationState = await Task.detached { () -> InstallationViewState in
+            do {
+                let client = try SupervisorClient(executableURL: context.supervisor)
+                let plan = try client.installationPlan(
+                    rootURL: context.root,
+                    osMajor: ProcessInfo.processInfo.operatingSystemVersion.majorVersion,
+                    upstreamsURL: context.upstreams
+                )
+                guard plan.schemaVersion == 1, plan.component == "omlx", plan.approvalRequired,
+                      plan.artifactSizeBytes > 0, plan.downloadedBytes >= 0,
+                      plan.downloadedBytes <= plan.artifactSizeBytes,
+                      plan.artifactSHA256.count == 64 else {
+                    return .unavailable("Supervisor returned an invalid installation plan.")
+                }
+                return .planned(plan)
+            } catch {
+                return .unavailable(String(describing: error))
+            }
+        }.value
+    }
+
+    @MainActor
+    private func install(_ plan: InstallationPlanPayload) async {
+        guard let context = installationContext() else {
+            installationState = .failed("Supervisor or pinned upstream manifest is missing.")
+            return
+        }
+        installationState = .installing("Downloading, verifying, and activating oMLX…")
+        installationState = await Task.detached { () -> InstallationViewState in
+            do {
+                let client = try SupervisorClient(executableURL: context.supervisor)
+                let installed = try client.installOMLX(
+                    rootURL: context.root,
+                    osMajor: ProcessInfo.processInfo.operatingSystemVersion.majorVersion,
+                    upstreamsURL: context.upstreams,
+                    approvedArtifactSHA256: plan.artifactSHA256
+                )
+                guard installed.schemaVersion == 1 else {
+                    return .failed("Supervisor returned an unsupported installation result.")
+                }
+                return .installed(installed.active.release)
+            } catch {
+                return .failed(String(describing: error))
+            }
+        }.value
+    }
+
+    private func installationContext() -> InstallationContext? {
+        guard let supervisor = supervisorExecutableURL(),
+              let upstreams = Bundle.main.url(forResource: "upstreams", withExtension: "json")
+                ?? developmentUpstreamsURL(),
+              let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+        else { return nil }
+        return InstallationContext(
+            supervisor: supervisor,
+            upstreams: upstreams,
+            root: support.appendingPathComponent("Mac AI Work OS", isDirectory: true)
+        )
+    }
+
+    private func developmentUpstreamsURL() -> URL? {
+        let url = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("config/upstreams.json")
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
+    }
+
+    private func byteCount(_ count: Int64) -> String {
+        ByteCountFormatter.string(fromByteCount: max(0, count), countStyle: .file)
+    }
+
     private func supervisorExecutableURL() -> URL? {
         let bundled = Bundle.main.bundleURL
             .appendingPathComponent("Contents/Helpers/Supervisor", isDirectory: true)
@@ -195,4 +327,19 @@ private enum SupervisorViewState: Sendable {
     case loading
     case unavailable(String)
     case ready(PreflightPayload)
+}
+
+private struct InstallationContext: Sendable {
+    let supervisor: URL
+    let upstreams: URL
+    let root: URL
+}
+
+private enum InstallationViewState: Sendable {
+    case loading
+    case unavailable(String)
+    case planned(InstallationPlanPayload)
+    case installing(String)
+    case installed(String)
+    case failed(String)
 }

@@ -71,6 +71,80 @@ public struct PreflightFinding: Decodable, Sendable, Identifiable {
     public var id: String { "\(code):\(message)" }
 }
 
+public struct InstallationPlanPayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let component: String
+    public let release: String
+    public let artifactName: String
+    public let artifactSizeBytes: Int64
+    public let artifactSHA256: String
+    public let downloadedBytes: Int64
+    public let productRoot: String
+    public let alreadyActive: Bool
+    public let approvalRequired: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case component, release
+        case artifactName = "artifact_name"
+        case artifactSizeBytes = "artifact_size_bytes"
+        case artifactSHA256 = "artifact_sha256"
+        case downloadedBytes = "downloaded_bytes"
+        case productRoot = "product_root"
+        case alreadyActive = "already_active"
+        case approvalRequired = "approval_required"
+    }
+}
+
+public struct InstallationStatusPayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let component: String
+    public let operation: InstallationOperation?
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case component, operation
+    }
+}
+
+public struct InstallationOperation: Decodable, Sendable {
+    public let operationID: String
+    public let phase: String
+    public let completedSteps: [String]
+    public let activeStep: String?
+    public let error: [String: String]?
+
+    enum CodingKeys: String, CodingKey {
+        case operationID = "operation_id"
+        case phase
+        case completedSteps = "completed_steps"
+        case activeStep = "active_step"
+        case error
+    }
+}
+
+public struct InstalledBundlePayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let active: InstalledBundle
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case active
+    }
+}
+
+public struct InstalledBundle: Decodable, Sendable {
+    public let release: String
+    public let appPath: String
+    public let shortVersion: String
+
+    enum CodingKeys: String, CodingKey {
+        case release
+        case appPath = "app_path"
+        case shortVersion = "short_version"
+    }
+}
+
 public struct SupervisorClient: Sendable {
     public let executableURL: URL
     public let maximumResponseBytes: Int
@@ -131,6 +205,77 @@ public struct SupervisorClient: Sendable {
         }
         guard ["supported", "unknown", "unsupported"].contains(payload.status) else {
             throw SupervisorProtocolError.invalidResponse("unknown preflight status")
+        }
+        return payload
+    }
+
+    public func installationPlan(
+        rootURL: URL,
+        osMajor: Int,
+        upstreamsURL: URL,
+        requestID: UUID = UUID()
+    ) throws -> InstallationPlanPayload {
+        try request(
+            command: "installation-plan",
+            arguments: ["--root", rootURL.path, "--os-major", String(osMajor),
+                        "--upstreams", upstreamsURL.path],
+            requestID: requestID
+        )
+    }
+
+    public func installationStatus(
+        rootURL: URL,
+        requestID: UUID = UUID()
+    ) throws -> InstallationStatusPayload {
+        try request(
+            command: "installation-status",
+            arguments: ["--root", rootURL.path],
+            requestID: requestID
+        )
+    }
+
+    public func installOMLX(
+        rootURL: URL,
+        osMajor: Int,
+        upstreamsURL: URL,
+        approvedArtifactSHA256: String,
+        requestID: UUID = UUID()
+    ) throws -> InstalledBundlePayload {
+        try request(
+            command: "install-omlx",
+            arguments: ["--root", rootURL.path, "--os-major", String(osMajor),
+                        "--upstreams", upstreamsURL.path,
+                        "--approve-artifact-sha256", approvedArtifactSHA256],
+            requestID: requestID
+        )
+    }
+
+    private func request<Payload: Decodable & Sendable>(
+        command: String,
+        arguments: [String],
+        requestID: UUID
+    ) throws -> Payload {
+        let request = requestID.uuidString.lowercased()
+        let invocation = try invoke(arguments: ["--request-id", request, command] + arguments)
+        let envelope: SupervisorEnvelope<Payload>
+        do {
+            envelope = try JSONDecoder().decode(SupervisorEnvelope<Payload>.self, from: invocation.data)
+        } catch {
+            throw SupervisorProtocolError.invalidResponse(String(describing: error))
+        }
+        guard envelope.schemaVersion == 1 else {
+            throw SupervisorProtocolError.invalidResponse("unsupported schema")
+        }
+        guard envelope.command == command else { throw SupervisorProtocolError.commandMismatch }
+        guard envelope.requestID == request else { throw SupervisorProtocolError.requestMismatch }
+        if envelope.status == "error", let remote = envelope.error {
+            throw SupervisorProtocolError.supervisorFailed(remote.code, remote.message)
+        }
+        guard invocation.exitStatus == 0 else {
+            throw SupervisorProtocolError.invalidResponse("successful payload used nonzero exit status")
+        }
+        guard envelope.status == "ok", let payload = envelope.payload else {
+            throw SupervisorProtocolError.invalidResponse("missing successful payload")
         }
         return payload
     }

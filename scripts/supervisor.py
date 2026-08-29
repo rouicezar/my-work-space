@@ -7,6 +7,7 @@ import argparse
 import json
 import sys
 import uuid
+from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -16,9 +17,14 @@ if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from scripts import preflight
+from mac_ai_work_os.artifacts import load_component, select_artifact
+from mac_ai_work_os.downloads import ResumableDownloader
+from mac_ai_work_os.installer import OMLXInstallLayout, OMLXInstaller
+from mac_ai_work_os.lifecycle import LifecycleJournal
 
 
 SCHEMA_VERSION = 1
+DEFAULT_UPSTREAMS = REPOSITORY_ROOT / "config/upstreams.json"
 
 
 class ProtocolArgumentParser(argparse.ArgumentParser):
@@ -57,6 +63,14 @@ def parser() -> argparse.ArgumentParser:
     )
     probe.add_argument("--check-path", type=Path, required=True)
     probe.add_argument("--ports", type=int, nargs="*", default=list(preflight.DEFAULT_PORTS))
+    for name in ("installation-plan", "installation-status", "install-omlx"):
+        command = commands.add_parser(name)
+        command.add_argument("--root", type=Path, required=True)
+        if name != "installation-status":
+            command.add_argument("--os-major", type=int, required=True)
+            command.add_argument("--upstreams", type=Path, default=DEFAULT_UPSTREAMS)
+        if name == "install-omlx":
+            command.add_argument("--approve-artifact-sha256", required=True)
     return result
 
 
@@ -85,12 +99,111 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             status="ok",
             payload=report,
         )
+    if args.command in {"installation-plan", "installation-status", "install-omlx"}:
+        _validate_product_root(args.root)
+    if args.command == "installation-status":
+        journal = LifecycleJournal(OMLXInstallLayout(args.root).operations)
+        state = journal.load_optional()
+        return envelope(
+            command=args.command,
+            request_id=request_id,
+            status="ok",
+            payload={
+                "schema_version": 1,
+                "component": "omlx",
+                "operation": asdict(state) if state else None,
+            },
+        )
+    if args.command in {"installation-plan", "install-omlx"}:
+        if args.os_major < 15 or args.os_major > 99:
+            raise ValueError("unsupported macOS major version")
+        if not args.upstreams.is_absolute() or not args.upstreams.is_file():
+            raise ValueError("upstream manifest must be an existing absolute file")
+        expected = select_artifact(
+            load_component(args.upstreams, "omlx"),
+            platform="macos",
+            os_major=args.os_major,
+        )
+        layout = OMLXInstallLayout(args.root)
+        if args.command == "installation-plan":
+            cached = layout.downloads / expected.name
+            partial = layout.downloads / f"{expected.name}.part"
+            cached_bytes = cached.stat().st_size if cached.is_file() and not cached.is_symlink() else 0
+            partial_bytes = (
+                partial.stat().st_size if partial.is_file() and not partial.is_symlink() else 0
+            )
+            active = _matches_active_bundle(layout, expected.release, expected.sha256)
+            return envelope(
+                command=args.command,
+                request_id=request_id,
+                status="ok",
+                payload={
+                    "schema_version": 1,
+                    "component": "omlx",
+                    "release": expected.release,
+                    "artifact_name": expected.name,
+                    "artifact_size_bytes": expected.size_bytes,
+                    "artifact_sha256": expected.sha256,
+                    "downloaded_bytes": min(max(cached_bytes, partial_bytes), expected.size_bytes),
+                    "product_root": str(args.root),
+                    "already_active": active,
+                    "approval_required": True,
+                },
+            )
+        if args.approve_artifact_sha256 != expected.sha256:
+            raise ValueError("installation approval does not match selected artifact")
+        installer = OMLXInstaller(
+            layout,
+            expected,
+            downloader=ResumableDownloader(),
+        )
+        active = installer.run()
+        return envelope(
+            command=args.command,
+            request_id=request_id,
+            status="ok",
+            payload={"schema_version": 1, "active": asdict(active)},
+        )
     raise ValueError("unsupported command")
+
+
+def _validate_product_root(root: Path) -> None:
+    if not root.is_absolute():
+        raise ValueError("product root must be absolute")
+    resolved = root.resolve(strict=False)
+    if resolved == Path("/") or resolved == Path.home() or root.is_symlink():
+        raise ValueError("product root is unsafe")
+
+
+def _matches_active_bundle(layout: OMLXInstallLayout, release: str, digest: str) -> bool:
+    if not layout.active_record.is_file() or layout.active_record.is_symlink():
+        return False
+    try:
+        record = json.loads(layout.active_record.read_text(encoding="utf-8"))
+        app = Path(record["app_path"])
+        return (
+            record.get("schema_version") == 1
+            and record.get("component") == "omlx"
+            and record.get("release") == release
+            and record.get("artifact_sha256") == digest
+            and app == layout.app(release)
+            and app.is_dir()
+            and not app.is_symlink()
+        )
+    except (KeyError, OSError, TypeError, json.JSONDecodeError):
+        return False
 
 
 def main(argv: list[str] | None = None) -> int:
     raw = list(sys.argv[1:] if argv is None else argv)
-    command = next((item for item in ("preflight",) if item in raw), "unknown")
+    command = next(
+        (
+            item
+            for item in ("preflight", "installation-plan", "installation-status", "install-omlx")
+            if item in raw
+        ),
+        "unknown",
+    )
     request_id = "invalid"
     if "--request-id" in raw:
         index = raw.index("--request-id") + 1
@@ -100,7 +213,7 @@ def main(argv: list[str] | None = None) -> int:
         args = parser().parse_args(raw)
         response = run(args)
         exit_code = 0
-    except (OSError, ValueError, json.JSONDecodeError):
+    except Exception:
         response = envelope(
             command=command,
             request_id=request_id,
