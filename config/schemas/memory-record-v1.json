@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mac-ai-work-os.local/contracts/memory-record-v1.json",
+  "title": "Mac AI Work OS governed memory record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "record_id", "claim_key", "content", "status",
+    "version", "sources", "correlation_id", "created_at", "updated_at"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "record_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "claim_key": {"type": "string", "minLength": 1, "maxLength": 256},
+    "content": {"type": "string", "minLength": 1, "maxLength": 65536},
+    "status": {"enum": ["candidate", "confirmed", "superseded", "rejected"]},
+    "version": {"type": "integer", "minimum": 1},
+    "sources": {
+      "type": "array", "minItems": 1, "maxItems": 64,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["uri", "observed_at"],
+        "properties": {
+          "uri": {"type": "string", "minLength": 1, "maxLength": 2048},
+          "observed_at": {"type": "string", "format": "date-time"},
+          "digest": {"type": ["string", "null"], "maxLength": 128}
+        }
+      }
+    },
+    "correlation_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "previous_record_id": {"type": ["string", "null"], "maxLength": 128},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"}
+  }
+}
