@@ -7,7 +7,14 @@ struct MacAIWorkOSPrototypeApp: App {
     var body: some Scene {
         WindowGroup("Mac AI Work OS") {
             ManifestOverview()
-                .frame(minWidth: 620, minHeight: 440)
+                .frame(
+                    minWidth: 620,
+                    idealWidth: 720,
+                    maxWidth: 800,
+                    minHeight: 440,
+                    idealHeight: 560,
+                    maxHeight: 700
+                )
         }
         .windowResizability(.contentSize)
     }
@@ -139,7 +146,10 @@ struct ManifestOverview: View {
     }
 
     private func supervisorExecutableURL() -> URL? {
-        if let bundled = Bundle.main.url(forAuxiliaryExecutable: "mac-ai-work-os-supervisor") {
+        let bundled = Bundle.main.bundleURL
+            .appendingPathComponent("Contents/Helpers/Supervisor", isDirectory: true)
+            .appendingPathComponent("mac-ai-work-os-supervisor", isDirectory: false)
+        if FileManager.default.isExecutableFile(atPath: bundled.path) {
             return bundled
         }
         guard let path = ProcessInfo.processInfo.environment["MAC_AI_WORK_OS_SUPERVISOR"],

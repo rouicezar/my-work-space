@@ -18,7 +18,7 @@ The repository already has authoritative Python implementations for hardware pre
 
 ## Packaging boundary
 
-During development the protocol entry is a Python executable that calls the existing implementations. It is not yet a distributable dependency. Before Alpha, the app bundle must contain a self-contained signed Supervisor helper or runtime, and the UI must resolve only that bundled helper. Absence remains an explicit unavailable state and never triggers a second native implementation.
+During development the protocol entry is a Python executable that calls the existing implementations. ADR 0010 freezes the same entry as a self-contained helper and embeds it in the app; the explicit environment override remains development-only. Absence remains an explicit unavailable state and never triggers a second native implementation.
 
 ## Initial command
 

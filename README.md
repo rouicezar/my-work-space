@@ -40,12 +40,14 @@ Mac AI Work OS 是一套面向普通 Mac 用户、通用且可分发的 AI 工�
 - [Keychain 运行时密钥 ADR](docs/adr/0007-keychain-runtime-secrets.md)
 - [已有模型零复制引用 ADR](docs/adr/0008-zero-copy-model-reference.md)
 - [Supervisor 与原生 App 协议 ADR](docs/adr/0009-supervisor-app-protocol.md)
+- [自包含 Supervisor Helper ADR](docs/adr/0010-self-contained-supervisor-helper.md)
 - [Swift 打包原型](prototypes/packaging/README.md)
 - [oMLX 适配器运行手册](docs/runbooks/omlx.md)
 - [oMLX v0.6.3 实测证据](evidence/upstream/omlx-v0.6.3-macos26-2026-08-29.md)
 - [oMLX 隔离与真实代理回归证据](evidence/upstream/omlx-v0.6.3-isolation-broker-2026-08-29.md)
 - [现有 Qwen 模型零复制与真实生成证据](evidence/upstream/omlx-v0.6.3-qwen3-generation-2026-08-29.md)
 - [原生 Supervisor 预检界面证据](evidence/ui/native-supervisor-preflight-2026-08-29.md)
+- [自包含 Supervisor Helper 证据](evidence/ui/self-contained-supervisor-2026-08-29.md)
 
 ## 开发者预检
 

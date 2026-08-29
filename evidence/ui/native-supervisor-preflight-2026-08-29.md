@@ -38,4 +38,4 @@ The screenshot was not committed because the surrounding desktop contained unrel
 
 ## Remaining Alpha boundary
 
-The environment-variable development helper is not distributable. Manual Alpha remains blocked until the app bundles a self-contained signed Supervisor and the protocol covers consented installation, progress, cancellation, recovery, model linking, start/stop and post-install deep health.
+The self-contained helper packaging gate was subsequently closed by the evidence in `self-contained-supervisor-2026-08-29.md`. Manual Alpha remains blocked until the protocol covers consented installation, progress, cancellation, recovery, model linking, start/stop and post-install deep health.

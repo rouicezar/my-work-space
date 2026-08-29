@@ -27,4 +27,4 @@ The SwiftUI executable proves compilation and shared-contract loading. A later p
 
 The app receives an ad-hoc development signature and embeds the exact repository product manifest as a resource. The package is intentionally unsigned: it exists to measure structure and installer behavior, not to impersonate a distributable release. Developer ID signing and notarization remain release gates.
 
-For a repository-only protocol check, launch the built executable with `MAC_AI_WORK_OS_SUPERVISOR` set to the absolute `scripts/supervisor.py` path. Public Alpha builds must instead bundle a self-contained signed helper; they must not depend on a developer Python installation or this environment override.
+`build-app.sh` freezes the existing Python Supervisor with pinned PyInstaller 6.22.2 and embeds it under `Contents/Helpers/Supervisor`. The end-user app does not require Python. For a repository-only protocol check without packaging, the executable still accepts an explicit absolute `MAC_AI_WORK_OS_SUPERVISOR` development override, but the bundled helper always takes precedence.
