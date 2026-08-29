@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import RuntimeSecurity
 @testable import SupervisorProtocol
 
 @Test func decodesAndCorrelatesRealProcessEnvelope() throws {
@@ -141,4 +142,74 @@ import Testing
     #expect(payload.availableVerified)
     #expect(payload.quantizationBits == 4)
     #expect(payload.approvalRequired)
+}
+
+@Test func runtimeSecretsTravelInEnvironmentNotArguments() throws {
+    let temporary = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(at: temporary, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: temporary) }
+    let executable = temporary.appendingPathComponent("fixture-supervisor")
+    let response = #"{"schema_version":1,"command":"start-runtime","request_id":"00000000-0000-0000-0000-000000000001","status":"ok","payload":{"schema_version":1,"runtime":{"phase":"running","correlation_id":"test","revision":4}},"error":null,"emitted_at":"2026-08-30T00:00:00+00:00"}"#
+    let script = """
+    #!/bin/sh
+    case " $* " in *fixture-omlx-secret*|*fixture-broker-secret*) exit 9;; esac
+    [ "$OMLX_API_KEY" = "fixture-omlx-secret-with-at-least-32-characters" ] || exit 8
+    [ "$MAC_AI_WORK_OS_BROKER_TOKEN" = "fixture-broker-secret-with-at-least-32-characters" ] || exit 7
+    printf '%s' '\(response)'
+    """
+    try script.write(to: executable, atomically: true, encoding: .utf8)
+    try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
+    let payload = try SupervisorClient(executableURL: executable).startRuntime(
+        rootURL: temporary.appendingPathComponent("Product"),
+        omlxAPIKey: "fixture-omlx-secret-with-at-least-32-characters",
+        brokerToken: "fixture-broker-secret-with-at-least-32-characters",
+        requestID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+    )
+    #expect(payload.runtime.phase == "running")
+}
+
+@Test(.enabled(if: ProcessInfo.processInfo.environment["MAC_AI_WORK_OS_RUNTIME_INTEGRATION"] == "1"))
+func realKeychainRuntimeSampleAuditAndStop() throws {
+    guard let supervisorPath = ProcessInfo.processInfo.environment["MAC_AI_WORK_OS_RUNTIME_SUPERVISOR"],
+          let rootPath = ProcessInfo.processInfo.environment["MAC_AI_WORK_OS_RUNTIME_ROOT"] else {
+        Issue.record("Runtime integration paths are required")
+        return
+    }
+    let supervisor = URL(fileURLWithPath: supervisorPath)
+    let root = URL(fileURLWithPath: rootPath, isDirectory: true)
+    let client = try SupervisorClient(executableURL: supervisor)
+    let secrets = try RuntimeSecretCoordinator().ensure()
+    defer { _ = try? client.stopRuntime(rootURL: root) }
+
+    let started = try client.startRuntime(
+        rootURL: root,
+        omlxAPIKey: secrets.omlxAPIKey,
+        brokerToken: secrets.brokerToken
+    )
+    #expect(started.runtime.phase == "running")
+    let status = try client.runtimeStatus(rootURL: root)
+    #expect(status.phase == "running")
+    #expect(status.omlxAlive)
+    #expect(status.brokerAlive)
+
+    let correlation = UUID()
+    let sample = try client.sampleTask(
+        rootURL: root,
+        omlxAPIKey: secrets.omlxAPIKey,
+        brokerToken: secrets.brokerToken,
+        requestID: correlation
+    )
+    #expect(sample.correlationID == correlation.uuidString.lowercased())
+    #expect(!sample.output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+    let audit = root.appendingPathComponent(sample.auditPath)
+    let auditText = try String(contentsOf: audit, encoding: .utf8)
+    #expect(auditText.contains(sample.correlationID))
+    #expect(!auditText.contains("LOCAL_AI_READY"))
+    #expect(!auditText.contains(sample.output))
+    #expect(!auditText.contains(secrets.omlxAPIKey))
+    #expect(!auditText.contains(secrets.brokerToken))
+
+    let stopped = try client.stopRuntime(rootURL: root)
+    #expect(stopped.runtime.phase == "stopped")
 }

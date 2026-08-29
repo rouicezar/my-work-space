@@ -5,7 +5,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import subprocess
 import sys
+import urllib.error
+import urllib.request
 import uuid
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -27,6 +31,9 @@ from mac_ai_work_os.models import (
     load_model,
     verify_snapshot,
 )
+from mac_ai_work_os.broker import BrokerPolicy, JsonlAuditSink, OMLXBroker, OMLXUpstream, create_server
+from mac_ai_work_os.processes import omlx_process_spec
+from mac_ai_work_os.runtime import RuntimeManager, SubprocessController
 
 
 SCHEMA_VERSION = 1
@@ -87,6 +94,18 @@ def parser() -> argparse.ArgumentParser:
         command.add_argument("--model-id", default=DEFAULT_MODEL_ID)
         if name == "link-model":
             command.add_argument("--approve-revision", required=True)
+    for name in ("runtime-status", "start-runtime", "stop-runtime", "sample-task"):
+        command = commands.add_parser(name)
+        command.add_argument("--root", type=Path, required=True)
+        if name == "start-runtime":
+            command.add_argument("--omlx-port", type=int, default=8000)
+            command.add_argument("--broker-port", type=int, default=43110)
+        if name == "sample-task":
+            command.add_argument("--broker-port", type=int, default=43110)
+    internal = commands.add_parser("internal-broker")
+    internal.add_argument("--root", type=Path, required=True)
+    internal.add_argument("--omlx-port", type=int, required=True)
+    internal.add_argument("--broker-port", type=int, required=True)
     return result
 
 
@@ -165,6 +184,93 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             status="ok",
             payload={"schema_version": 1, "reference": asdict(reference)},
         )
+    if args.command in {"runtime-status", "start-runtime", "stop-runtime", "sample-task", "internal-broker"}:
+        _validate_product_root(args.root)
+    if args.command == "runtime-status":
+        return envelope(
+            command=args.command,
+            request_id=request_id,
+            status="ok",
+            payload={"schema_version": 1, **RuntimeManager(args.root).status()},
+        )
+    if args.command == "stop-runtime":
+        stopped = RuntimeManager(args.root).stop()
+        return envelope(
+            command=args.command,
+            request_id=request_id,
+            status="ok",
+            payload={"schema_version": 1, "runtime": asdict(stopped)},
+        )
+    if args.command == "internal-broker":
+        _run_internal_broker(args.root, args.omlx_port, args.broker_port)
+        return envelope(command=args.command, request_id=request_id, status="ok", payload={"schema_version": 1})
+    if args.command == "start-runtime":
+        _validate_runtime_ports(args.omlx_port, args.broker_port)
+        omlx_key, broker_token = _runtime_secrets()
+        executable = _installed_omlx_executable(args.root)
+        spec = omlx_process_spec(executable=executable, app_support=args.root, port=args.omlx_port)
+        for path in (
+            Path(spec.working_directory),
+            Path(spec.environment["HOME"]),
+            Path(spec.environment["TMPDIR"]),
+        ):
+            path.mkdir(parents=True, exist_ok=True)
+        omlx_environment = dict(spec.environment)
+        omlx_environment["OMLX_API_KEY"] = omlx_key
+        broker_executable, broker_prefix = _supervisor_invocation()
+        broker_arguments = [
+            *broker_prefix, "--request-id", str(uuid.uuid4()), "internal-broker",
+            "--root", str(args.root), "--omlx-port", str(args.omlx_port),
+            "--broker-port", str(args.broker_port),
+        ]
+        runtime_home = args.root / "state/homes/broker"
+        runtime_tmp = args.root / "state/runtime/broker/tmp"
+        runtime_home.mkdir(parents=True, exist_ok=True)
+        runtime_tmp.mkdir(parents=True, exist_ok=True)
+        broker_environment = {
+            "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
+            "HOME": str(runtime_home),
+            "TMPDIR": str(runtime_tmp),
+            "NO_PROXY": "127.0.0.1,localhost,::1",
+            "OMLX_API_KEY": omlx_key,
+            "MAC_AI_WORK_OS_BROKER_TOKEN": broker_token,
+        }
+        record = RuntimeManager(args.root).start(
+            correlation_id=request_id,
+            omlx={
+                "executable": spec.executable,
+                "arguments": spec.arguments,
+                "environment": omlx_environment,
+                "working_directory": spec.working_directory,
+                "log_path": args.root / "logs/omlx/server.log",
+            },
+            broker={
+                "executable": broker_executable,
+                "arguments": broker_arguments,
+                "environment": broker_environment,
+                "working_directory": args.root / "state/runtime/broker",
+                "log_path": args.root / "logs/broker/server.log",
+            },
+            omlx_probe=lambda: _http_ready(args.omlx_port, omlx_key),
+            broker_probe=lambda: _http_ready(args.broker_port, broker_token),
+            omlx_adopt=lambda: _adopt_omlx_server(
+                args.omlx_port, args.root / "logs/omlx/server.log"
+            ),
+            timeout=90.0,
+        )
+        return envelope(
+            command=args.command,
+            request_id=request_id,
+            status="ok",
+            payload={"schema_version": 1, "runtime": asdict(record)},
+        )
+    if args.command == "sample-task":
+        _, broker_token = _runtime_secrets()
+        status = RuntimeManager(args.root).status()
+        if status["phase"] != "running":
+            raise ValueError("runtime is not running")
+        payload = _sample_task(args.broker_port, broker_token, request_id)
+        return envelope(command=args.command, request_id=request_id, status="ok", payload=payload)
     if args.command == "installation-status":
         journal = LifecycleJournal(OMLXInstallLayout(args.root).operations)
         state = journal.load_optional()
@@ -268,6 +374,142 @@ def _matches_active_bundle(layout: OMLXInstallLayout, release: str, digest: str)
         return False
 
 
+def _validate_runtime_ports(omlx_port: int, broker_port: int) -> None:
+    if not 1024 <= omlx_port <= 65535 or not 1024 <= broker_port <= 65535 or omlx_port == broker_port:
+        raise ValueError("runtime ports must be unique unprivileged ports")
+
+
+def _installed_omlx_executable(root: Path) -> Path:
+    layout = OMLXInstallLayout(root)
+    if not layout.active_record.is_file() or layout.active_record.is_symlink():
+        raise ValueError("oMLX active record is missing or unsafe")
+    try:
+        record = json.loads(layout.active_record.read_text(encoding="utf-8"))
+        release = record["release"]
+        app = Path(record["app_path"])
+    except (KeyError, OSError, TypeError, json.JSONDecodeError) as exc:
+        raise ValueError("oMLX active record is invalid") from exc
+    if (
+        record.get("schema_version") != 1
+        or record.get("component") != "omlx"
+        or not isinstance(release, str)
+        or app != layout.app(release)
+        or not app.is_dir()
+        or app.is_symlink()
+    ):
+        raise ValueError("oMLX active bundle does not match the managed layout")
+    executable = app / "Contents/MacOS/omlx-cli"
+    if not executable.is_file() or executable.is_symlink() or not os.access(executable, os.X_OK):
+        raise ValueError("oMLX runtime executable is missing or unsafe")
+    return executable
+
+
+def _runtime_secrets() -> tuple[str, str]:
+    omlx_key = os.environ.get("OMLX_API_KEY", "")
+    broker_token = os.environ.get("MAC_AI_WORK_OS_BROKER_TOKEN", "")
+    if len(omlx_key) < 32 or len(broker_token) < 32 or omlx_key == broker_token:
+        raise ValueError("distinct Keychain runtime secrets are required")
+    return omlx_key, broker_token
+
+
+def _supervisor_invocation() -> tuple[Path, list[str]]:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable), []
+    return Path(sys.executable), [str(REPOSITORY_ROOT / "scripts/supervisor.py")]
+
+
+def _http_ready(port: int, token: str) -> bool:
+    request = urllib.request.Request(
+        f"http://127.0.0.1:{port}/health",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=1.0) as response:
+            body = json.loads(response.read(1024 * 1024))
+            return response.status == 200 and str(body.get("status", "")).lower() in {"ok", "healthy"}
+    except (OSError, ValueError, urllib.error.URLError, json.JSONDecodeError):
+        return False
+
+
+def _adopt_omlx_server(port: int, log_path: Path):
+    result = subprocess.run(
+        ["/usr/sbin/lsof", "-nP", "-t", f"-iTCP:{port}", "-sTCP:LISTEN"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    pids = {line.strip() for line in result.stdout.splitlines() if line.strip().isdigit()}
+    if result.returncode != 0 or len(pids) != 1:
+        raise ValueError("oMLX listener identity is missing or ambiguous")
+    return SubprocessController().adopt(
+        role="omlx", pid=int(next(iter(pids))), command_prefix="omlx-server", log_path=log_path
+    )
+
+
+def _run_internal_broker(root: Path, omlx_port: int, broker_port: int) -> None:
+    _validate_runtime_ports(omlx_port, broker_port)
+    omlx_key, broker_token = _runtime_secrets()
+    broker = OMLXBroker(
+        BrokerPolicy(client_token=broker_token, allowed_origins=frozenset()),
+        OMLXUpstream(f"http://127.0.0.1:{omlx_port}", omlx_key, timeout=30.0),
+        JsonlAuditSink(root / "logs/audit/inference.jsonl"),
+    )
+    server = create_server("127.0.0.1", broker_port, broker)
+    try:
+        server.serve_forever()
+    finally:
+        server.server_close()
+
+
+def _broker_request(port: int, token: str, path: str, correlation_id: str, body: dict[str, Any] | None = None) -> dict[str, Any]:
+    encoded = json.dumps(body, separators=(",", ":")).encode("utf-8") if body is not None else None
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/json",
+        "X-Correlation-ID": correlation_id,
+    }
+    if encoded is not None:
+        headers["Content-Type"] = "application/json"
+    request = urllib.request.Request(
+        f"http://127.0.0.1:{port}{path}", data=encoded, headers=headers,
+        method="POST" if encoded is not None else "GET",
+    )
+    with urllib.request.urlopen(request, timeout=35.0) as response:
+        return json.loads(response.read(8_388_608))
+
+
+def _sample_task(port: int, token: str, correlation_id: str) -> dict[str, Any]:
+    models = _broker_request(port, token, "/v1/models", correlation_id)
+    entries = models.get("data")
+    if not isinstance(entries, list) or not entries or not isinstance(entries[0].get("id"), str):
+        raise ValueError("broker returned no usable local model")
+    model = entries[0]["id"]
+    completion = _broker_request(
+        port, token, "/v1/chat/completions", correlation_id,
+        {
+            "model": model,
+            "messages": [{"role": "user", "content": "Reply with exactly: LOCAL_AI_READY"}],
+            "temperature": 0,
+            "max_tokens": 16,
+            "stream": False,
+            "chat_template_kwargs": {"enable_thinking": False},
+        },
+    )
+    try:
+        content = completion["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise ValueError("sample completion returned no text") from exc
+    if not isinstance(content, str) or not content.strip():
+        raise ValueError("sample completion returned empty text")
+    return {
+        "schema_version": 1,
+        "correlation_id": correlation_id,
+        "model": model,
+        "output": content,
+        "audit_path": "logs/audit/inference.jsonl",
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     raw = list(sys.argv[1:] if argv is None else argv)
     command = next(
@@ -276,6 +518,7 @@ def main(argv: list[str] | None = None) -> int:
             for item in (
                 "preflight", "installation-plan", "installation-status", "install-omlx",
                 "model-plan", "link-model",
+                "runtime-status", "start-runtime", "stop-runtime", "sample-task", "internal-broker",
             )
             if item in raw
         ),
@@ -290,13 +533,13 @@ def main(argv: list[str] | None = None) -> int:
         args = parser().parse_args(raw)
         response = run(args)
         exit_code = 0
-    except Exception:
+    except Exception as exc:
         response = envelope(
             command=command,
             request_id=request_id,
             status="error",
             error={
-                "code": "SUPERVISOR_COMMAND_FAILED",
+                "code": getattr(exc, "code", "SUPERVISOR_COMMAND_FAILED"),
                 "message": "Supervisor command could not complete.",
             },
         )

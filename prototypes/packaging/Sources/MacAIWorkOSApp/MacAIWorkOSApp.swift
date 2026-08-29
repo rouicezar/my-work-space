@@ -1,6 +1,7 @@
 import SwiftUI
 import LifecycleContract
 import SupervisorProtocol
+import RuntimeSecurity
 
 @main
 struct MacAIWorkOSPrototypeApp: App {
@@ -25,6 +26,7 @@ struct ManifestOverview: View {
     @State private var supervisorState: SupervisorViewState = .loading
     @State private var installationState: InstallationViewState = .loading
     @State private var modelState: ModelViewState = .loading
+    @State private var runtimeState: RuntimeViewState = .loading
 
     var body: some View {
         ScrollView {
@@ -37,6 +39,7 @@ struct ManifestOverview: View {
             supervisorSection
             installationSection
             modelSection
+            runtimeSection
 
             switch result {
             case .success(let manifest):
@@ -75,6 +78,57 @@ struct ManifestOverview: View {
             await loadSupervisorPreflight()
             await loadInstallationPlan()
             await loadModelPlan()
+            await loadRuntimeStatus()
+        }
+    }
+
+    @ViewBuilder
+    private var runtimeSection: some View {
+        GroupBox("Local AI runtime") {
+            VStack(alignment: .leading, spacing: 8) {
+                switch runtimeState {
+                case .loading:
+                    ProgressView("Reading managed runtime state…")
+                case .stopped:
+                    Label("Local runtime is stopped", systemImage: "stop.circle")
+                    Button("Start local AI") { Task { await startRuntime() } }
+                        .buttonStyle(.borderedProminent)
+                case .starting:
+                    ProgressView("Starting oMLX, loading the model, and verifying the Broker…")
+                case .running:
+                    Label("Local runtime and policy Broker are running", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                    HStack {
+                        Button("Run verified sample task") { Task { await runSampleTask() } }
+                            .buttonStyle(.borderedProminent)
+                        Button("Stop local AI") { Task { await stopRuntime() } }
+                    }
+                case .sampling:
+                    ProgressView("Running a local sample task through the audited Broker…")
+                case .sample(let model, let output, let correlation):
+                    Label("Verified local sample completed", systemImage: "checkmark.seal.fill")
+                        .foregroundStyle(.green)
+                    Text("Model: \(model)")
+                    Text(output).font(.headline).textSelection(.enabled)
+                    Text("Audit correlation: \(correlation)")
+                        .font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
+                    HStack {
+                        Button("Run again") { Task { await runSampleTask() } }
+                        Button("Stop local AI") { Task { await stopRuntime() } }
+                    }
+                case .degraded(let message):
+                    Label("Runtime needs recovery", systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                    Text(message).font(.callout).foregroundStyle(.secondary)
+                    Button("Stop managed processes safely") { Task { await stopRuntime() } }
+                case .failed(let message):
+                    Label("Runtime action failed safely", systemImage: "xmark.octagon.fill")
+                        .foregroundStyle(.red)
+                    Text(message).font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
+                    Button("Refresh status") { Task { await loadRuntimeStatus() } }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -362,6 +416,94 @@ struct ManifestOverview: View {
         }.value
     }
 
+    @MainActor
+    private func loadRuntimeStatus() async {
+        guard let context = installationContext() else {
+            runtimeState = .failed("Supervisor context is unavailable.")
+            return
+        }
+        runtimeState = .loading
+        runtimeState = await Task.detached { () -> RuntimeViewState in
+            do {
+                let status = try SupervisorClient(executableURL: context.supervisor)
+                    .runtimeStatus(rootURL: context.root)
+                guard status.schemaVersion == 1 else { return .failed("Unsupported runtime status.") }
+                switch status.phase {
+                case "stopped": return .stopped
+                case "running" where status.omlxAlive && status.brokerAlive: return .running
+                default: return .degraded("Recorded phase: \(status.phase). oMLX: \(status.omlxAlive), Broker: \(status.brokerAlive).")
+                }
+            } catch {
+                return .failed(String(describing: error))
+            }
+        }.value
+    }
+
+    @MainActor
+    private func startRuntime() async {
+        guard let context = installationContext() else {
+            runtimeState = .failed("Supervisor context is unavailable.")
+            return
+        }
+        runtimeState = .starting
+        runtimeState = await Task.detached { () -> RuntimeViewState in
+            do {
+                let secrets = try RuntimeSecretCoordinator().ensure()
+                let result = try SupervisorClient(executableURL: context.supervisor).startRuntime(
+                    rootURL: context.root,
+                    omlxAPIKey: secrets.omlxAPIKey,
+                    brokerToken: secrets.brokerToken
+                )
+                return result.runtime.phase == "running" ? .running : .degraded("Runtime did not reach running state.")
+            } catch {
+                return .failed(String(describing: error))
+            }
+        }.value
+    }
+
+    @MainActor
+    private func stopRuntime() async {
+        guard let context = installationContext() else {
+            runtimeState = .failed("Supervisor context is unavailable.")
+            return
+        }
+        runtimeState = .loading
+        runtimeState = await Task.detached { () -> RuntimeViewState in
+            do {
+                let result = try SupervisorClient(executableURL: context.supervisor)
+                    .stopRuntime(rootURL: context.root)
+                return result.runtime.phase == "stopped" ? .stopped : .failed("Runtime did not stop.")
+            } catch {
+                return .failed(String(describing: error))
+            }
+        }.value
+    }
+
+    @MainActor
+    private func runSampleTask() async {
+        guard let context = installationContext() else {
+            runtimeState = .failed("Supervisor context is unavailable.")
+            return
+        }
+        runtimeState = .sampling
+        runtimeState = await Task.detached { () -> RuntimeViewState in
+            do {
+                let secrets = try RuntimeSecretCoordinator().ensure()
+                let sample = try SupervisorClient(executableURL: context.supervisor).sampleTask(
+                    rootURL: context.root,
+                    omlxAPIKey: secrets.omlxAPIKey,
+                    brokerToken: secrets.brokerToken
+                )
+                guard sample.schemaVersion == 1, !sample.output.isEmpty else {
+                    return .failed("Sample result was empty or unsupported.")
+                }
+                return .sample(sample.model, sample.output, sample.correlationID)
+            } catch {
+                return .failed(String(describing: error))
+            }
+        }.value
+    }
+
     private func installationContext() -> InstallationContext? {
         guard let supervisor = supervisorExecutableURL(),
               let upstreams = Bundle.main.url(forResource: "upstreams", withExtension: "json")
@@ -487,5 +629,16 @@ private enum ModelViewState: Sendable {
     case planned(ModelPlanPayload)
     case linking
     case linked(String)
+    case failed(String)
+}
+
+private enum RuntimeViewState: Sendable {
+    case loading
+    case stopped
+    case starting
+    case running
+    case sampling
+    case sample(String, String, String)
+    case degraded(String)
     case failed(String)
 }

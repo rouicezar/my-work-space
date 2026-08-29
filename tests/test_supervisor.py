@@ -186,6 +186,26 @@ class SupervisorProtocolTests(unittest.TestCase):
             ])
             self.assertFalse(supervisor.run(args)["payload"]["already_active"])
 
+    def test_installation_plan_recognizes_matching_active_bundle(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "Product"
+            upstreams = self.write_upstreams(base)
+            app = root / "runtimes/omlx/v1.2.3/oMLX.app"
+            app.mkdir(parents=True)
+            record = root / "state/components/omlx-active.json"
+            record.parent.mkdir(parents=True)
+            record.write_text(json.dumps({
+                "schema_version": 1, "component": "omlx", "release": "v1.2.3",
+                "artifact_sha256": hashlib.sha256(b"fixture").hexdigest(),
+                "app_path": str(app)
+            }), encoding="utf-8")
+            args = supervisor.parser().parse_args([
+                "--request-id", str(uuid.uuid4()), "installation-plan", "--root", str(root),
+                "--os-major", "26", "--upstreams", str(upstreams),
+            ])
+            self.assertTrue(supervisor.run(args)["payload"]["already_active"])
+
     def test_installation_status_reports_absence_without_mutation(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "Product"
@@ -301,6 +321,51 @@ class SupervisorProtocolTests(unittest.TestCase):
                         *common, "--approve-revision", "a" * 40]))
             link.assert_called_once()
             self.assertEqual(response["payload"]["reference"]["storage_mode"], "external-reference")
+
+    def test_runtime_commands_require_distinct_environment_secrets(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "Product"
+            args = supervisor.parser().parse_args([
+                "--request-id", str(uuid.uuid4()), "start-runtime", "--root", str(root),
+            ])
+            with patch.dict("os.environ", {}, clear=True):
+                with self.assertRaisesRegex(ValueError, "Keychain"):
+                    supervisor.run(args)
+            duplicate = "same-secret-value-with-at-least-32-characters"
+            with patch.dict("os.environ", {
+                "OMLX_API_KEY": duplicate,
+                "MAC_AI_WORK_OS_BROKER_TOKEN": duplicate,
+            }, clear=True):
+                with self.assertRaisesRegex(ValueError, "distinct"):
+                    supervisor.run(args)
+
+    def test_runtime_status_delegates_to_single_runtime_authority(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "Product"
+            args = supervisor.parser().parse_args([
+                "--request-id", str(uuid.uuid4()), "runtime-status", "--root", str(root),
+            ])
+            with patch.object(supervisor.RuntimeManager, "status", return_value={
+                "phase": "stopped", "record": None, "omlx_alive": False, "broker_alive": False,
+            }) as status:
+                response = supervisor.run(args)
+            status.assert_called_once_with()
+            self.assertEqual(response["payload"]["phase"], "stopped")
+
+    def test_sample_task_refuses_nonrunning_runtime_before_network(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "Product"
+            args = supervisor.parser().parse_args([
+                "--request-id", str(uuid.uuid4()), "sample-task", "--root", str(root),
+            ])
+            with patch.dict("os.environ", {
+                "OMLX_API_KEY": "o" * 40,
+                "MAC_AI_WORK_OS_BROKER_TOKEN": "b" * 40,
+            }, clear=True), patch.object(supervisor.RuntimeManager, "status", return_value={"phase": "stopped"}), \
+                 patch.object(supervisor, "_sample_task") as sample:
+                with self.assertRaisesRegex(ValueError, "not running"):
+                    supervisor.run(args)
+            sample.assert_not_called()
 
 
 if __name__ == "__main__":

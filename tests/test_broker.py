@@ -71,6 +71,21 @@ class BrokerTests(unittest.TestCase):
         self.assertEqual(self.audit.events[0]["correlation_id"], "run-123")
         self.assertNotIn(TOKEN, repr(self.audit.events))
 
+    def test_request_headers_are_case_insensitive(self):
+        response = self.broker.handle(BrokerRequest(
+            "POST",
+            "/v1/chat/completions",
+            {
+                "authorization": f"Bearer {TOKEN}",
+                "content-type": "application/json",
+                "x-correlation-id": "run-lowercase",
+            },
+            b'{"model":"test"}',
+        ))
+        self.assertEqual(response.status, 200)
+        self.assertEqual(response.headers["X-Correlation-ID"], "run-lowercase")
+        self.assertEqual(self.audit.events[-1]["correlation_id"], "run-lowercase")
+
     def test_unknown_route_query_and_wrong_method_are_denied(self):
         for method, target in [("GET", "/admin"), ("GET", "/health?x=1"), ("POST", "/health")]:
             with self.subTest(method=method, target=target):
@@ -135,6 +150,26 @@ class BrokerTests(unittest.TestCase):
             with self.assertRaises(urllib.error.HTTPError) as denied:
                 urllib.request.urlopen(url, timeout=2)
             self.assertEqual(denied.exception.code, 401)
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
+
+    def test_live_http_server_preserves_caller_correlation_id(self):
+        server = create_server("127.0.0.1", 0, self.broker)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            request = urllib.request.Request(
+                f"http://127.0.0.1:{server.server_port}/health",
+                headers={
+                    "Authorization": f"Bearer {TOKEN}",
+                    "X-Correlation-ID": "run-live-123",
+                },
+            )
+            with urllib.request.urlopen(request, timeout=2) as response:
+                self.assertEqual(response.headers["X-Correlation-ID"], "run-live-123")
+            self.assertEqual(self.audit.events[-1]["correlation_id"], "run-live-123")
         finally:
             server.shutdown()
             server.server_close()

@@ -246,8 +246,8 @@ class OMLXBroker:
         started = time.monotonic()
         method = request.method.upper()
         parsed = urlsplit(request.target)
-        correlation_id = self._correlation_id(request.headers.get("X-Correlation-ID"))
-        origin = request.headers.get("Origin")
+        correlation_id = self._correlation_id(self._header(request.headers, "X-Correlation-ID"))
+        origin = self._header(request.headers, "Origin")
         status = 500
         outcome = "internal_error"
         response_bytes = 0
@@ -261,7 +261,7 @@ class OMLXBroker:
                 status, outcome = 403, "origin_denied"
                 return self._json(status, {"error": {"code": "ORIGIN_DENIED"}}, correlation_id, None)
             expected = f"Bearer {self.policy.client_token}"
-            if not hmac.compare_digest(request.headers.get("Authorization", ""), expected):
+            if not hmac.compare_digest(self._header(request.headers, "Authorization") or "", expected):
                 status, outcome = 401, "auth_denied"
                 return self._json(status, {"error": {"code": "AUTH_REQUIRED"}}, correlation_id, origin)
             request_bytes = request.declared_body_bytes if request.declared_body_bytes is not None else len(request.body)
@@ -269,7 +269,7 @@ class OMLXBroker:
                 status, outcome = 413, "body_too_large"
                 return self._json(status, {"error": {"code": "BODY_TOO_LARGE"}}, correlation_id, origin)
             if method == "POST":
-                content_type = request.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
+                content_type = (self._header(request.headers, "Content-Type") or "").split(";", 1)[0].strip().lower()
                 if content_type != "application/json" or not self._is_json_object(request.body):
                     status, outcome = 400, "invalid_json"
                     return self._json(status, {"error": {"code": "INVALID_JSON"}}, correlation_id, origin)
@@ -388,11 +388,11 @@ class OMLXBroker:
 
     def preflight(self, request: BrokerRequest) -> BrokerResponse:
         started = time.monotonic()
-        origin = request.headers.get("Origin")
-        requested_method = request.headers.get("Access-Control-Request-Method", "").upper()
+        origin = self._header(request.headers, "Origin")
+        requested_method = (self._header(request.headers, "Access-Control-Request-Method") or "").upper()
         requested_headers = {
             item.strip().lower()
-            for item in request.headers.get("Access-Control-Request-Headers", "").split(",")
+            for item in (self._header(request.headers, "Access-Control-Request-Headers") or "").split(",")
             if item.strip()
         }
         path = urlsplit(request.target).path
@@ -402,7 +402,7 @@ class OMLXBroker:
             or (requested_method, path) not in ALLOWED_ROUTES
             or not requested_headers.issubset(allowed_headers)
         )
-        correlation_id = self._correlation_id(request.headers.get("X-Correlation-ID"))
+        correlation_id = self._correlation_id(self._header(request.headers, "X-Correlation-ID"))
         if allowed:
             response = BrokerResponse(
                 204,
@@ -448,6 +448,12 @@ class OMLXBroker:
         if candidate and CORRELATION_PATTERN.fullmatch(candidate):
             return candidate
         return str(uuid.uuid4())
+
+    @staticmethod
+    def _header(headers: dict[str, str], name: str) -> str | None:
+        """Read HTTP field names with their required case-insensitive semantics."""
+        target = name.casefold()
+        return next((value for key, value in headers.items() if key.casefold() == target), None)
 
     @staticmethod
     def _is_json_object(body: bytes) -> bool:

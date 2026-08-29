@@ -201,6 +201,57 @@ public struct ModelReferencePayload: Decodable, Sendable {
     }
 }
 
+public struct RuntimeStatusPayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let phase: String
+    public let record: RuntimeRecordPayload?
+    public let omlxAlive: Bool
+    public let brokerAlive: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case phase, record
+        case omlxAlive = "omlx_alive"
+        case brokerAlive = "broker_alive"
+    }
+}
+
+public struct RuntimeCommandPayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let runtime: RuntimeRecordPayload
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case runtime
+    }
+}
+
+public struct RuntimeRecordPayload: Decodable, Sendable {
+    public let phase: String
+    public let correlationID: String
+    public let revision: Int
+
+    enum CodingKeys: String, CodingKey {
+        case phase, revision
+        case correlationID = "correlation_id"
+    }
+}
+
+public struct SampleTaskPayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let correlationID: String
+    public let model: String
+    public let output: String
+    public let auditPath: String
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case correlationID = "correlation_id"
+        case model, output
+        case auditPath = "audit_path"
+    }
+}
+
 public struct SupervisorClient: Sendable {
     public let executableURL: URL
     public let maximumResponseBytes: Int
@@ -335,13 +386,63 @@ public struct SupervisorClient: Sendable {
         )
     }
 
+    public func runtimeStatus(rootURL: URL, requestID: UUID = UUID()) throws -> RuntimeStatusPayload {
+        try request(
+            command: "runtime-status", arguments: ["--root", rootURL.path], requestID: requestID
+        )
+    }
+
+    public func startRuntime(
+        rootURL: URL,
+        omlxAPIKey: String,
+        brokerToken: String,
+        requestID: UUID = UUID()
+    ) throws -> RuntimeCommandPayload {
+        try request(
+            command: "start-runtime",
+            arguments: ["--root", rootURL.path],
+            requestID: requestID,
+            environmentOverrides: [
+                "OMLX_API_KEY": omlxAPIKey,
+                "MAC_AI_WORK_OS_BROKER_TOKEN": brokerToken,
+            ]
+        )
+    }
+
+    public func stopRuntime(rootURL: URL, requestID: UUID = UUID()) throws -> RuntimeCommandPayload {
+        try request(
+            command: "stop-runtime", arguments: ["--root", rootURL.path], requestID: requestID
+        )
+    }
+
+    public func sampleTask(
+        rootURL: URL,
+        omlxAPIKey: String,
+        brokerToken: String,
+        requestID: UUID = UUID()
+    ) throws -> SampleTaskPayload {
+        try request(
+            command: "sample-task",
+            arguments: ["--root", rootURL.path],
+            requestID: requestID,
+            environmentOverrides: [
+                "OMLX_API_KEY": omlxAPIKey,
+                "MAC_AI_WORK_OS_BROKER_TOKEN": brokerToken,
+            ]
+        )
+    }
+
     private func request<Payload: Decodable & Sendable>(
         command: String,
         arguments: [String],
-        requestID: UUID
+        requestID: UUID,
+        environmentOverrides: [String: String] = [:]
     ) throws -> Payload {
         let request = requestID.uuidString.lowercased()
-        let invocation = try invoke(arguments: ["--request-id", request, command] + arguments)
+        let invocation = try invoke(
+            arguments: ["--request-id", request, command] + arguments,
+            environmentOverrides: environmentOverrides
+        )
         let envelope: SupervisorEnvelope<Payload>
         do {
             envelope = try JSONDecoder().decode(SupervisorEnvelope<Payload>.self, from: invocation.data)
@@ -365,11 +466,19 @@ public struct SupervisorClient: Sendable {
         return payload
     }
 
-    private func invoke(arguments: [String]) throws -> (data: Data, exitStatus: Int32) {
+    private func invoke(
+        arguments: [String],
+        environmentOverrides: [String: String] = [:]
+    ) throws -> (data: Data, exitStatus: Int32) {
         let process = Process()
         let output = Pipe()
         process.executableURL = executableURL
         process.arguments = arguments
+        if !environmentOverrides.isEmpty {
+            var environment = ProcessInfo.processInfo.environment
+            for (name, value) in environmentOverrides { environment[name] = value }
+            process.environment = environment
+        }
         process.standardOutput = output
         process.standardError = FileHandle.nullDevice
         do {

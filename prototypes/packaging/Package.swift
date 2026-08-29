@@ -21,7 +21,7 @@ let package = Package(
         ),
         .executableTarget(
             name: "MacAIWorkOSApp",
-            dependencies: ["LifecycleContract", "SupervisorProtocol"]
+            dependencies: ["LifecycleContract", "SupervisorProtocol", "RuntimeSecurity"]
         ),
         .testTarget(
             name: "LifecycleContractTests",
@@ -33,7 +33,7 @@ let package = Package(
         ),
         .testTarget(
             name: "SupervisorProtocolTests",
-            dependencies: ["SupervisorProtocol"]
+            dependencies: ["SupervisorProtocol", "RuntimeSecurity"]
         ),
     ]
 )
