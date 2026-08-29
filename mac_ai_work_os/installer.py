@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 from contextlib import AbstractContextManager
@@ -211,8 +212,13 @@ class OMLXInstaller:
         if staging_app.exists():
             if staging_app.is_symlink():
                 raise InstallError("UNSAFE_BUNDLE_PATH", str(staging_app))
-            self._require_valid(staging_app, expected_version, "STAGED_BUNDLE_INVALID")
-        else:
+            try:
+                self._require_valid(staging_app, expected_version, "STAGED_BUNDLE_INVALID")
+            except InstallError as exc:
+                if exc.code != "STAGED_BUNDLE_INVALID":
+                    raise
+                shutil.rmtree(staging_root)
+        if not staging_app.exists():
             staging_root.mkdir(parents=True, exist_ok=True)
             with self.mount(artifact, mountpoint) as mounted:
                 source = mounted / "oMLX.app"

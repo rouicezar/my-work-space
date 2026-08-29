@@ -19,3 +19,5 @@ An existing active record is unchanged until the new bundle has passed every gat
 The implementation currently covers installation transaction semantics. Disk-space reservation, download progress persistence, launch supervision, rollback selection, old-version retention, quarantine repair, uninstall and a real clean-machine install remain separate gates.
 
 `scripts/install_omlx.py` is the structured development entry. It requires an explicit absolute product root and OS major, emits JSON, and never installs into `/Applications`. The native app will call a bundled helper through a versioned protocol rather than expose this developer command to ordinary users.
+
+An interrupted copy may leave an invalid bundle under the exact `.staging-<operation-id>` directory owned by the active journal operation. On resume, the installer re-verifies that staging bundle. If and only if it fails with `STAGED_BUNDLE_INVALID`, the installer removes that operation-scoped staging directory and recopies from the already verified DMG. It never removes an active version, an unrelated staging path, or an external model cache.

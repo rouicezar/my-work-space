@@ -151,6 +151,36 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(active.release, "v0.6.3")
         self.assertEqual(installer.journal.load().operation_id, failed.operation_id)
 
+    def test_resume_replaces_only_incomplete_staging_for_same_operation(self):
+        calls = [0]
+
+        def interrupted_copy(source, destination):
+            calls[0] += 1
+            if calls[0] == 1:
+                (destination / "Contents").mkdir(parents=True)
+                (destination / "Contents/partial").write_text("interrupted", encoding="utf-8")
+                raise InstallError("COPY_FAILED", "interrupted after partial copy")
+            shutil.copytree(source, destination)
+
+        installer = self.installer(
+            copy=interrupted_copy,
+            inspect=lambda path, version: inspection(
+                path, version, valid=(path / "Contents/Info.plist").is_file()
+            ),
+        )
+        with self.assertRaisesRegex(InstallError, "interrupted after partial copy"):
+            installer.run()
+        failed = installer.journal.load()
+        staging_root = self.layout.version_root("v0.6.3") / f".staging-{failed.operation_id}"
+        self.assertTrue((staging_root / "oMLX.app/Contents/partial").is_file())
+
+        active = installer.run()
+
+        self.assertEqual(active.release, "v0.6.3")
+        self.assertEqual(calls[0], 2)
+        self.assertFalse(staging_root.exists())
+        self.assertEqual(installer.journal.load().operation_id, failed.operation_id)
+
     def test_invalid_source_never_copies_or_activates(self):
         copied = []
         installer = self.installer(
