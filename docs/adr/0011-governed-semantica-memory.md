@@ -37,6 +37,9 @@ objects directly.
 - If Semantica is missing or unhealthy, confirmed-memory reads and writes fail
   with an explicit capability error. Candidate data is not returned as a
   substitute.
+- Semantica health is unavailable until an explicit, verified embedding route
+  is injected. The presence of a chat model does not satisfy this requirement,
+  and upstream automatic embedding-model downloads are prohibited.
 - Product data lives below the product-owned application support root. Tests
   use synthetic data and temporary databases only.
 

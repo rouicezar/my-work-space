@@ -21,7 +21,7 @@ class SupervisorProtocolTests(unittest.TestCase):
         return ModelDefinition(
             id="fixture-model", repository="test/model", revision="a" * 40,
             license="Apache-2.0", license_url="https://example.test/license",
-            model_type="fixture", architecture="Fixture", quantization_bits=4,
+            model_type="fixture", architecture="Fixture", capabilities=("chat",), quantization_bits=4,
             files={"weights.bin": ModelFile(10, "b" * 64)},
         )
     def write_upstreams(self, directory: Path) -> Path:
@@ -280,6 +280,7 @@ class SupervisorProtocolTests(unittest.TestCase):
                 response = supervisor.run(args)
             self.assertTrue(response["payload"]["available_verified"])
             self.assertEqual(response["payload"]["size_bytes"], 10)
+            self.assertEqual(response["payload"]["capabilities"], ["chat"])
             self.assertFalse((base / "Product").exists())
 
     def test_model_plan_reports_missing_as_data_not_false_success(self):

@@ -64,7 +64,7 @@ class RealSemanticaIntegrationTests(unittest.TestCase):
                 graph_expansion=False,
                 decision_tracking=False,
             )
-            backend = SemanticaContextBackend(context)
+            backend = SemanticaContextBackend(context, embedding_route="test-explicit-local")
             metadata = {
                 "schema_version": 1,
                 "record_id": "real-record-1",
@@ -89,7 +89,7 @@ class RealSemanticaIntegrationTests(unittest.TestCase):
                 decision_tracking=False,
             )
             restored_context.load(str(state))
-            restored = SemanticaContextBackend(restored_context)
+            restored = SemanticaContextBackend(restored_context, embedding_route="test-explicit-local")
             self.assertEqual(restored.get(memory_id)["content"], "Alpha Harbor is the fixture capital")
             self.assertTrue(restored.forget(memory_id))
             self.assertIsNone(restored.get(memory_id))

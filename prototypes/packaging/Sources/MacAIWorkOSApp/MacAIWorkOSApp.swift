@@ -149,6 +149,16 @@ struct ManifestOverview: View {
                     Text("Reuse \(byteCount(plan.sizeBytes)) without downloading or copying model weights.")
                     Text("License: \(plan.license) · \(plan.quantizationBits)-bit · revision \(plan.revision.prefix(12))")
                         .font(.caption).foregroundStyle(.secondary)
+                    Text("Verified capabilities: \(plan.capabilities.joined(separator: ", "))")
+                        .font(.caption).foregroundStyle(.secondary)
+                    if !plan.capabilities.contains("embedding") {
+                        Label(
+                            "Semantic memory search is unavailable until a separately verified embedding model is approved.",
+                            systemImage: "exclamationmark.triangle.fill"
+                        )
+                        .foregroundStyle(.orange)
+                        .font(.callout)
+                    }
                     Text("The source cache remains externally owned and will not be deleted by this product.")
                         .font(.caption).foregroundStyle(.secondary)
                     Button("Approve existing model reference") {

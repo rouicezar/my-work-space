@@ -32,7 +32,7 @@ class FixtureContext:
 class SemanticaAdapterContractTests(unittest.TestCase):
     def test_uses_pinned_agent_context_surface_without_automatic_extraction(self):
         context = FixtureContext()
-        adapter = SemanticaContextBackend(context)
+        adapter = SemanticaContextBackend(context, embedding_route="fixture-local")
         metadata = {"record_id": "record-1", "status": "confirmed", "version": 1}
         memory_id = adapter.store("confirmed fact", metadata)
         self.assertEqual(memory_id, "upstream-1")
@@ -44,7 +44,7 @@ class SemanticaAdapterContractTests(unittest.TestCase):
 
     def test_retrieval_disables_graph_and_uses_max_results(self):
         context = FixtureContext()
-        adapter = SemanticaContextBackend(context)
+        adapter = SemanticaContextBackend(context, embedding_route="fixture-local")
         adapter.retrieve("fact", 7)
         kwargs = context.calls[-1][2]
         self.assertEqual(kwargs["max_results"], 7)
@@ -53,11 +53,16 @@ class SemanticaAdapterContractTests(unittest.TestCase):
 
     def test_health_and_forget_are_normalized(self):
         context = FixtureContext()
-        adapter = SemanticaContextBackend(context)
+        adapter = SemanticaContextBackend(context, embedding_route="fixture-local")
         identity = adapter.store("fact", {})
         self.assertEqual(adapter.health()["status"], "healthy")
         self.assertTrue(adapter.forget(identity))
         self.assertFalse(adapter.forget(identity))
+
+    def test_missing_embedding_route_is_explicitly_unavailable(self):
+        health = SemanticaContextBackend(FixtureContext()).health()
+        self.assertEqual(health["status"], "unavailable")
+        self.assertEqual(health["code"], "EMBEDDING_ROUTE_UNVERIFIED")
 
 
 if __name__ == "__main__":

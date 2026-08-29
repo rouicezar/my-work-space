@@ -6,8 +6,9 @@ from typing import Any
 
 
 class SemanticaContextBackend:
-    def __init__(self, context: Any):
+    def __init__(self, context: Any, *, embedding_route: str | None = None):
         self.context = context
+        self.embedding_route = embedding_route
 
     def store(self, content: str, metadata: dict[str, Any]) -> str:
         result = self.context.store(
@@ -32,9 +33,19 @@ class SemanticaContextBackend:
         return self.context.forget(memory_id=memory_id) == 1
 
     def health(self) -> dict[str, Any]:
+        if not self.embedding_route:
+            return {
+                "status": "unavailable",
+                "code": "EMBEDDING_ROUTE_UNVERIFIED",
+                "details": "Semantica requires an explicit verified local embedding route",
+            }
         try:
             result = self.context.health()
             healthy = isinstance(result, dict) and result.get("status") in {"healthy", "ok"}
-            return {"status": "healthy" if healthy else "unavailable", "details": result}
+            return {
+                "status": "healthy" if healthy else "unavailable",
+                "embedding_route": self.embedding_route,
+                "details": result,
+            }
         except Exception as exc:
             return {"status": "unavailable", "error_type": type(exc).__name__}

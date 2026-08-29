@@ -39,6 +39,7 @@ def fixture(tmp: Path):
             "license_url": "https://example.test/license",
             "model_type": "fixture",
             "architecture": "FixtureModel",
+            "capabilities": ["chat"],
             "quantization_bits": 4,
             "files": files,
         }],
@@ -47,6 +48,18 @@ def fixture(tmp: Path):
 
 
 class ModelReferenceTests(unittest.TestCase):
+    def test_catalog_capabilities_are_explicit_and_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _, catalog, _ = fixture(root)
+            self.assertEqual(load_model(catalog, "fixture").capabilities, ("chat",))
+            data = json.loads(catalog.read_text())
+            data["models"][0]["capabilities"] = ["chat", "secret-network-route"]
+            catalog.write_text(json.dumps(data))
+            with self.assertRaises(ModelError) as failed:
+                load_model(catalog, "fixture")
+            self.assertEqual(failed.exception.code, "MODEL_CAPABILITIES_INVALID")
+
     def test_verified_snapshot_is_linked_without_copying_weights(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

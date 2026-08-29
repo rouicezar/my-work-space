@@ -9,6 +9,7 @@
       "license_url": "https://huggingface.co/Qwen/Qwen3-0.6B/blob/main/LICENSE",
       "model_type": "qwen3",
       "architecture": "Qwen3ForCausalLM",
+      "capabilities": ["chat"],
       "quantization_bits": 4,
       "files": {
         "added_tokens.json": {"size_bytes": 707, "sha256": "c0284b582e14987fbd3d5a2cb2bd139084371ed9acbae488829a1c900833c680"},

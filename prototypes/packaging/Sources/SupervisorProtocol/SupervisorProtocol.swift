@@ -155,6 +155,7 @@ public struct ModelPlanPayload: Decodable, Sendable {
     public let repository: String
     public let revision: String
     public let license: String
+    public let capabilities: [String]
     public let quantizationBits: Int
     public let sizeBytes: Int64
     public let sourcePath: String
@@ -165,7 +166,7 @@ public struct ModelPlanPayload: Decodable, Sendable {
     enum CodingKeys: String, CodingKey {
         case schemaVersion = "schema_version"
         case modelID = "model_id"
-        case repository, revision, license
+        case repository, revision, license, capabilities
         case quantizationBits = "quantization_bits"
         case sizeBytes = "size_bytes"
         case sourcePath = "source_path"

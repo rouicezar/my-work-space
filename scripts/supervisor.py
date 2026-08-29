@@ -163,6 +163,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                     "repository": model.repository,
                     "revision": model.revision,
                     "license": model.license,
+                    "capabilities": list(model.capabilities),
                     "quantization_bits": model.quantization_bits,
                     "size_bytes": sum(item.size_bytes for item in model.files.values()),
                     "source_path": str(verified),

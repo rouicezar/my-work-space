@@ -18,6 +18,7 @@ from typing import Any
 REVISION = re.compile(r"^[0-9a-f]{40}$")
 REPOSITORY = re.compile(r"^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$")
 MODEL_ID = re.compile(r"^[a-z0-9][a-z0-9._-]{0,79}$")
+MODEL_CAPABILITIES = frozenset({"chat", "embedding", "rerank", "tools"})
 
 
 class ModelError(RuntimeError):
@@ -41,6 +42,7 @@ class ModelDefinition:
     license_url: str
     model_type: str
     architecture: str
+    capabilities: tuple[str, ...]
     quantization_bits: int
     files: dict[str, ModelFile]
 
@@ -84,6 +86,14 @@ def load_model(path: Path, model_id: str) -> ModelDefinition:
         files[name] = ModelFile(size, digest)
     if not files:
         raise ModelError("MODEL_FILES_MISSING", model_id)
+    raw_capabilities = item.get("capabilities")
+    if (
+        not isinstance(raw_capabilities, list)
+        or not raw_capabilities
+        or any(not isinstance(value, str) or value not in MODEL_CAPABILITIES for value in raw_capabilities)
+        or len(raw_capabilities) != len(set(raw_capabilities))
+    ):
+        raise ModelError("MODEL_CAPABILITIES_INVALID", model_id)
     return ModelDefinition(
         id=item["id"],
         repository=item["repository"],
@@ -92,6 +102,7 @@ def load_model(path: Path, model_id: str) -> ModelDefinition:
         license_url=item["license_url"],
         model_type=item["model_type"],
         architecture=item["architecture"],
+        capabilities=tuple(raw_capabilities),
         quantization_bits=item["quantization_bits"],
         files=files,
     )
