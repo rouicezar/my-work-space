@@ -21,6 +21,11 @@
       "start_order": 10,
       "port": 8000,
       "health_contract": "pending-adapter-verification",
+      "artifact_contract": "verified-2026-08-29-macos26",
+      "shallow_health_contract": "verified-2026-08-29-empty-model-runtime",
+      "deep_health_contract": "pending-real-model-inference",
+      "isolation_contract": "failed-base-path-still-writes-user-home",
+      "cors_contract": "requires-explicit-safe-configuration",
       "update_owner": "product_compatibility_gate",
       "allow_self_update": false,
       "data_path": "${APP_SUPPORT}/data/omlx"

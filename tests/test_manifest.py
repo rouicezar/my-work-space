@@ -56,6 +56,14 @@ class ProductManifestTests(unittest.TestCase):
             "external_user_install_pending_license_clearance",
         )
 
+    def test_omlx_evidence_is_layered_and_does_not_claim_deep_readiness(self):
+        omlx = next(item for item in self.manifest["components"] if item["id"] == "omlx")
+        self.assertTrue(omlx["artifact_contract"].startswith("verified-"))
+        self.assertTrue(omlx["shallow_health_contract"].startswith("verified-"))
+        self.assertEqual(omlx["deep_health_contract"], "pending-real-model-inference")
+        self.assertEqual(omlx["isolation_contract"], "failed-base-path-still-writes-user-home")
+        self.assertEqual(omlx["health_contract"], "pending-adapter-verification")
+
 
 if __name__ == "__main__":
     unittest.main()

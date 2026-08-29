@@ -37,7 +37,14 @@ API keys are read from the environment name supplied by `--api-key-env` (default
 
 ## Current evidence boundary
 
-The adapter contract is covered by deterministic simulated responses. On the current development Mac, neither the oMLX app nor CLI was found and port 8000 was not listening. Therefore `config/product-manifest.json` correctly retains `pending-adapter-verification`; no real artifact, start/stop, model, or inference evidence exists yet.
+The adapter contract is covered by deterministic simulated responses and a real local HTTP transport test. The official `v0.6.3` macOS 26–27 DMG has also passed size, SHA-256, signature, notarization, version, architecture, isolated empty-model startup, shallow health, model-list, and graceful-stop checks on the development Mac.
+
+No model has been downloaded, so deep inference remains unverified and the overall `health_contract` stays `pending-adapter-verification`.
+
+The real startup also found two product blockers:
+
+1. `--base-path /tmp/...` did not fully isolate state. oMLX still created `~/.omlx/bin/omlx-cluster-python`. The exact link and newly empty directories were removed after the test. A product wrapper must prove a fully isolated home/config strategy before installation is enabled.
+2. The server logged CORS origins as `['*']`. The product must configure and test an explicit loopback/UI origin policy instead of accepting this default.
 
 ## Upstream risk carried into our policy
 
