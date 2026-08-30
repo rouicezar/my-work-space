@@ -6,10 +6,10 @@ import unittest
 from contextlib import AbstractContextManager
 from pathlib import Path
 
-from mac_ai_work_os.artifacts import ArtifactExpectation
-from mac_ai_work_os.downloads import DownloadResult
-from mac_ai_work_os.installer import INSTALL_STEPS, InstallError, OMLXInstallLayout, OMLXInstaller
-from mac_ai_work_os.macos_bundle import AppInspection
+from forma_ai.artifacts import ArtifactExpectation
+from forma_ai.downloads import DownloadResult
+from forma_ai.installer import INSTALL_STEPS, InstallError, OMLXInstallLayout, OMLXInstaller
+from forma_ai.macos_bundle import AppInspection
 
 
 PAYLOAD = b"fixture-dmg"

@@ -204,8 +204,8 @@ import RuntimeSecurity
     #!/bin/sh
     case " $* " in *fixture-omlx-secret*|*fixture-broker-secret*|*fixture-memory-secret*) exit 9;; esac
     [ "$OMLX_API_KEY" = "fixture-omlx-secret-with-at-least-32-characters" ] || exit 8
-    [ "$MAC_AI_WORK_OS_BROKER_TOKEN" = "fixture-broker-secret-with-at-least-32-characters" ] || exit 7
-    [ "$MAC_AI_WORK_OS_MEMORY_TOKEN" = "fixture-memory-secret-with-at-least-32-characters" ] || exit 6
+    [ "$FORMA_AI_BROKER_TOKEN" = "fixture-broker-secret-with-at-least-32-characters" ] || exit 7
+    [ "$FORMA_AI_MEMORY_TOKEN" = "fixture-memory-secret-with-at-least-32-characters" ] || exit 6
     printf '%s' '\(response)'
     """
     try script.write(to: executable, atomically: true, encoding: .utf8)
@@ -239,7 +239,7 @@ import RuntimeSecurity
         ;;
       *" cloud-execute "*)
         case " $* " in *deepseek-secret*) exit 7;; esac
-        [ "$MAC_AI_WORK_OS_DEEPSEEK_API_KEY" = "deepseek-secret" ] || exit 6
+        [ "$FORMA_AI_DEEPSEEK_API_KEY" = "deepseek-secret" ] || exit 6
         printf '%s' '\(execution)'
         ;;
       *) exit 5 ;;
@@ -317,8 +317,8 @@ import RuntimeSecurity
     #!/bin/sh
     case " $* " in *private-local-prompt*|*runtime-secret*) exit 9;; esac
     [ "$OMLX_API_KEY" = "omlx-runtime-secret" ] || exit 8
-    [ "$MAC_AI_WORK_OS_BROKER_TOKEN" = "broker-runtime-secret" ] || exit 7
-    [ "$MAC_AI_WORK_OS_MEMORY_TOKEN" = "memory-runtime-secret" ] || exit 6
+    [ "$FORMA_AI_BROKER_TOKEN" = "broker-runtime-secret" ] || exit 7
+    [ "$FORMA_AI_MEMORY_TOKEN" = "memory-runtime-secret" ] || exit 6
     body=$(cat)
     case "$body" in *private-local-prompt*) ;; *) exit 5;; esac
     printf '%s' '\(response)'
@@ -401,10 +401,10 @@ import RuntimeSecurity
     }
 }
 
-@Test(.enabled(if: ProcessInfo.processInfo.environment["MAC_AI_WORK_OS_RUNTIME_INTEGRATION"] == "1"))
+@Test(.enabled(if: ProcessInfo.processInfo.environment["FORMA_AI_RUNTIME_INTEGRATION"] == "1"))
 func realKeychainRuntimeSampleAuditAndStop() throws {
-    guard let supervisorPath = ProcessInfo.processInfo.environment["MAC_AI_WORK_OS_RUNTIME_SUPERVISOR"],
-          let rootPath = ProcessInfo.processInfo.environment["MAC_AI_WORK_OS_RUNTIME_ROOT"] else {
+    guard let supervisorPath = ProcessInfo.processInfo.environment["FORMA_AI_RUNTIME_SUPERVISOR"],
+          let rootPath = ProcessInfo.processInfo.environment["FORMA_AI_RUNTIME_ROOT"] else {
         Issue.record("Runtime integration paths are required")
         return
     }

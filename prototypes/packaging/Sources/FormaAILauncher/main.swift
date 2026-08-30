@@ -16,7 +16,7 @@ enum LauncherError: Error, CustomStringConvertible {
     case usage
 
     var description: String {
-        "usage: mac-ai-work-os-launcher --manifest /path/to/product-manifest.json"
+        "usage: forma-ai-launcher --manifest /path/to/product-manifest.json"
     }
 }
 

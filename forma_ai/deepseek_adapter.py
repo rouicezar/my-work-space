@@ -9,10 +9,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Callable, Protocol
 
-from mac_ai_work_os.broker import AuditSink
-from mac_ai_work_os.cloud_approval import CloudApprovalStore
-from mac_ai_work_os.cloud_catalog import CloudProvider
-from mac_ai_work_os.inference_routing import CloudEscalationProposal
+from forma_ai.broker import AuditSink
+from forma_ai.cloud_approval import CloudApprovalStore
+from forma_ai.cloud_catalog import CloudProvider
+from forma_ai.inference_routing import CloudEscalationProposal
 
 
 class DeepSeekError(RuntimeError):
@@ -30,7 +30,7 @@ class HTTPResponse(Protocol):
     def __exit__(self, *args: object) -> None: ...
 
 
-OpenURL = Callable[[urllib.request.Request, float], HTTPResponse]
+OpenURL = Callable[..., HTTPResponse]
 
 
 @dataclass(frozen=True)
@@ -83,14 +83,15 @@ class DeepSeekAdapter:
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
                 "Accept": "application/json",
-                "User-Agent": "MacAIWorkOS/0.1",
+                "User-Agent": "FormaAI/0.1",
             },
         )
         outcome = "failed"
         error_code: str | None = None
+        error_type: str | None = None
         try:
             try:
-                with self.open_url(request, self.timeout) as response:
+                with self.open_url(request, timeout=self.timeout) as response:
                     if response.geturl() != endpoint:
                         raise DeepSeekError("DEEPSEEK_REDIRECT_DENIED", response.geturl())
                     if response.status != 200:
@@ -110,7 +111,12 @@ class DeepSeekAdapter:
             return result
         except DeepSeekError as exc:
             error_code = exc.code
+            error_type = type(exc).__name__
             raise
+        except Exception as exc:
+            error_code = "DEEPSEEK_UNEXPECTED_FAILURE"
+            error_type = type(exc).__name__
+            raise DeepSeekError(error_code, error_type) from exc
         finally:
             self.audit.record({
                 "schema_version": 1, "event": "cloud_inference",
@@ -121,7 +127,7 @@ class DeepSeekAdapter:
                 "payload_size_bytes": proposal.payload_size_bytes,
                 "maximum_output_tokens": proposal.maximum_output_tokens,
                 "maximum_cost_usd": approval.maximum_cost_usd,
-                "outcome": outcome, "error_code": error_code,
+                "outcome": outcome, "error_code": error_code, "error_type": error_type,
             })
 
     def _normalize(

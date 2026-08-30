@@ -1,5 +1,14 @@
 import Foundation
 
+public enum ManifestArgumentResolver {
+    public static func explicitManifestPath(in arguments: [String]) -> String? {
+        guard let flag = arguments.firstIndex(of: "--manifest") else { return nil }
+        let value = arguments.index(after: flag)
+        guard value < arguments.endIndex, !arguments[value].hasPrefix("-") else { return nil }
+        return arguments[value]
+    }
+}
+
 public enum ManifestValidationError: Error, Equatable, CustomStringConvertible {
     case unsupportedSchema(Int)
     case wrongComponentSet([String])

@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from mac_ai_work_os.system_resources import measure_available_memory, parse_vm_stat
+from forma_ai.system_resources import measure_available_memory, parse_vm_stat
 
 
 class SystemResourceTests(unittest.TestCase):

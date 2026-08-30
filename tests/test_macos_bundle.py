@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from mac_ai_work_os.macos_bundle import CommandEvidence, inspect_app
+from forma_ai.macos_bundle import CommandEvidence, inspect_app
 
 
 def fake_runner(results):

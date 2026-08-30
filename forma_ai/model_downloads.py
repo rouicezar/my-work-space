@@ -7,9 +7,9 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from urllib.parse import quote
 
-from mac_ai_work_os.artifacts import ArtifactExpectation
-from mac_ai_work_os.downloads import DownloadResult, ResumableDownloader
-from mac_ai_work_os.models import ModelDefinition, ModelError, huggingface_snapshot, verify_snapshot
+from forma_ai.artifacts import ArtifactExpectation
+from forma_ai.downloads import DownloadResult, ResumableDownloader
+from forma_ai.models import ModelDefinition, ModelError, huggingface_snapshot, verify_snapshot
 
 
 HUGGINGFACE_DOWNLOAD_HOSTS = frozenset({

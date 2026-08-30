@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from mac_ai_work_os.models import (
+from forma_ai.models import (
     MODEL_ID, REVISION, ModelDefinition, ModelReference, _atomic_json,
 )
 

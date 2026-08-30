@@ -4,7 +4,7 @@ Verified: 2026-08-28. Product intent clarified 2026-08-31. This is engineering r
 
 Development policy: the current phase is personal, non-commercial learning and exchange. Reuse existing non-visual functionality from all four upstream projects as far as each license permits, preserving required notices and modification records. Non-commercial intent does not itself waive license conditions. Public open-source distribution is a later, separate gate and must not inherit an unverified assumption from the private development phase.
 
-| Component | Declared license | Source redistribution | Embedding in Mac AI Work OS | Required action |
+| Component | Declared license | Source redistribution | Embedding in Forma AI | Required action |
 |---|---|---|---|---|
 | Semantica | MIT | Permitted with copyright and permission notice | Candidate | Preserve notice; audit dependency licenses and optional backends |
 | holaOS | Modified Apache 2.0 with additional commercial-distribution and branding conditions | Conditional | Personal non-commercial reuse subject to license; **not cleared** for a generally distributable embedded product | Reuse permitted non-visual capability in development with notices; retain adapter boundary and obtain written clarification before public embedding |

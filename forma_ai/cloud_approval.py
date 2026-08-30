@@ -11,8 +11,8 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from mac_ai_work_os.inference_routing import CloudEscalationProposal
-from mac_ai_work_os.models import _atomic_json
+from forma_ai.inference_routing import CloudEscalationProposal
+from forma_ai.models import _atomic_json
 
 
 class CloudApprovalError(RuntimeError):

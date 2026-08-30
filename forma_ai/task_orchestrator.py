@@ -6,12 +6,12 @@ import json
 import math
 from dataclasses import dataclass
 
-from mac_ai_work_os.cloud_preferences import CloudPreferenceState
-from mac_ai_work_os.inference_routing import (
+from forma_ai.cloud_preferences import CloudPreferenceState
+from forma_ai.inference_routing import (
     LocalProfile, RouteDecision, TaskRequirements, decide_route,
 )
-from mac_ai_work_os.local_profiles import VerifiedLocalProfile
-from mac_ai_work_os.local_tasks import LocalTaskError, LocalTaskRequest, parse_local_task
+from forma_ai.local_profiles import VerifiedLocalProfile
+from forma_ai.local_tasks import LocalTaskError, LocalTaskRequest, parse_local_task
 
 
 MAXIMUM_UNIFIED_TASK_BYTES = 1024 * 1024

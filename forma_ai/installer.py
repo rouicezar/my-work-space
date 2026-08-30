@@ -13,10 +13,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Protocol
 
-from mac_ai_work_os.artifacts import ArtifactExpectation, verify_file
-from mac_ai_work_os.downloads import DownloadResult, ResumableDownloader
-from mac_ai_work_os.lifecycle import LifecycleJournal, OperationState
-from mac_ai_work_os.macos_bundle import AppInspection, inspect_app
+from forma_ai.artifacts import ArtifactExpectation, verify_file
+from forma_ai.downloads import DownloadResult, ResumableDownloader
+from forma_ai.lifecycle import LifecycleJournal, OperationState
+from forma_ai.macos_bundle import AppInspection, inspect_app
 
 
 INSTALL_STEPS = ["acquire_artifact", "stage_bundle", "activate_bundle"]

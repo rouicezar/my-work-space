@@ -12,7 +12,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
-from mac_ai_work_os.artifacts import ArtifactError, load_component, select_artifact, verify_file
+from forma_ai.artifacts import ArtifactError, load_component, select_artifact, verify_file
 
 
 def parse_args() -> argparse.Namespace:

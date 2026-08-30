@@ -110,7 +110,7 @@ class OMLXEmbeddingClient:
         return [vector for vector in ordered if vector is not None]
 
     def probe(self) -> dict[str, Any]:
-        vectors = self.embed_many(["mac-ai-work-os-probe-a", "mac-ai-work-os-probe-b"])
+        vectors = self.embed_many(["forma-ai-probe-a", "forma-ai-probe-b"])
         return {"status": "healthy", "model": self.model, "dimension": len(vectors[0])}
 
 

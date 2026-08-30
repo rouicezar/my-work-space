@@ -802,8 +802,8 @@ public struct SupervisorClient: Sendable {
             requestID: requestID,
             environmentOverrides: [
                 "OMLX_API_KEY": omlxAPIKey,
-                "MAC_AI_WORK_OS_BROKER_TOKEN": brokerToken,
-                "MAC_AI_WORK_OS_MEMORY_TOKEN": memoryToken,
+                "FORMA_AI_BROKER_TOKEN": brokerToken,
+                "FORMA_AI_MEMORY_TOKEN": memoryToken,
             ]
         )
     }
@@ -827,8 +827,8 @@ public struct SupervisorClient: Sendable {
             requestID: requestID,
             environmentOverrides: [
                 "OMLX_API_KEY": omlxAPIKey,
-                "MAC_AI_WORK_OS_BROKER_TOKEN": brokerToken,
-                "MAC_AI_WORK_OS_MEMORY_TOKEN": memoryToken,
+                "FORMA_AI_BROKER_TOKEN": brokerToken,
+                "FORMA_AI_MEMORY_TOKEN": memoryToken,
             ]
         )
     }
@@ -859,8 +859,8 @@ public struct SupervisorClient: Sendable {
             requestID: requestID,
             environmentOverrides: [
                 "OMLX_API_KEY": omlxAPIKey,
-                "MAC_AI_WORK_OS_BROKER_TOKEN": brokerToken,
-                "MAC_AI_WORK_OS_MEMORY_TOKEN": memoryToken,
+                "FORMA_AI_BROKER_TOKEN": brokerToken,
+                "FORMA_AI_MEMORY_TOKEN": memoryToken,
             ],
             inputData: input
         )
@@ -907,8 +907,8 @@ public struct SupervisorClient: Sendable {
             requestID: requestID,
             environmentOverrides: [
                 "OMLX_API_KEY": omlxAPIKey,
-                "MAC_AI_WORK_OS_BROKER_TOKEN": brokerToken,
-                "MAC_AI_WORK_OS_MEMORY_TOKEN": memoryToken,
+                "FORMA_AI_BROKER_TOKEN": brokerToken,
+                "FORMA_AI_MEMORY_TOKEN": memoryToken,
             ],
             inputData: input
         )
@@ -1012,7 +1012,7 @@ public struct SupervisorClient: Sendable {
             arguments: ["--root", rootURL.path, "--catalog", catalogURL.path,
                         "--proposal-id", proposalID],
             requestID: requestID,
-            environmentOverrides: ["MAC_AI_WORK_OS_DEEPSEEK_API_KEY": deepSeekAPIKey]
+            environmentOverrides: ["FORMA_AI_DEEPSEEK_API_KEY": deepSeekAPIKey]
         )
     }
 

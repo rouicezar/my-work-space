@@ -2,7 +2,7 @@ import unittest
 import tempfile
 from pathlib import Path
 
-from mac_ai_work_os.adapters.semantica import SemanticaContextBackend
+from forma_ai.adapters.semantica import SemanticaContextBackend
 
 
 class FixtureContext:

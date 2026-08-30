@@ -6,7 +6,7 @@ Scope: Alpha first-run installation preview and consent boundary. This is not ev
 
 ## Build and protocol evidence
 
-- Built `Mac AI Work OS.app` from the repository with `prototypes/packaging/build-app.sh`.
+- Built `Forma AI.app` from the repository with `prototypes/packaging/build-app.sh`.
 - Bundle size was 21 MB and deep ad-hoc signature verification passed.
 - The bundle contained its self-contained Supervisor helper plus `product-manifest.json`, `hardware-profiles.json`, and `upstreams.json`.
 - Calling the bundled helper's read-only `installation-plan` command on macOS 26 returned oMLX `v0.6.3`, artifact size `807057789`, SHA-256 `5bde65e35c0cc3e7b0365c0e078f98d7571cb71c6a6bead591329a2cf8287537`, zero reusable bytes in the isolated check root, and `approval_required: true`.

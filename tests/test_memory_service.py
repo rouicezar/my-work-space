@@ -6,9 +6,9 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from mac_ai_work_os.broker import BrokerRequest, MemoryAuditSink
-from mac_ai_work_os.governed_memory import GovernedMemory
-from mac_ai_work_os.memory_service import (
+from forma_ai.broker import BrokerRequest, MemoryAuditSink
+from forma_ai.governed_memory import GovernedMemory
+from forma_ai.memory_service import (
     GovernedMemoryService,
     MemoryServicePolicy,
     create_memory_server,

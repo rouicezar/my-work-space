@@ -1,4 +1,4 @@
-# Mac AI Work OS Product Design
+# Forma AI Product Design
 
 Status: product architecture baseline draft.
 
@@ -7,7 +7,7 @@ Status: product architecture baseline draft.
 Use a product-owned native shell and versioned adapter protocol around four upstream foundations. The native workbench is the default experience and owns the unified interaction, policy, lifecycle, and audit contract. Licensed non-visual capabilities from Semantica, holaOS, Herdr, and oMLX are reused before product-owned equivalents are considered. holaOS visual assets and public bundling remain separately gated by license and branding terms.
 
 ```text
-Mac AI Work OS
+Forma AI
 ├── Installer and First-Run Assistant
 ├── Product-owned Native Workbench
 ├── Policy and Approval Service

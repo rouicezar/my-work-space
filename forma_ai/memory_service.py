@@ -13,8 +13,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 from urllib.parse import urlsplit
 
-from mac_ai_work_os.broker import AuditSink, BrokerRequest, BrokerResponse
-from mac_ai_work_os.governed_memory import (
+from forma_ai.broker import AuditSink, BrokerRequest, BrokerResponse
+from forma_ai.governed_memory import (
     CORRELATION,
     GovernedMemory,
     MemoryGovernanceError,

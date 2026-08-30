@@ -4,7 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from mac_ai_work_os.semantica_backend import (
+from forma_ai.semantica_backend import (
     ManagedSemanticaError,
     create_managed_semantica_backend,
 )
@@ -30,7 +30,7 @@ class ManagedSemanticaBackendFactoryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve() / "Product"
             semantica, context = self.modules(root)
-            with patch("mac_ai_work_os.semantica_backend.importlib.import_module",
+            with patch("forma_ai.semantica_backend.importlib.import_module",
                        side_effect=[semantica, context]):
                 backend = create_managed_semantica_backend(
                     product_root=root, omlx_port=8000, omlx_api_key="o" * 40,
@@ -48,7 +48,7 @@ class ManagedSemanticaBackendFactoryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve() / "Product"
             semantica, context = self.modules(root, version="0.6.8")
-            with patch("mac_ai_work_os.semantica_backend.importlib.import_module",
+            with patch("forma_ai.semantica_backend.importlib.import_module",
                        side_effect=[semantica, context]):
                 with self.assertRaises(ManagedSemanticaError) as error:
                     create_managed_semantica_backend(

@@ -3,8 +3,8 @@ import json
 import unittest
 from pathlib import Path
 
-from mac_ai_work_os.manifest import ManifestError, load_manifest, ordered_components, validate_manifest
-from mac_ai_work_os.broker import BrokerPolicy
+from forma_ai.manifest import ManifestError, load_manifest, ordered_components, validate_manifest
+from forma_ai.broker import BrokerPolicy
 
 
 ROOT = Path(__file__).resolve().parents[1]

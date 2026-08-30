@@ -10,8 +10,8 @@ import stat
 import tempfile
 from pathlib import Path
 
-from mac_ai_work_os.inference_routing import CloudEscalationProposal, CostEstimate
-from mac_ai_work_os.models import _atomic_json
+from forma_ai.inference_routing import CloudEscalationProposal, CostEstimate
+from forma_ai.models import _atomic_json
 
 
 PROPOSAL_ID = re.compile(r"^[0-9a-f-]{36}$")

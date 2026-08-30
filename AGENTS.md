@@ -2,7 +2,7 @@
 
 ## Product scope
 
-Build a general-purpose, distributable, out-of-the-box Mac AI Work OS based on Semantica, holaOS, Herdr, and oMLX. The current machine is the first development environment, not the product's sole target or a source of product-specific assumptions.
+Build a general-purpose, distributable, out-of-the-box Forma AI based on Semantica, holaOS, Herdr, and oMLX. The current machine is the first development environment, not the product's sole target or a source of product-specific assumptions.
 
 The product is a local-first, multi-agent Mac AI workbench. Its default distributable shape is a product-owned native workbench plus adapter protocol. It must let a local small model coordinate work, route tasks, use memory, and supervise parallel agents while also allowing explicit, approved cloud-model execution when configured.
 
@@ -37,6 +37,12 @@ Before ending any implementation, documentation, test, commit, or phase task, ev
 3. Record verification evidence, changed files, commit status, push status, blockers, and the next exact action.
 
 No task is complete unless both control documents are updated. Do not create a competing tracker, roadmap, or handoff file unless the user explicitly replaces these paths.
+
+## Codex quota exhaustion protocol
+
+When the Codex usage limit is close to exhaustion, stop starting new work units immediately. Finish only the smallest currently active safe unit, run its required verification, update the master tracker and handoff, commit and push verified changes, and confirm the repository is clean before stopping.
+
+Do not force a clean repository by discarding user or pre-existing agent changes. If unrelated dirty work prevents a clean state, preserve it, identify every path and owner in `docs/TASK_HANDOFF.md`, isolate the verified commit from it, and state the exact recovery action. Unverified partial work must either be safely reverted when it was created solely by the current agent and no useful work would be lost, or left explicitly claimed with a recovery recipe; it must never be hidden in a completion commit.
 
 ## Workflow
 

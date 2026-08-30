@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import BinaryIO, Callable, Protocol
 from urllib.parse import urlsplit
 
-from mac_ai_work_os.artifacts import ArtifactExpectation, verify_file
+from forma_ai.artifacts import ArtifactExpectation, verify_file
 
 
 CONTENT_RANGE = re.compile(r"^bytes (\d+)-(\d+)/(\d+)$")
@@ -110,7 +110,7 @@ class ResumableDownloader:
             partial.unlink()
             offset = 0
 
-        headers = {"Accept": "application/octet-stream", "User-Agent": "MacAIWorkOS/0.1"}
+        headers = {"Accept": "application/octet-stream", "User-Agent": "FormaAI/0.1"}
         if offset:
             headers["Range"] = f"bytes={offset}-"
         request = urllib.request.Request(expected.url, headers=headers, method="GET")

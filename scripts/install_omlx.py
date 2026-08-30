@@ -13,9 +13,9 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
-from mac_ai_work_os.artifacts import load_component, select_artifact
-from mac_ai_work_os.downloads import ResumableDownloader
-from mac_ai_work_os.installer import InstallError, OMLXInstallLayout, OMLXInstaller
+from forma_ai.artifacts import load_component, select_artifact
+from forma_ai.downloads import ResumableDownloader
+from forma_ai.installer import InstallError, OMLXInstallLayout, OMLXInstaller
 
 
 def parser() -> argparse.ArgumentParser:

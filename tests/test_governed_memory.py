@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from mac_ai_work_os.governed_memory import (
+from forma_ai.governed_memory import (
     GovernedMemory,
     MemoryGovernanceError,
     SourceReference,

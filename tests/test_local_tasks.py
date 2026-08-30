@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from mac_ai_work_os.local_tasks import (
+from forma_ai.local_tasks import (
     LocalTaskError, completion_body, normalize_local_result, parse_local_task,
 )
 

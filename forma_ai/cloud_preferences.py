@@ -9,8 +9,8 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from mac_ai_work_os.cloud_catalog import CloudCatalogError, CloudProvider
-from mac_ai_work_os.models import _atomic_json
+from forma_ai.cloud_catalog import CloudCatalogError, CloudProvider
+from forma_ai.models import _atomic_json
 
 
 @dataclass(frozen=True)

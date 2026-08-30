@@ -1,4 +1,4 @@
-# Mac AI Work OS Product Requirements
+# Forma AI Product Requirements
 
 Status: product baseline draft, 2026-08-28.
 

@@ -2,12 +2,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from mac_ai_work_os.processes import ProcessPolicyError, omlx_process_spec
+from forma_ai.processes import ProcessPolicyError, omlx_process_spec
 
 
 class OMLXProcessSpecTests(unittest.TestCase):
     def setUp(self):
-        self.root = Path(tempfile.gettempdir()) / "MacAIWorkOSTest"
+        self.root = Path(tempfile.gettempdir()) / "FormaAITest"
         self.executable = Path("/Applications/oMLX.app/Contents/MacOS/omlx-cli")
 
     def test_spec_isolates_home_data_models_cache_and_temp(self):

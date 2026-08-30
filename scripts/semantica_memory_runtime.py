@@ -9,14 +9,14 @@ import sys
 from pathlib import Path
 
 RUNTIME_ROOT = Path(__file__).resolve().parent
-SOURCE_ROOT = RUNTIME_ROOT if (RUNTIME_ROOT / "mac_ai_work_os").is_dir() else RUNTIME_ROOT.parent
+SOURCE_ROOT = RUNTIME_ROOT if (RUNTIME_ROOT / "forma_ai").is_dir() else RUNTIME_ROOT.parent
 if str(SOURCE_ROOT) not in sys.path:
     sys.path.insert(0, str(SOURCE_ROOT))
 
-from mac_ai_work_os.broker import JsonlAuditSink
-from mac_ai_work_os.governed_memory import GovernedMemory
-from mac_ai_work_os.memory_service import GovernedMemoryService, MemoryServicePolicy, create_memory_server
-from mac_ai_work_os.semantica_backend import create_managed_semantica_backend
+from forma_ai.broker import JsonlAuditSink
+from forma_ai.governed_memory import GovernedMemory
+from forma_ai.memory_service import GovernedMemoryService, MemoryServicePolicy, create_memory_server
+from forma_ai.semantica_backend import create_managed_semantica_backend
 
 
 def main() -> int:
@@ -31,7 +31,7 @@ def main() -> int:
     args = parser.parse_args()
     if not args.root.is_absolute() or not 1024 <= args.memory_port <= 65535:
         raise ValueError("unsafe memory runtime configuration")
-    memory_token = os.environ.get("MAC_AI_WORK_OS_MEMORY_TOKEN", "")
+    memory_token = os.environ.get("FORMA_AI_MEMORY_TOKEN", "")
     omlx_key = os.environ.get("OMLX_API_KEY", "")
     if len(memory_token) < 32 or len(omlx_key) < 32 or memory_token == omlx_key:
         raise ValueError("distinct memory and oMLX runtime secrets are required")

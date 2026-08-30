@@ -15,15 +15,15 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from scripts import preflight, supervisor
-from mac_ai_work_os.installer import ActiveBundle
-from mac_ai_work_os.models import ModelDefinition, ModelFile, ModelReference
-from mac_ai_work_os.semantica_runtime import SemanticaRuntimeInspector
-from mac_ai_work_os.embedding_config import ApprovedEmbeddingRoute
-from mac_ai_work_os.runtime import RuntimeRecord
-from mac_ai_work_os.deepseek_adapter import DeepSeekResult, DeepSeekUsage
-from mac_ai_work_os.local_tasks import LocalTaskError, LocalTaskResult
-from mac_ai_work_os.cloud_preferences import CloudPreferenceStore
-from mac_ai_work_os.system_resources import MemoryEvidence
+from forma_ai.installer import ActiveBundle
+from forma_ai.models import ModelDefinition, ModelFile, ModelReference
+from forma_ai.semantica_runtime import SemanticaRuntimeInspector
+from forma_ai.embedding_config import ApprovedEmbeddingRoute
+from forma_ai.runtime import RuntimeRecord
+from forma_ai.deepseek_adapter import DeepSeekResult, DeepSeekUsage
+from forma_ai.local_tasks import LocalTaskError, LocalTaskResult
+from forma_ai.cloud_preferences import CloudPreferenceStore
+from forma_ai.system_resources import MemoryEvidence
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -328,7 +328,7 @@ class SupervisorProtocolTests(unittest.TestCase):
             adapter = Mock()
             adapter.execute.return_value = expected
             with patch.object(supervisor, "DeepSeekAdapter", return_value=adapter), \
-                 patch.dict(os.environ, {"MAC_AI_WORK_OS_DEEPSEEK_API_KEY": "secret-key"}):
+                 patch.dict(os.environ, {"FORMA_AI_DEEPSEEK_API_KEY": "secret-key"}):
                 response = supervisor.run(execute)
             self.assertEqual(response["payload"]["result"]["content"], "cloud result")
             self.assertEqual(adapter.execute.call_args.kwargs["api_key"], "secret-key")
@@ -735,15 +735,15 @@ class SupervisorProtocolTests(unittest.TestCase):
             duplicate = "same-secret-value-with-at-least-32-characters"
             with patch.dict("os.environ", {
                 "OMLX_API_KEY": duplicate,
-                "MAC_AI_WORK_OS_BROKER_TOKEN": duplicate,
-                "MAC_AI_WORK_OS_MEMORY_TOKEN": "m" * 40,
+                "FORMA_AI_BROKER_TOKEN": duplicate,
+                "FORMA_AI_MEMORY_TOKEN": "m" * 40,
             }, clear=True):
                 with self.assertRaisesRegex(ValueError, "distinct"):
                     supervisor.run(args)
             with patch.dict("os.environ", {
                 "OMLX_API_KEY": "o" * 40,
-                "MAC_AI_WORK_OS_BROKER_TOKEN": duplicate,
-                "MAC_AI_WORK_OS_MEMORY_TOKEN": duplicate,
+                "FORMA_AI_BROKER_TOKEN": duplicate,
+                "FORMA_AI_MEMORY_TOKEN": duplicate,
             }, clear=True):
                 with self.assertRaisesRegex(ValueError, "distinct"):
                     supervisor.run(args)
@@ -778,8 +778,8 @@ class SupervisorProtocolTests(unittest.TestCase):
             runtime = RuntimeRecord(1, "running", args.request_id, None, None, None, None, 1, now, now)
             environment = {
                 "OMLX_API_KEY": "o" * 40,
-                "MAC_AI_WORK_OS_BROKER_TOKEN": "b" * 40,
-                "MAC_AI_WORK_OS_MEMORY_TOKEN": "m" * 40,
+                "FORMA_AI_BROKER_TOKEN": "b" * 40,
+                "FORMA_AI_MEMORY_TOKEN": "m" * 40,
             }
             route = ApprovedEmbeddingRoute(
                 "fixture-embedding", "fixture/embedding", "a" * 40, 384,
@@ -802,7 +802,7 @@ class SupervisorProtocolTests(unittest.TestCase):
             self.assertNotIn("o" * 40, memory["arguments"])
             self.assertNotIn("m" * 40, memory["arguments"])
             self.assertEqual(memory["environment"]["OMLX_API_KEY"], "o" * 40)
-            self.assertEqual(memory["environment"]["MAC_AI_WORK_OS_MEMORY_TOKEN"], "m" * 40)
+            self.assertEqual(memory["environment"]["FORMA_AI_MEMORY_TOKEN"], "m" * 40)
 
     def test_memory_liveness_probe_reads_versioned_result_envelope(self):
         class Response:
@@ -846,8 +846,8 @@ class SupervisorProtocolTests(unittest.TestCase):
             ])
             with patch.dict("os.environ", {
                 "OMLX_API_KEY": "o" * 40,
-                "MAC_AI_WORK_OS_BROKER_TOKEN": "b" * 40,
-                "MAC_AI_WORK_OS_MEMORY_TOKEN": "m" * 40,
+                "FORMA_AI_BROKER_TOKEN": "b" * 40,
+                "FORMA_AI_MEMORY_TOKEN": "m" * 40,
             }, clear=True), patch.object(supervisor.RuntimeManager, "status", return_value={"phase": "stopped"}), \
                  patch.object(supervisor, "_sample_task") as sample:
                 with self.assertRaisesRegex(ValueError, "not running"):

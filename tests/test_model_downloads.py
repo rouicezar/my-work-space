@@ -4,9 +4,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from mac_ai_work_os.downloads import ResumableDownloader
-from mac_ai_work_os.model_downloads import download_model_snapshot
-from mac_ai_work_os.models import ModelDefinition, ModelError, ModelFile
+from forma_ai.downloads import ResumableDownloader
+from forma_ai.model_downloads import download_model_snapshot
+from forma_ai.models import ModelDefinition, ModelError, ModelFile
 from tests.test_downloads import FakeOpen, FakeResponse
 
 

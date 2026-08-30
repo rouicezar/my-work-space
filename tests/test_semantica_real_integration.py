@@ -68,15 +68,15 @@ class ExplicitLocalEmbeddingClient:
 
 
 @unittest.skipUnless(
-    os.environ.get("MAC_AI_WORK_OS_SEMANTICA_INTEGRATION") == "1",
+    os.environ.get("FORMA_AI_SEMANTICA_INTEGRATION") == "1",
     "real pinned Semantica runtime integration is opt-in",
 )
 class RealSemanticaIntegrationTests(unittest.TestCase):
     def test_agent_context_store_retrieve_save_reload_and_forget(self):
         from semantica.context import AgentContext
 
-        from mac_ai_work_os.adapters.semantica import SemanticaContextBackend
-        from mac_ai_work_os.omlx_embeddings import PersistentOMLXVectorStore
+        from forma_ai.adapters.semantica import SemanticaContextBackend
+        from forma_ai.omlx_embeddings import PersistentOMLXVectorStore
 
         with tempfile.TemporaryDirectory() as directory:
             state = Path(directory) / "state"

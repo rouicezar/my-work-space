@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from mac_ai_work_os.runtime import (
+from forma_ai.runtime import (
     ProcessRecord, RuntimeManager, RuntimeManagerError, SubprocessController,
 )
 

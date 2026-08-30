@@ -14,6 +14,15 @@ class PackagingScriptTests(unittest.TestCase):
             info = plistlib.load(handle)
         self.assertEqual(info["CFBundlePackageType"], "APPL")
         self.assertEqual(info["NSPrincipalClass"], "NSApplication")
+        self.assertEqual(info["CFBundleName"], "Forma AI")
+        self.assertEqual(info["CFBundleIconFile"], "FormaAI")
+
+    def test_app_bundle_includes_forma_ai_icon(self):
+        icon = ROOT / "prototypes/packaging/Resources/FormaAI.icns"
+        self.assertTrue(icon.is_file())
+        self.assertGreater(icon.stat().st_size, 100_000)
+        script = (ROOT / "prototypes/packaging/build-app.sh").read_text(encoding="utf-8")
+        self.assertIn('Resources/FormaAI.icns" "$APP/Contents/Resources/FormaAI.icns', script)
 
     def test_app_bundle_includes_pinned_upstream_manifest(self):
         script = (ROOT / "prototypes/packaging/build-app.sh").read_text(encoding="utf-8")
@@ -57,7 +66,7 @@ class PackagingScriptTests(unittest.TestCase):
 
     def test_app_build_refuses_existing_bundle(self):
         with tempfile.TemporaryDirectory() as directory:
-            app = Path(directory) / "Mac AI Work OS.app"
+            app = Path(directory) / "Forma AI.app"
             app.mkdir()
             result = subprocess.run(
                 ["./prototypes/packaging/build-app.sh", directory],

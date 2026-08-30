@@ -5,8 +5,8 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from mac_ai_work_os.cloud_catalog import CloudCatalogError, load_cloud_provider
-from mac_ai_work_os.inference_routing import (
+from forma_ai.cloud_catalog import CloudCatalogError, load_cloud_provider
+from forma_ai.inference_routing import (
     LocalProfile, RoutingError, TaskRequirements, create_cloud_proposal, decide_route,
 )
 

@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from mac_ai_work_os.lifecycle import LifecycleError, LifecycleJournal
+from forma_ai.lifecycle import LifecycleError, LifecycleJournal
 
 
 class LifecycleJournalTests(unittest.TestCase):

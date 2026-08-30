@@ -1,4 +1,4 @@
-# Mac AI Work OS Task Handoff
+# Forma AI Task Handoff
 
 This is the authoritative handoff document for agent takeover, interruption recovery, and cross-tool continuity.
 
@@ -14,14 +14,15 @@ Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-ma
 - For cloud providers, record provider name, policy decision, approximate cost boundary, result class, and correlation ID if available. Do not record keys.
 - For screenshots, record what the screenshot actually proves. Do not treat a wrong-window or background capture as UI evidence.
 - If an external agent, tool, or parallel task takes over, it must add a takeover entry before work and an exit entry after work.
+- A Codex quota warning triggers immediate closeout: start no new work, verify the smallest safe unit, update tracker and handoff, commit and push, and confirm repository cleanliness. Never discard unrelated dirty work merely to make status clean; inventory and isolate it instead.
 
 ## Current Baton
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
 Master plan task: P1-T01
-State: P0-T07 verified; role documents are aligned and upstream-first reuse is mandatory
-Next required action: claim P1-T01, inventory the four upstream checkouts/pins, and build reuse ledgers before implementing capabilities.
+State: Forma AI rename and icon integration verified; pending commit/push closeout
+Next required action: commit and push P0-T08, confirm clean repository, then claim P1-T01 for the four-upstream inventory.
 
 ## Product Goal Snapshot
 
@@ -38,10 +39,10 @@ The product is a local-first, multi-agent Mac AI workbench.
 
 These paths were already dirty before the documentation-control task and must be preserved:
 
-- `mac_ai_work_os/deepseek_adapter.py`
+- `forma_ai/deepseek_adapter.py`
 - `tests/test_deepseek_adapter.py`
 - `prototypes/packaging/Sources/LifecycleContract/ProductManifest.swift`
-- `prototypes/packaging/Sources/MacAIWorkOSApp/MacAIWorkOSApp.swift`
+- `prototypes/packaging/Sources/FormaAIApp/FormaAIApp.swift`
 - `prototypes/packaging/Tests/LifecycleContractTests/ProductManifestTests.swift`
 - `build/`
 - `evidence/ui/cloud-settings-review-2026-08-31.png`
@@ -106,9 +107,49 @@ Blocked items:
 Next exact action:
 Approval needed:
 Secret/external-write status:
+Quota state and closeout action:
 ```
 
 ## Handoff Log
+
+## 2026-08-31 05:57 Asia/Shanghai - P0-T08 - exit
+
+Executor: Codex root agent
+Starting git state: quota-interrupted P0-T08 worktree plus preserved earlier DeepSeek/settings edits
+Scope: resume at the exact interruption point, finish Forma AI global rename, icon contract test, validation, and quota-safe closeout
+Files intended: all tracked product identity surfaces, Python module/import names, Swift targets, packaging identifiers, documentation, tests, and Forma AI icon assets
+Actions: added missing automated icon assertions; confirmed product name/module/target/executable/environment/service/support-path migration; generated standard iconset and ICNS; integrated icon in Info.plist and app build; added the Codex quota exhaustion protocol
+Verification: legacy-name scan outside preserved untracked historical build returned no match; full Python suite passed 225 with 1 skipped; targeted packaging suite passed 6; Swift suite passed 30 with 2 skipped; temporary signed `Forma AI.app` built successfully; Info.plist exposes `CFBundleName=Forma AI` and `CFBundleIconFile=FormaAI`; ICNS identified as a macOS icon; codesign verification passed; `git diff --check` passed
+Evidence: `assets/branding/forma-ai-app-icon-1024.png`, `prototypes/packaging/Resources/FormaAI.icns`, temporary validation bundle `/tmp/forma-ai-validation-20260831-0203/Forma AI.app`
+Files changed: tracked product source/tests/docs/config/packaging naming plus new branding and icon resources; earlier DeepSeek/settings edits are locally test-verified but the real DeepSeek closed loop remains pending under P5
+Commit: pending verified rename commit and closeout record
+Push: pending
+Decisions: product and internal identity are Forma AI; no split legacy module/target/service identity remains in tracked files; generated build artifacts are not product source
+Assumptions: pre-existing local DeepSeek/settings edits can be included because full Python and Swift suites pass, without claiming P5 real-provider acceptance
+Blocked items: no P0-T08 blocker; real DeepSeek acceptance remains explicitly open
+Next exact action: stage tracked changes and formal icon assets only, commit, stash preserved untracked legacy artifacts, push, confirm clean status, then start P1-T01
+Approval needed: separate explicit approval remains required for a real DeepSeek call
+Secret/external-write status: no project credential read or transmitted; only repository push remains
+Quota state and closeout action: resumed after quota reset; following the new protocol by completing the smallest verified unit, committing, pushing, and leaving a clean recoverable state
+
+## 2026-08-31 - P0-T08 - takeover
+
+Executor: Codex root agent
+Starting git state: P0-T07 committed; earlier DeepSeek/settings source changes remain dirty and must be preserved through the mechanical rename
+Scope: rename the product globally to Forma AI and add an original macOS application icon
+Files intended: tracked source, tests, documentation, Swift package/targets, build scripts, product manifest, application metadata, and new icon assets
+Actions: generated an original 1024px macOS icon concept using the built-in image generation workflow; inventoried tracked legacy names and identifiers
+Verification: pending legacy-name absence scan, Python suite, Swift suite, and application bundle inspection
+Evidence: generated source image at the Codex generated-image path; final project asset pending copy and iconset creation
+Files changed: master tracker and handoff at takeover
+Commit: P0-T07 commits `a618993` and `d190d90` complete; P0-T08 pending
+Push: pending combined push
+Decisions: public product name is `Forma AI`; internal module, target, executable, environment, support-directory, service, bundle, and documentation names will be migrated rather than leaving a split identity
+Assumptions: historical evidence wording may be updated for product identity, while technical results and dates remain unchanged
+Blocked items: none
+Next exact action: perform mechanical rename, preserve dirty functional edits, create icon assets, update package metadata, and test
+Approval needed: none for repository-local rename and generated asset integration
+Secret/external-write status: no secrets handled; image generation only, no cloud model credential used from the project
 
 ## 2026-08-31 01:57 Asia/Shanghai - P0-T07 - exit
 
@@ -137,7 +178,7 @@ Scope: align active and legacy product documents with the confirmed independent-
 Files intended: `AGENTS.md`, product requirements, decisions, ADR-0017, active/legacy plans, license matrix, master tracker, and this handoff
 Actions: claimed P0-T07 after repository-wide conflict scan found documents that still called holaOS the default UI and Herdr optional
 Verification: pending repository-wide role/reuse conflict scan and whitespace validation
-Evidence: conflicts found in `docs/decisions.md`, `docs/product-requirements.md`, `docs/adr/0017-product-owned-native-workbench.md`, and `docs/plans/2026-08-28-mac-ai-work-os.md`
+Evidence: conflicts found in `docs/decisions.md`, `docs/product-requirements.md`, `docs/adr/0017-product-owned-native-workbench.md`, and `docs/plans/2026-08-28-forma-ai.md`
 Files changed: master tracker and this handoff at takeover
 Commit: none yet
 Push: none yet

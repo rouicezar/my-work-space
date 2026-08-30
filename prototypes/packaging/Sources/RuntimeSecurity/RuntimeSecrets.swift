@@ -26,7 +26,7 @@ public protocol SecretStore {
 public struct KeychainSecretStore: SecretStore {
     public let service: String
 
-    public init(service: String = "app.mac-ai-work-os.runtime") {
+    public init(service: String = "app.forma-ai.runtime") {
         self.service = service
     }
 

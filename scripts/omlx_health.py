@@ -13,7 +13,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
-from mac_ai_work_os.adapters.omlx import OMLXAdapter, UrllibTransport, detect_installation
+from forma_ai.adapters.omlx import OMLXAdapter, UrllibTransport, detect_installation
 
 
 def parse_args() -> argparse.Namespace:

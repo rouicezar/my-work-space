@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from mac_ai_work_os.local_profiles import LocalProfileError, load_local_profile
+from forma_ai.local_profiles import LocalProfileError, load_local_profile
 
 
 ROOT = Path(__file__).resolve().parents[1]

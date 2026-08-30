@@ -41,7 +41,7 @@ class MemoryServiceProcessTests(unittest.TestCase):
                 "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
                 "HOME": str(self.product_root / "state/homes/memory-test"),
                 "TMPDIR": str(self.product_root / "state/runtime/memory-test/tmp"),
-                "MAC_AI_WORK_OS_MEMORY_TOKEN": TOKEN,
+                "FORMA_AI_MEMORY_TOKEN": TOKEN,
                 "HF_HUB_OFFLINE": "1",
                 "TRANSFORMERS_OFFLINE": "1",
             },

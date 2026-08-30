@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only compatibility probe for Mac AI Work OS."""
+"""Read-only compatibility probe for Forma AI."""
 
 from __future__ import annotations
 

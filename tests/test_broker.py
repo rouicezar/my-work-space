@@ -8,7 +8,7 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from mac_ai_work_os.broker import (
+from forma_ai.broker import (
     BrokerPolicy,
     BrokerRequest,
     BrokerResponse,

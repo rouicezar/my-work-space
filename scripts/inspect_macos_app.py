@@ -12,7 +12,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
-from mac_ai_work_os.macos_bundle import inspect_app
+from forma_ai.macos_bundle import inspect_app
 
 
 def main() -> int:

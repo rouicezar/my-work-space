@@ -4,10 +4,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from mac_ai_work_os.embedding_config import (
+from forma_ai.embedding_config import (
     EmbeddingConfigError, activate_embedding_route, load_approved_embedding_route,
 )
-from mac_ai_work_os.models import ModelDefinition, ModelReference
+from forma_ai.models import ModelDefinition, ModelReference
 
 
 class ApprovedEmbeddingRouteTests(unittest.TestCase):

@@ -12,7 +12,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
-from mac_ai_work_os.broker import (
+from forma_ai.broker import (
     BrokerPolicy,
     JsonlAuditSink,
     OMLXBroker,
@@ -34,7 +34,7 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--inference-requests-per-minute", type=int, default=30)
     result.add_argument("--upstream-timeout", type=float, default=30.0)
     result.add_argument("--audit-path", type=Path, required=True)
-    result.add_argument("--client-token-env", default="MAC_AI_WORK_OS_BROKER_TOKEN")
+    result.add_argument("--client-token-env", default="FORMA_AI_BROKER_TOKEN")
     result.add_argument("--upstream-key-env", default="OMLX_API_KEY")
     return result
 

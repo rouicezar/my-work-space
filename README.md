@@ -1,6 +1,8 @@
-# Mac AI Work OS
+# Forma AI
 
-Mac AI Work OS 是一套面向普通 Mac 用户、通用且可分发的 AI 工作操作系统。它组合 Semantica、holaOS、Herdr 与 oMLX，提供统一入口、长期记忆、端到端审计、多 Agent 并行、本地优先推理，以及经过权限闸门的真实工具操作。
+![Forma AI app icon](assets/branding/forma-ai-app-icon-1024.png)
+
+Forma AI 是一套面向普通 Mac 用户、通用且可分发的 AI 工作操作系统。它组合 Semantica、holaOS、Herdr 与 oMLX，提供统一入口、长期记忆、端到端审计、多 Agent 并行、本地优先推理，以及经过权限闸门的真实工具操作。
 
 目标不是让四个上游项目“同时启动”，而是把它们产品化为一套开箱即用、部署简单、操作方便、安全可恢复的完整系统。
 
@@ -25,8 +27,8 @@ Mac AI Work OS 是一套面向普通 Mac 用户、通用且可分发的 AI 工�
 当前 Mac 仅作为首个开发与验收环境，不是产品的唯一目标用户。
 
 - [产品需求](docs/product-requirements.md)
-- [产品架构设计](docs/plans/2026-08-28-mac-ai-work-os-design.md)
-- [产品实施计划](docs/plans/2026-08-28-mac-ai-work-os.md)
+- [产品架构设计](docs/plans/2026-08-28-forma-ai-design.md)
+- [产品实施计划](docs/plans/2026-08-28-forma-ai.md)
 - [架构决策记录](docs/decisions.md)
 - [暂定 Mac 支持矩阵](docs/support-matrix.md)
 - [上游兼容性矩阵](docs/research/upstream-matrix.md)

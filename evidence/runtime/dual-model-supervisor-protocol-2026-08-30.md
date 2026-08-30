@@ -26,7 +26,7 @@
 - Swift package: `25` passed, `2` environment-gated integration tests skipped.
 - Release Swift build, PyInstaller Supervisor build, ad-hoc signing, and strict bundle
   signature verification: passed at
-  `/tmp/mac-ai-work-os-cloud-build-20260830-1945/Mac AI Work OS.app`.
+  `/tmp/forma-ai-cloud-build-20260830-1945/Forma AI.app`.
 
 The temporary app is build evidence, not a user acceptance release.
 

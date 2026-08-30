@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from mac_ai_work_os.artifacts import (
+from forma_ai.artifacts import (
     ArtifactError,
     ArtifactExpectation,
     load_component,

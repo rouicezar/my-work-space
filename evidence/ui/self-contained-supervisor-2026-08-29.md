@@ -21,7 +21,7 @@ PyInstaller's official documentation describes `onedir` as a folder bundle, docu
 ## Runtime checks
 
 1. The frozen helper ran under an environment containing only the system `PATH` and returned a schema-1, correlated, real preflight response.
-2. The complete app launched through macOS Launch Services without `MAC_AI_WORK_OS_SUPERVISOR` or another helper override.
+2. The complete app launched through macOS Launch Services without `FORMA_AI_SUPERVISOR` or another helper override.
 3. The UI displayed `Hardware preflight passed` and the `apple-silicon-16gb` provisional profile, proving the bundled helper was resolved and executed.
 4. The helper executable passed strict code-signature verification before embedding.
 5. After embedding, the complete app passed deep strict code-signature verification, including the frozen Python library and archive.

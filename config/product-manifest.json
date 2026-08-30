@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "product_id": "mac-ai-work-os",
+  "product_id": "forma-ai",
   "manifest_version": "0.1.0-dev",
   "paths": {
     "config": "${APP_SUPPORT}/config",
@@ -10,7 +10,7 @@
     "logs": "${APP_SUPPORT}/logs",
     "backups": "${APP_SUPPORT}/backups",
     "cache": "${CACHE}",
-    "secrets": "keychain://mac-ai-work-os"
+    "secrets": "keychain://forma-ai"
   },
   "components": [
     {

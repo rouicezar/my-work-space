@@ -12,7 +12,7 @@ The packaging prototype produced and verified both shapes on an Apple Silicon Ma
 
 - Swift package contract tests: 4 passed.
 - Python lifecycle and manifest suite at the preceding gate: 24 passed.
-- `MacAIWorkOSApp` compiled in release mode.
+- `FormaAIApp` compiled in release mode.
 - A real `.app` bundle was assembled with `Info.plist`, the exact product manifest resource, and the native executable.
 - The `.app` passed strict deep ad-hoc `codesign` verification.
 - The app launched and visually displayed the four components, pinned versions, correct start order, and explicit unverified health state without installing or starting anything.

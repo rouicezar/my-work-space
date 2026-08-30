@@ -2,25 +2,25 @@
 import PackageDescription
 
 let package = Package(
-    name: "MacAIWorkOSPackagingPrototype",
+    name: "FormaAIPackagingPrototype",
     platforms: [.macOS(.v15)],
     products: [
         .library(name: "LifecycleContract", targets: ["LifecycleContract"]),
         .library(name: "RuntimeSecurity", targets: ["RuntimeSecurity"]),
         .library(name: "SupervisorProtocol", targets: ["SupervisorProtocol"]),
-        .executable(name: "mac-ai-work-os-launcher", targets: ["MacAIWorkOSLauncher"]),
-        .executable(name: "MacAIWorkOSApp", targets: ["MacAIWorkOSApp"]),
+        .executable(name: "forma-ai-launcher", targets: ["FormaAILauncher"]),
+        .executable(name: "FormaAIApp", targets: ["FormaAIApp"]),
     ],
     targets: [
         .target(name: "LifecycleContract"),
         .target(name: "RuntimeSecurity"),
         .target(name: "SupervisorProtocol"),
         .executableTarget(
-            name: "MacAIWorkOSLauncher",
+            name: "FormaAILauncher",
             dependencies: ["LifecycleContract"]
         ),
         .executableTarget(
-            name: "MacAIWorkOSApp",
+            name: "FormaAIApp",
             dependencies: ["LifecycleContract", "SupervisorProtocol", "RuntimeSecurity"]
         ),
         .testTarget(

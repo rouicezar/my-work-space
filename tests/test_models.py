@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from mac_ai_work_os.models import ModelError, link_external_model, load_model, verify_snapshot
+from forma_ai.models import ModelError, link_external_model, load_model, verify_snapshot
 
 
 def fixture(tmp: Path):

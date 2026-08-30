@@ -4,9 +4,9 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from mac_ai_work_os.cloud_catalog import load_cloud_provider
-from mac_ai_work_os.cloud_proposals import CloudProposalError, CloudProposalStore
-from mac_ai_work_os.inference_routing import TaskRequirements, create_cloud_proposal
+from forma_ai.cloud_catalog import load_cloud_provider
+from forma_ai.cloud_proposals import CloudProposalError, CloudProposalStore
+from forma_ai.inference_routing import TaskRequirements, create_cloud_proposal
 
 
 ROOT = Path(__file__).resolve().parents[1]

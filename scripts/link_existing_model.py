@@ -13,7 +13,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
-from mac_ai_work_os.models import ModelError, link_external_model, load_model
+from forma_ai.models import ModelError, link_external_model, load_model
 
 
 def main() -> int:

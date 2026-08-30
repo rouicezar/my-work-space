@@ -2,6 +2,18 @@ import Foundation
 import Testing
 @testable import LifecycleContract
 
+@Test func manifestArgumentRequiresItsNamedFlagAndIgnoresMacOSLaunchArguments() {
+    #expect(ManifestArgumentResolver.explicitManifestPath(
+        in: ["app", "-ApplePersistenceIgnoreState", "YES"]
+    ) == nil)
+    #expect(ManifestArgumentResolver.explicitManifestPath(
+        in: ["app", "--manifest", "/tmp/product-manifest.json", "-ApplePersistenceIgnoreState", "YES"]
+    ) == "/tmp/product-manifest.json")
+    #expect(ManifestArgumentResolver.explicitManifestPath(
+        in: ["app", "--manifest", "-ApplePersistenceIgnoreState"]
+    ) == nil)
+}
+
 private func repositoryRoot() -> URL {
     URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent()

@@ -94,9 +94,9 @@ private final class MemorySecretStore: SecretStore {
     #expect(store.values.isEmpty)
 }
 
-@Test(.enabled(if: ProcessInfo.processInfo.environment["MAC_AI_WORK_OS_KEYCHAIN_INTEGRATION"] == "1"))
+@Test(.enabled(if: ProcessInfo.processInfo.environment["FORMA_AI_KEYCHAIN_INTEGRATION"] == "1"))
 func realTemporaryKeychainRoundTripAndCleanup() throws {
-    let service = "app.mac-ai-work-os.test.\(UUID().uuidString)"
+    let service = "app.forma-ai.test.\(UUID().uuidString)"
     let account = "round-trip"
     let store = KeychainSecretStore(service: service)
     defer { try? store.delete(account: account) }

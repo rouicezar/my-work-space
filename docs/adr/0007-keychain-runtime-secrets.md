@@ -4,7 +4,7 @@ Status: accepted for implementation, 2026-08-29.
 
 ## Decision
 
-- Store the inference-broker caller token and oMLX API key as separate generic-password items in macOS Keychain under service `app.mac-ai-work-os.runtime`.
+- Store the inference-broker caller token and oMLX API key as separate generic-password items in macOS Keychain under service `app.forma-ai.runtime`.
 - Generate each from 32 bytes of `SecRandomCopyBytes` and encode it as URL-safe Base64 without padding.
 - Use `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`; runtime secrets do not synchronize through iCloud Keychain and are unavailable while the device is locked.
 - Reuse valid existing secrets across launches. Invalid or duplicate existing values fail closed rather than being silently replaced.

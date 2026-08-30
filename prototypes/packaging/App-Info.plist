@@ -5,13 +5,15 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleExecutable</key>
-    <string>MacAIWorkOSApp</string>
+    <string>FormaAIApp</string>
     <key>CFBundleIdentifier</key>
-    <string>dev.macaiworkos.prototype</string>
+    <string>dev.formaai.prototype</string>
+    <key>CFBundleIconFile</key>
+    <string>FormaAI</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>Mac AI Work OS</string>
+    <string>Forma AI</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>

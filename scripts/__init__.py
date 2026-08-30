@@ -1,1 +1,1 @@
-"""Mac AI Work OS lifecycle utilities."""
+"""Forma AI lifecycle utilities."""

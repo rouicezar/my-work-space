@@ -5,8 +5,8 @@ import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 
-from mac_ai_work_os.cloud_catalog import load_cloud_provider
-from mac_ai_work_os.cloud_preferences import CloudPreferenceStore
+from forma_ai.cloud_catalog import load_cloud_provider
+from forma_ai.cloud_preferences import CloudPreferenceStore
 
 
 ROOT = Path(__file__).resolve().parents[1]

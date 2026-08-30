@@ -4,9 +4,9 @@ import SupervisorProtocol
 import RuntimeSecurity
 
 @main
-struct MacAIWorkOSPrototypeApp: App {
+struct FormaAIPrototypeApp: App {
     var body: some Scene {
-        WindowGroup("Mac AI Work OS") {
+        WindowGroup("Forma AI") {
             ManifestOverview()
                 .frame(
                     minWidth: 900,
@@ -179,7 +179,7 @@ struct ManifestOverview: View {
     private var composer: some View {
         VStack(spacing: 10) {
             HStack(alignment: .bottom, spacing: 12) {
-                TextField("Message Mac AI Work OS", text: $prompt, axis: .vertical)
+                TextField("Message Forma AI", text: $prompt, axis: .vertical)
                     .textFieldStyle(.plain)
                     .lineLimit(1...8)
                     .onSubmit { submitWorkbenchTask() }
@@ -218,10 +218,10 @@ struct ManifestOverview: View {
                 .foregroundStyle(.secondary)
 
             supervisorSection
+            cloudSettingsSection
             installationSection
             modelSection
             embeddingSection
-            cloudSettingsSection
             runtimeSection
 
             switch result {
@@ -278,8 +278,15 @@ struct ManifestOverview: View {
                 case .enabled(let model):
                     Label("Cloud AI available with approval", systemImage: "checkmark.shield.fill")
                         .foregroundStyle(.green)
+                    Text("DeepSeek credential is stored in this Mac's Keychain. Its value is never displayed.")
+                        .font(.callout).foregroundStyle(.secondary)
                     Text("\(model) · every request still requires a separate preview and approval")
                         .font(.callout).foregroundStyle(.secondary)
+                    SecureField("Replace DeepSeek API key", text: $deepSeekAPIKey)
+                        .textFieldStyle(.roundedBorder)
+                        .accessibilityLabel("Replacement DeepSeek API key")
+                    Button("Replace credential") { Task { await saveAndEnableCloud() } }
+                        .disabled(deepSeekAPIKey.isEmpty)
                     Button("Disable cloud and remove key", role: .destructive) {
                         Task { await disableCloud() }
                     }
@@ -783,7 +790,7 @@ struct ManifestOverview: View {
     }
 
     private func loadManifest() {
-        let explicitPath = CommandLine.arguments.dropFirst().first
+        let explicitPath = ManifestArgumentResolver.explicitManifestPath(in: CommandLine.arguments)
         let explicitURL = explicitPath.map { URL(fileURLWithPath: $0) }
         let bundledURL = Bundle.main.url(forResource: "product-manifest", withExtension: "json")
         let developmentURL = URL(
@@ -1162,7 +1169,7 @@ struct ManifestOverview: View {
         return InstallationContext(
             supervisor: supervisor,
             upstreams: upstreams,
-            root: support.appendingPathComponent("Mac AI Work OS", isDirectory: true)
+            root: support.appendingPathComponent("Forma AI", isDirectory: true)
         )
     }
 
@@ -1205,11 +1212,11 @@ struct ManifestOverview: View {
     private func supervisorExecutableURL() -> URL? {
         let bundled = Bundle.main.bundleURL
             .appendingPathComponent("Contents/Helpers/Supervisor", isDirectory: true)
-            .appendingPathComponent("mac-ai-work-os-supervisor", isDirectory: false)
+            .appendingPathComponent("forma-ai-supervisor", isDirectory: false)
         if FileManager.default.isExecutableFile(atPath: bundled.path) {
             return bundled
         }
-        guard let path = ProcessInfo.processInfo.environment["MAC_AI_WORK_OS_SUPERVISOR"],
+        guard let path = ProcessInfo.processInfo.environment["FORMA_AI_SUPERVISOR"],
               path.hasPrefix("/") else {
             return nil
         }

@@ -5,11 +5,11 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from mac_ai_work_os.broker import MemoryAuditSink
-from mac_ai_work_os.cloud_approval import CloudApprovalError, CloudApprovalStore
-from mac_ai_work_os.cloud_catalog import load_cloud_provider
-from mac_ai_work_os.deepseek_adapter import DeepSeekAdapter, DeepSeekError
-from mac_ai_work_os.inference_routing import (
+from forma_ai.broker import MemoryAuditSink
+from forma_ai.cloud_approval import CloudApprovalError, CloudApprovalStore
+from forma_ai.cloud_catalog import load_cloud_provider
+from forma_ai.deepseek_adapter import DeepSeekAdapter, DeepSeekError
+from forma_ai.inference_routing import (
     TaskRequirements, create_cloud_proposal,
 )
 
@@ -42,7 +42,7 @@ class FakeOpen:
         self.responses = list(responses)
         self.requests = []
 
-    def __call__(self, request, timeout):
+    def __call__(self, request, *, timeout):
         self.requests.append(request)
         return self.responses.pop(0)
 
@@ -184,6 +184,28 @@ class DeepSeekAdapterTests(unittest.TestCase):
                 with self.assertRaises(DeepSeekError) as raised:
                     adapter.execute(proposal, payload, api_key="fixture-key", now=self.now)
                 self.assertEqual(raised.exception.code, code)
+
+    def test_unexpected_transport_exception_is_classified_without_sensitive_detail(self):
+        proposal, payload = self.proposal()
+        audit = MemoryAuditSink()
+
+        def unexpected(_request, *, timeout):
+            self.assertEqual(timeout, 120.0)
+            raise RuntimeError("private provider detail")
+
+        with tempfile.TemporaryDirectory() as directory:
+            approvals = CloudApprovalStore(Path(directory))
+            approvals.approve(
+                proposal, maximum_cost_usd=proposal.estimated_cost.maximum, now=self.now,
+            )
+            adapter = DeepSeekAdapter(
+                self.provider, approvals, audit, open_url=unexpected,
+            )
+            with self.assertRaises(DeepSeekError) as raised:
+                adapter.execute(proposal, payload, api_key="fixture-key", now=self.now)
+        self.assertEqual(raised.exception.code, "DEEPSEEK_UNEXPECTED_FAILURE")
+        self.assertEqual(audit.events[0]["error_type"], "RuntimeError")
+        self.assertNotIn("private provider detail", json.dumps(audit.events[0]))
 
 
 if __name__ == "__main__":

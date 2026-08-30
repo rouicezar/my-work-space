@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://mac-ai-work-os.local/contracts/memory-record-v1.json",
-  "title": "Mac AI Work OS governed memory record",
+  "$id": "https://forma-ai.local/contracts/memory-record-v1.json",
+  "title": "Forma AI governed memory record",
   "type": "object",
   "additionalProperties": false,
   "required": [

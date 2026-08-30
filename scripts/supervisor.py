@@ -21,41 +21,41 @@ if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from scripts import preflight
-from mac_ai_work_os.artifacts import load_component, select_artifact, verify_file
-from mac_ai_work_os.downloads import ResumableDownloader
-from mac_ai_work_os.installer import OMLXInstallLayout, OMLXInstaller
-from mac_ai_work_os.lifecycle import LifecycleJournal
-from mac_ai_work_os.models import (
+from forma_ai.artifacts import load_component, select_artifact, verify_file
+from forma_ai.downloads import ResumableDownloader
+from forma_ai.installer import OMLXInstallLayout, OMLXInstaller
+from forma_ai.lifecycle import LifecycleJournal
+from forma_ai.models import (
     huggingface_snapshot,
     link_external_model,
     load_model,
     verify_snapshot,
 )
-from mac_ai_work_os.model_downloads import download_model_snapshot
-from mac_ai_work_os.broker import BrokerPolicy, JsonlAuditSink, OMLXBroker, OMLXUpstream, create_server
-from mac_ai_work_os.processes import omlx_process_spec
-from mac_ai_work_os.runtime import RuntimeManager, SubprocessController
-from mac_ai_work_os.semantica_runtime import SemanticaLayout, SemanticaRuntimeInspector
-from mac_ai_work_os.governed_memory import GovernedMemory
-from mac_ai_work_os.embedding_config import activate_embedding_route, load_approved_embedding_route
-from mac_ai_work_os.memory_service import (
+from forma_ai.model_downloads import download_model_snapshot
+from forma_ai.broker import BrokerPolicy, JsonlAuditSink, OMLXBroker, OMLXUpstream, create_server
+from forma_ai.processes import omlx_process_spec
+from forma_ai.runtime import RuntimeManager, SubprocessController
+from forma_ai.semantica_runtime import SemanticaLayout, SemanticaRuntimeInspector
+from forma_ai.governed_memory import GovernedMemory
+from forma_ai.embedding_config import activate_embedding_route, load_approved_embedding_route
+from forma_ai.memory_service import (
     GovernedMemoryService,
     MemoryServicePolicy,
     create_memory_server,
 )
-from mac_ai_work_os.cloud_approval import CloudApprovalStore
-from mac_ai_work_os.cloud_catalog import load_cloud_provider
-from mac_ai_work_os.cloud_proposals import CloudProposalStore
-from mac_ai_work_os.deepseek_adapter import DeepSeekAdapter
-from mac_ai_work_os.inference_routing import RoutingError, TaskRequirements, create_cloud_proposal
-from mac_ai_work_os.local_tasks import (
+from forma_ai.cloud_approval import CloudApprovalStore
+from forma_ai.cloud_catalog import load_cloud_provider
+from forma_ai.cloud_proposals import CloudProposalStore
+from forma_ai.deepseek_adapter import DeepSeekAdapter
+from forma_ai.inference_routing import RoutingError, TaskRequirements, create_cloud_proposal
+from forma_ai.local_tasks import (
     MAXIMUM_TASK_BYTES, LocalTaskError, LocalTaskRequest, completion_body, normalize_local_result,
     parse_local_task,
 )
-from mac_ai_work_os.cloud_preferences import CloudPreferenceStore
-from mac_ai_work_os.local_profiles import load_local_profile
-from mac_ai_work_os.system_resources import measure_available_memory
-from mac_ai_work_os.task_orchestrator import (
+from forma_ai.cloud_preferences import CloudPreferenceStore
+from forma_ai.local_profiles import load_local_profile
+from forma_ai.system_resources import measure_available_memory
+from forma_ai.task_orchestrator import (
     MAXIMUM_UNIFIED_TASK_BYTES, local_task_from_unified, parse_unified_task,
     plan_unified_task,
 )
@@ -418,7 +418,7 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
             )
         if not args.catalog.is_absolute() or not args.catalog.is_file():
             raise ValueError("cloud catalog must be an existing absolute file")
-        api_key = os.environ.get("MAC_AI_WORK_OS_DEEPSEEK_API_KEY", "")
+        api_key = os.environ.get("FORMA_AI_DEEPSEEK_API_KEY", "")
         provider = load_cloud_provider(args.catalog, proposal.provider_id)
         try:
             result = DeepSeekAdapter(
@@ -572,7 +572,7 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
             "TMPDIR": str(runtime_tmp),
             "NO_PROXY": "127.0.0.1,localhost,::1",
             "OMLX_API_KEY": omlx_key,
-            "MAC_AI_WORK_OS_BROKER_TOKEN": broker_token,
+            "FORMA_AI_BROKER_TOKEN": broker_token,
         }
         embedding_route = load_approved_embedding_route(args.root)
         if embedding_route is None:
@@ -605,7 +605,7 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
             "NO_PROXY": "127.0.0.1,localhost,::1",
             "HF_HUB_OFFLINE": "1",
             "TRANSFORMERS_OFFLINE": "1",
-            "MAC_AI_WORK_OS_MEMORY_TOKEN": memory_token,
+            "FORMA_AI_MEMORY_TOKEN": memory_token,
             "OMLX_API_KEY": omlx_key,
         }
         record = RuntimeManager(args.root).start(
@@ -826,14 +826,14 @@ def _runtime_secrets() -> tuple[str, str, str]:
 
 def _broker_secrets() -> tuple[str, str]:
     omlx_key = os.environ.get("OMLX_API_KEY", "")
-    broker_token = os.environ.get("MAC_AI_WORK_OS_BROKER_TOKEN", "")
+    broker_token = os.environ.get("FORMA_AI_BROKER_TOKEN", "")
     if len(omlx_key) < 32 or len(broker_token) < 32 or omlx_key == broker_token:
         raise ValueError("distinct inference runtime secrets are required")
     return omlx_key, broker_token
 
 
 def _memory_secret() -> str:
-    memory_token = os.environ.get("MAC_AI_WORK_OS_MEMORY_TOKEN", "")
+    memory_token = os.environ.get("FORMA_AI_MEMORY_TOKEN", "")
     if len(memory_token) < 32:
         raise ValueError("memory runtime secret is required")
     return memory_token

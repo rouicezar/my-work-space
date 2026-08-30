@@ -9,7 +9,7 @@ import uuid
 from dataclasses import asdict, dataclass
 from datetime import datetime
 
-from mac_ai_work_os.cloud_catalog import CloudProvider
+from forma_ai.cloud_catalog import CloudProvider
 
 
 BLOCKED_DATA_CLASSES = frozenset({

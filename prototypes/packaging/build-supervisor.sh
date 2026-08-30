@@ -25,23 +25,23 @@ if ! command -v uv >/dev/null 2>&1; then
   exit 2
 fi
 
-BUILD_DIRECTORY=$(mktemp -d "${TMPDIR:-/tmp}/mac-ai-work-os-supervisor.XXXXXX")
+BUILD_DIRECTORY=$(mktemp -d "${TMPDIR:-/tmp}/forma-ai-supervisor.XXXXXX")
 trap 'rm -rf "$BUILD_DIRECTORY"' EXIT INT TERM
 
 uv tool run --from pyinstaller==6.22.2 pyinstaller \
   --noconfirm \
   --clean \
   --onedir \
-  --name mac-ai-work-os-supervisor \
+  --name forma-ai-supervisor \
   --paths "$REPOSITORY_ROOT" \
   --distpath "$BUILD_DIRECTORY/dist" \
   --workpath "$BUILD_DIRECTORY/work" \
   --specpath "$BUILD_DIRECTORY/spec" \
   "$REPOSITORY_ROOT/scripts/supervisor.py"
 
-ditto "$BUILD_DIRECTORY/dist/mac-ai-work-os-supervisor" "$OUTPUT_DIRECTORY"
+ditto "$BUILD_DIRECTORY/dist/forma-ai-supervisor" "$OUTPUT_DIRECTORY"
 
-EXECUTABLE="$OUTPUT_DIRECTORY/mac-ai-work-os-supervisor"
+EXECUTABLE="$OUTPUT_DIRECTORY/forma-ai-supervisor"
 file "$EXECUTABLE" | grep -q 'arm64'
 codesign --verify --strict --verbose=2 "$EXECUTABLE"
 echo "$OUTPUT_DIRECTORY"

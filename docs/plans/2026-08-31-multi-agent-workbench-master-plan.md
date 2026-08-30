@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Build a local-first Mac AI workbench where a small local model can coordinate parallel agents, reuse Semantica, holaOS, Herdr, and oMLX through adapters, and combine local and approved cloud models for real work.
+**Goal:** Build Forma AI, a local-first Mac AI workbench where a small local model can coordinate parallel agents, reuse Semantica, holaOS, Herdr, and oMLX through adapters, and combine local and approved cloud models for real work.
 
 **Architecture:** The product-owned native workbench is the default distributable UI. Licensed non-visual holaOS workflow/application capabilities are reused behind the adapter boundary, while its visual assets and public bundling remain separately gated. Herdr is the core multi-agent execution runtime, Semantica is the governed memory authority, and oMLX is the local inference runtime.
 
@@ -14,7 +14,7 @@
 
 ## Control Rules
 
-This is the authoritative execution and progress tracker for the Mac AI Work OS project.
+This is the authoritative execution and progress tracker for the Forma AI project.
 
 - Every agent must read this full file, `docs/TASK_HANDOFF.md`, and `AGENTS.md` before changing product code.
 - Every task must have exactly one status: `pending`, `in_progress`, `blocked`, `verified`, or `dropped`.
@@ -23,6 +23,7 @@ This is the authoritative execution and progress tracker for the Mac AI Work OS 
 - Progress is evidence-based. Do not mark `verified` from visual inspection, intent, or a passing health endpoint alone.
 - Any change to product goal, upstream reuse policy, memory authority, or cloud credential behavior requires explicit user approval.
 - If another agent takes over, it must claim a task ID here and write a handoff entry before and after its work.
+- On Codex quota warning, stop opening new work, close and verify the smallest safe unit, update both control documents, commit and push verified work, and leave a clean repository. Preserve and explicitly inventory any pre-existing dirty work that cannot safely be removed.
 
 ## Current State
 
@@ -34,10 +35,10 @@ Next action: inventory local upstream checkouts and pins, then build per-capabil
 
 Known uncommitted implementation work that must not be overwritten by this documentation task:
 
-- `mac_ai_work_os/deepseek_adapter.py`
+- `forma_ai/deepseek_adapter.py`
 - `tests/test_deepseek_adapter.py`
 - `prototypes/packaging/Sources/LifecycleContract/ProductManifest.swift`
-- `prototypes/packaging/Sources/MacAIWorkOSApp/MacAIWorkOSApp.swift`
+- `prototypes/packaging/Sources/FormaAIApp/FormaAIApp.swift`
 - `prototypes/packaging/Tests/LifecycleContractTests/ProductManifestTests.swift`
 - `build/`
 - `evidence/ui/cloud-settings-review-2026-08-31.png`
@@ -121,6 +122,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | P0-T05 | verified | Commit governance docs only | Same files | `git add AGENTS.md docs/plans/2026-08-31-multi-agent-workbench-master-plan.md docs/TASK_HANDOFF.md` then `git commit -m "docs: add workbench execution control"` | Commit `3756677` created without staging implementation work |
 | P0-T06 | verified | Push governance docs | Same files | `git push` | Governance documentation commits are ready to push with this completion update |
 | P0-T07 | verified | Reconcile product-role conflicts and enforce upstream-first reuse | `AGENTS.md`, requirements, decisions, ADRs, active/legacy plans, handoff | `rg` conflict scan plus `git diff --check` | Conflicting role statements are superseded or corrected; upstream-first rule, universal agent adapter, and full Settings scope are explicit |
+| P0-T08 | verified | Rename product globally to Forma AI and add an original macOS icon | tracked source, tests, docs, packaging, app assets, filenames | legacy-name absence scan, Python tests, Swift tests, app bundle inspection | Tracked product surface has no legacy name; 225 Python tests passed with 1 skipped; 30 Swift tests passed with 2 skipped; signed Forma AI app contains valid ICNS |
 
 ### P1: Upstream Capability and License Inventory
 
@@ -140,11 +142,11 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | ID | Status | Action | Files | Command | Expected Evidence |
 |---|---|---|---|---|---|
 | P2-T01 | pending | Write failing test for adapter identity and health envelope | `tests/test_adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Fails because contract is absent |
-| P2-T02 | pending | Add minimal protocol dataclasses | `mac_ai_work_os/adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Identity/health tests pass |
+| P2-T02 | pending | Add minimal protocol dataclasses | `forma_ai/adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Identity/health tests pass |
 | P2-T03 | pending | Write failing test for capability declaration | `tests/test_adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Fails on missing capabilities |
-| P2-T04 | pending | Implement capability declaration model | `mac_ai_work_os/adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Capabilities pass |
+| P2-T04 | pending | Implement capability declaration model | `forma_ai/adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Capabilities pass |
 | P2-T05 | pending | Write failing test for policy preview/audit fields | `tests/test_adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Fails on missing policy fields |
-| P2-T06 | pending | Implement policy preview/audit envelope | `mac_ai_work_os/adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Contract tests pass |
+| P2-T06 | pending | Implement policy preview/audit envelope | `forma_ai/adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Contract tests pass |
 | P2-T07 | pending | Specify vendor-neutral AI agent adapter for Codex, Claude, and compatible tools | `docs/contracts/agent-adapter.md`, contract tests | Contract validation command | Discovery, dispatch, status, handoff, cancel, resume, artifacts, and audit are covered |
 | P2-T08 | pending | Commit adapter contract | Adapter contract, agent contract, and tests | `git diff --check` then `git commit` | Commit created |
 
@@ -153,13 +155,13 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | ID | Status | Action | Files | Command | Expected Evidence |
 |---|---|---|---|---|---|
 | P3-T01 | pending | Write failing Herdr adapter availability test | `tests/test_herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Fails before adapter exists |
-| P3-T02 | pending | Add Herdr adapter skeleton using adapter contract | `mac_ai_work_os/herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Availability test passes |
+| P3-T02 | pending | Add Herdr adapter skeleton using adapter contract | `forma_ai/herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Availability test passes |
 | P3-T03 | pending | Write failing test for spawning two mock tasks | `tests/test_herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Fails on missing spawn |
-| P3-T04 | pending | Implement mockable task spawn/status methods | `mac_ai_work_os/herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Two tasks have stable IDs and states |
+| P3-T04 | pending | Implement mockable task spawn/status methods | `forma_ai/herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Two tasks have stable IDs and states |
 | P3-T05 | pending | Write failing test for cancel and resume envelope | `tests/test_herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Fails on missing lifecycle |
-| P3-T06 | pending | Implement cancel/resume mapping | `mac_ai_work_os/herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Lifecycle tests pass |
-| P3-T07 | pending | Wire supervisor to Herdr adapter behind feature flag | `mac_ai_work_os/supervisor.py` | `python -m unittest discover tests -v` | Existing tests pass |
-| P3-T08 | pending | Add UI task state fixture for parallel agents | `prototypes/packaging/Sources/MacAIWorkOSApp/MacAIWorkOSApp.swift` | `swift test --package-path prototypes/packaging` | Swift tests pass |
+| P3-T06 | pending | Implement cancel/resume mapping | `forma_ai/herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Lifecycle tests pass |
+| P3-T07 | pending | Wire supervisor to Herdr adapter behind feature flag | `forma_ai/supervisor.py` | `python -m unittest discover tests -v` | Existing tests pass |
+| P3-T08 | pending | Add UI task state fixture for parallel agents | `prototypes/packaging/Sources/FormaAIApp/FormaAIApp.swift` | `swift test --package-path prototypes/packaging` | Swift tests pass |
 | P3-T09 | pending | Commit Herdr core slice | Adapter, supervisor, tests, Swift fixture | `git diff --check` then `git commit` | Commit created |
 
 ### P4: Independent Workbench Product Experience
@@ -167,7 +169,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | ID | Status | Action | Files | Command | Expected Evidence |
 |---|---|---|---|---|---|
 | P4-T01 | pending | Write UI contract test for first-screen task composer | `prototypes/packaging/Tests/LifecycleContractTests/ProductManifestTests.swift` | `swift test --package-path prototypes/packaging` | Fails before composer contract |
-| P4-T02 | pending | Move daily work surface above setup/recovery | `prototypes/packaging/Sources/MacAIWorkOSApp/MacAIWorkOSApp.swift` | `swift test --package-path prototypes/packaging` | Contract passes |
+| P4-T02 | pending | Move daily work surface above setup/recovery | `prototypes/packaging/Sources/FormaAIApp/FormaAIApp.swift` | `swift test --package-path prototypes/packaging` | Contract passes |
 | P4-T03 | pending | Add model/provider selection contract | Lifecycle contract tests | `swift test --package-path prototypes/packaging` | Provider selector required |
 | P4-T04 | pending | Implement cloud/local model selector state | Swift app and manifest files | `swift test --package-path prototypes/packaging` | Selector state passes tests |
 | P4-T05 | pending | Add task history visible state contract | Swift tests | `swift test --package-path prototypes/packaging` | History state test passes |
@@ -182,7 +184,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 |---|---|---|---|---|---|
 | P5-T01 | pending | Reproduce current DeepSeek failure with test credential only | `evidence/cloud/deepseek-YYYY-MM-DD.md` | Approved low-cost test command | Error or success captured without secret |
 | P5-T02 | pending | Add failing test for DeepSeek output budget handling | `tests/test_deepseek_adapter.py` | `python -m unittest tests.test_deepseek_adapter -v` | Fails on invalid small response path |
-| P5-T03 | pending | Fix DeepSeek low-cost chat completion path | `mac_ai_work_os/deepseek_adapter.py` | `python -m unittest tests.test_deepseek_adapter -v` | Tests pass |
+| P5-T03 | pending | Fix DeepSeek low-cost chat completion path | `forma_ai/deepseek_adapter.py` | `python -m unittest tests.test_deepseek_adapter -v` | Tests pass |
 | P5-T04 | pending | Run one approved real DeepSeek closed loop | `evidence/cloud/deepseek-YYYY-MM-DD.md` | Approved test command | Provider returns valid minimal answer |
 | P5-T05 | pending | Add oMLX local inference proof test/runbook | `docs/runbooks/omlx.md` | Local runtime command | Real local response captured |
 | P5-T06 | pending | Add model routing decision tests | `tests/test_model_routing.py` | `python -m unittest tests.test_model_routing -v` | Local-first and approval escalation pass |
@@ -193,11 +195,11 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | ID | Status | Action | Files | Command | Expected Evidence |
 |---|---|---|---|---|---|
 | P6-T01 | pending | Write failing Semantica adapter health test | `tests/test_semantica_adapter.py` | `python -m unittest tests.test_semantica_adapter -v` | Fails before adapter |
-| P6-T02 | pending | Add Semantica adapter skeleton | `mac_ai_work_os/semantica_adapter.py` | `python -m unittest tests.test_semantica_adapter -v` | Health test passes |
+| P6-T02 | pending | Add Semantica adapter skeleton | `forma_ai/semantica_adapter.py` | `python -m unittest tests.test_semantica_adapter -v` | Health test passes |
 | P6-T03 | pending | Add candidate memory test | `tests/test_semantica_adapter.py` | `python -m unittest tests.test_semantica_adapter -v` | Fails before candidate flow |
-| P6-T04 | pending | Implement candidate memory envelope | `mac_ai_work_os/semantica_adapter.py` | `python -m unittest tests.test_semantica_adapter -v` | Candidate flow passes |
+| P6-T04 | pending | Implement candidate memory envelope | `forma_ai/semantica_adapter.py` | `python -m unittest tests.test_semantica_adapter -v` | Candidate flow passes |
 | P6-T05 | pending | Add approval-to-commit memory test | `tests/test_semantica_adapter.py` | `python -m unittest tests.test_semantica_adapter -v` | Approval flow passes |
-| P6-T06 | pending | Wire task audit event to Semantica adapter | `mac_ai_work_os/supervisor.py` | `python -m unittest discover tests -v` | Audit event test passes |
+| P6-T06 | pending | Wire task audit event to Semantica adapter | `forma_ai/supervisor.py` | `python -m unittest discover tests -v` | Audit event test passes |
 | P6-T07 | pending | Commit governed memory slice | Adapter, supervisor, tests | `git diff --check` then `git commit` | Commit created |
 
 ### P7: History, Cancel, Resume, Recovery
@@ -205,7 +207,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | ID | Status | Action | Files | Command | Expected Evidence |
 |---|---|---|---|---|---|
 | P7-T01 | pending | Write failing persisted task-state test | `tests/test_task_state_store.py` | `python -m unittest tests.test_task_state_store -v` | Fails before store |
-| P7-T02 | pending | Implement repository-local task-state store | `mac_ai_work_os/task_state_store.py` | `python -m unittest tests.test_task_state_store -v` | Store test passes |
+| P7-T02 | pending | Implement repository-local task-state store | `forma_ai/task_state_store.py` | `python -m unittest tests.test_task_state_store -v` | Store test passes |
 | P7-T03 | pending | Add cancellation persistence test | `tests/test_task_state_store.py` | `python -m unittest tests.test_task_state_store -v` | Cancel state survives reload |
 | P7-T04 | pending | Add resume-from-history supervisor test | `tests/test_supervisor_resume.py` | `python -m unittest tests.test_supervisor_resume -v` | Resume route passes |
 | P7-T05 | pending | Add UI history/recovery contract | Swift tests | `swift test --package-path prototypes/packaging` | History recovery visible |
@@ -240,3 +242,4 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 - 2026-08-31 -- P0-T05 follow-up verified by Codex root agent. Commit `7b516a1` records completion progress for the control documents.
 - 2026-08-31 -- P0-T06 verified by Codex root agent. This status update is committed and pushed together with the governance documentation chain.
 - 2026-08-31 01:57 Asia/Shanghai - P0-T07 - Codex root agent - reconciled role conflicts and enforced upstream-first reuse - repository-wide conflict scan and `git diff --check` passed - commit `a618993` plus closeout record - next P1-T01
+- 2026-08-31 05:57 Asia/Shanghai - P0-T08 - Codex root agent - renamed tracked product identity to Forma AI and integrated original macOS icon - legacy-name scan, 225 Python tests, 30 Swift tests, signed bundle/icon inspection passed - commit pending closeout - next P1-T01

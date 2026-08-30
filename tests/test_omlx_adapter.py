@@ -3,7 +3,7 @@ import json
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from mac_ai_work_os.adapters.omlx import (
+from forma_ai.adapters.omlx import (
     AdapterError,
     HTTPResult,
     InstallationEvidence,

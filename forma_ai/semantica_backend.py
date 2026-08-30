@@ -6,9 +6,9 @@ import importlib
 from pathlib import Path
 from typing import Any
 
-from mac_ai_work_os.adapters.semantica import SemanticaContextBackend
-from mac_ai_work_os.omlx_embeddings import OMLXEmbeddingClient, PersistentOMLXVectorStore
-from mac_ai_work_os.semantica_runtime import EXPECTED_VERSION, SemanticaLayout
+from forma_ai.adapters.semantica import SemanticaContextBackend
+from forma_ai.omlx_embeddings import OMLXEmbeddingClient, PersistentOMLXVectorStore
+from forma_ai.semantica_runtime import EXPECTED_VERSION, SemanticaLayout
 
 
 class ManagedSemanticaError(RuntimeError):

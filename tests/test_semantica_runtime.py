@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from subprocess import CompletedProcess
 
-from mac_ai_work_os.semantica_runtime import (
+from forma_ai.semantica_runtime import (
     EXPECTED_COMMIT,
     EXPECTED_RELEASE,
     EXPECTED_VERSION,

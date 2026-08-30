@@ -4,8 +4,8 @@ import unittest
 import urllib.error
 from pathlib import Path
 
-from mac_ai_work_os.artifacts import ArtifactExpectation
-from mac_ai_work_os.downloads import DownloadError, ResumableDownloader
+from forma_ai.artifacts import ArtifactExpectation
+from forma_ai.downloads import DownloadError, ResumableDownloader
 
 
 PAYLOAD = b"0123456789abcdef"

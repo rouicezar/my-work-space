@@ -3,9 +3,9 @@ import unittest
 from dataclasses import replace
 from pathlib import Path
 
-from mac_ai_work_os.cloud_preferences import CloudPreferenceState
-from mac_ai_work_os.local_profiles import load_local_profile
-from mac_ai_work_os.task_orchestrator import (
+from forma_ai.cloud_preferences import CloudPreferenceState
+from forma_ai.local_profiles import load_local_profile
+from forma_ai.task_orchestrator import (
     TaskOrchestratorError, estimate_input_tokens, parse_unified_task, plan_unified_task,
 )
 
