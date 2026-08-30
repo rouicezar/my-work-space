@@ -20,9 +20,9 @@ Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-ma
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P1-T06
-State: P1-T05 oMLX evidence refresh verified; documentation commit and push pending
-Next required action: commit/push P1-T05, then claim P1-T06 and reconcile the license matrix with future public open-source distribution.
+Master plan task: P1-T07
+State: P1-T06 license reconciliation verified; documentation commit and push pending
+Next required action: commit/push P1-T06, then claim P1-T07 and record one explicit reuse decision for each upstream.
 
 ## Product Goal Snapshot
 
@@ -111,6 +111,46 @@ Quota state and closeout action:
 ```
 
 ## Handoff Log
+
+## 2026-08-31 - P1-T06 - exit
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `7e42050`
+Scope: reconcile Semantica, holaOS, Herdr, and oMLX license obligations with personal development and future public open-source distribution
+Files intended: license matrix, master tracker, and handoff
+Actions: bound each component to its reviewed revision; separated private, public-source, copied-source, binary, adapter, and commercial modes; added provenance, notices, SBOM, trademark, asset, model, and dependency gates
+Verification: required public/redistribution/holaOS terms plus all reviewed revisions and release-mode gates are present; `git diff --check` passed
+Evidence: P1-T02 through P1-T05 upstream ledgers and commit-pinned official license links
+Files changed: `docs/research/license-matrix.md`, master tracker, and this handoff
+Commit: pending documentation commit
+Push: pending
+Decisions: open source and non-commercial are not interchangeable; public Forma source without copied upstream code is the lowest-risk candidate; holaOS frontend/bundling remains blocked without written clearance
+Assumptions: matrix is engineering compliance guidance, not legal advice
+Blocked items: file-level provenance, third-party notices, SBOM, transitive/model licenses, and written holaOS clarification remain P8 release gates
+Next exact action: commit/push P1-T06, then claim P1-T07
+Approval needed: none
+Secret/external-write status: no secrets; repository-local documentation only
+Quota state and closeout action: normal; this verified unit is ready to commit and push
+
+## 2026-08-31 - P1-T06 - takeover
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `7e42050`
+Scope: reconcile Semantica, holaOS, Herdr, and oMLX license obligations with personal development and future public open-source distribution
+Files intended: `docs/research/license-matrix.md`, master tracker, and handoff
+Actions: claimed P1-T06 in plan order
+Verification: pending matrix and upstream-ledger conflict scan
+Evidence: pending
+Files changed: tracker and handoff at takeover
+Commit: none yet
+Push: none yet
+Decisions: public source publication, binary distribution, commercial distribution, trademarks/assets, and separately installed adapters must be treated as distinct release modes
+Assumptions: this is an engineering compliance gate, not legal advice
+Blocked items: none
+Next exact action: inspect and reconcile the license matrix with the pinned upstream evidence already recorded in P1-T02 through P1-T05
+Approval needed: none
+Secret/external-write status: no secrets; repository-local documentation only
+Quota state and closeout action: normal; close and push this documentation unit on warning
 
 ## 2026-08-31 - P1-T05 - exit
 
