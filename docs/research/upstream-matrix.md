@@ -2,6 +2,19 @@
 
 Verified: 2026-08-28. Sources are official repositories, release metadata, and build manifests. This is an engineering snapshot, not a promise that future releases remain compatible.
 
+## Local source and pin inventory
+
+Verified: 2026-08-31. Search boundaries were the Forma AI repository, the prior four-project research workspace under `~/Documents/Codex/2026-08-28`, normal user/system Applications folders, and product-managed Application Support paths. This is not a claim that no copy exists elsewhere on the machine.
+
+| Component | Declared product pin | Local checkout/source result | Installed artifact result | Gap before reuse work |
+|---|---|---|---|---|
+| Semantica | `v0.6.7` in `config/upstreams.json` and `config/product-manifest.json` | No Git checkout found. The directory named `ai-memory-semantica` contains only empty `outputs/` and `work/` directories and is not a repository. | No managed Semantica runtime was found in the searched product paths. | Acquire or locate the exact `v0.6.7` wheel/source archive and record its digest before source-level capability mapping. |
+| holaOS | rolling `latest` in both manifests; this is not an immutable pin | No local checkout found in the searched repository/research workspace. | No installed holaOS application found in normal Applications or product-managed paths. | Resolve an immutable commit for the current personal-development source review; do not treat `latest` or `main` as reproducible evidence. |
+| Herdr | `v0.8.2` in both manifests | No local checkout found in the searched repository/research workspace. | No installed Herdr binary/application found in the searched product or Applications paths. | Acquire or locate the exact `v0.8.2` source/release artifact and record checksum plus protocol surface before integration. |
+| oMLX | `v0.6.3` in both manifests | No local source checkout found. | Verified product-managed `oMLX.app` exists at the legacy pre-Forma support root; bundle ID `app.omlx`, short version `0.6.3`, build `2500`. Its active record binds SHA-256 `5bde65e35c0cc3e7b0365c0e078f98d7571cb71c6a6bead591329a2cf8287537`. | Treat the installed app as binary/runtime evidence, not source evidence; add a migration task for the legacy support-root name and locate pinned source only if source-level reuse becomes necessary. |
+
+Repository-local integration code currently exists only for Semantica and oMLX adapters. No repository-local holaOS or Herdr adapter exists yet. That absence is an integration gap, not permission to reimplement their upstream capabilities.
+
 | Component | Stable reference | Runtime/platform | Product interface | Official distribution evidence | Current integration conclusion |
 |---|---|---|---|---|---|
 | Semantica | `v0.6.7` | Python `>=3.8`; project labels OS-independent | CLI, REST server, worker, Explorer, stdio MCP | Release wheel and source archive | Pin wheel in a product-owned Python environment; test REST/MCP contracts and local storage before bundling |

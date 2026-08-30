@@ -20,9 +20,9 @@ Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-ma
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P1-T01
-State: Forma AI rename and icon integration committed, pushed, and cleanly closed
-Next required action: claim P1-T01 for the four-upstream checkout/pin and reuse inventory.
+Master plan task: P1-T02
+State: P1-T01 local source/pin inventory verified; pending commit/push closeout
+Next required action: commit and push P1-T01, then claim P1-T02 and refresh Semantica evidence from primary sources.
 
 ## Product Goal Snapshot
 
@@ -111,6 +111,46 @@ Quota state and closeout action:
 ```
 
 ## Handoff Log
+
+## 2026-08-31 - P1-T01 - exit
+
+Executor: Codex root agent
+Starting git state: clean at `5cee7a9`
+Scope: inventory repository and bounded machine-local checkouts, pins, and installed artifacts for all four upstream foundations
+Files intended: upstream matrix, master tracker, and handoff
+Actions: scanned repository integrations, prior research workspace, normal Applications folders, and product-managed support paths; inspected the oMLX bundle and active artifact record; distinguished empty research directories from Git checkouts
+Verification: repository file scan found Semantica/oMLX adapters only; no upstream Git checkout was found in the bounded search; Semantica-named research directory is not a Git repository; installed oMLX reports bundle ID `app.omlx`, version `0.6.3`, build `2500`, and the expected artifact digest
+Evidence: updated `docs/research/upstream-matrix.md` local inventory table; `config/upstreams.json`; `config/product-manifest.json`; read-only oMLX Info.plist and active record
+Files changed: `docs/research/upstream-matrix.md`, master tracker, and this handoff
+Commit: pending documentation commit
+Push: pending
+Decisions: installed oMLX is binary evidence, not source evidence; `latest` is not an acceptable holaOS pin; absence of local source never authorizes reimplementation
+Assumptions: search is explicitly bounded and does not prove machine-wide absence
+Blocked items: none for P1-T01
+Next exact action: commit/push P1-T01, then claim P1-T02
+Approval needed: none
+Secret/external-write status: no secrets; no cloud calls
+Quota state and closeout action: normal; task is independently committable and ready for quota-safe closeout
+
+## 2026-08-31 - P1-T01 - takeover
+
+Executor: Codex root agent
+Starting git state: clean at `5cee7a9`; legacy build artifacts preserved in `stash@{0}`
+Scope: list available local upstream checkouts, installed artifacts, declared pins, and gaps for all four foundations
+Files intended: `docs/research/upstream-matrix.md`, master tracker, and this handoff
+Actions: claimed P1-T01 after confirming the previous quota-safe closeout and reviewing the execution plan
+Verification: pending repository file inventory and read-only local source discovery
+Evidence: pending
+Files changed: tracker and handoff at takeover
+Commit: none yet
+Push: none yet
+Decisions: inventory only; no upstream modification or new capability implementation
+Assumptions: local checkouts outside the repository are read-only evidence and are not product dependencies until pinned and integrated
+Blocked items: none
+Next exact action: scan repository references, known development directories, installed application locations, and Git metadata for exact pins
+Approval needed: none for read-only discovery
+Secret/external-write status: no secrets; no cloud calls
+Quota state and closeout action: normal; close current task immediately if a usage warning appears
 
 ## 2026-08-31 05:57 Asia/Shanghai - P0-T08 - exit
 
