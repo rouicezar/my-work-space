@@ -18,6 +18,20 @@ class AdapterIdentity:
 
 
 @dataclass(frozen=True)
+class CapabilityDeclaration:
+    capability_id: str
+    operations: tuple[str, ...]
+    proof: str
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "capability_id": self.capability_id,
+            "operations": list(self.operations),
+            "proof": self.proof,
+        }
+
+
+@dataclass(frozen=True)
 class HealthEnvelope:
     schema_version: int
     status: str

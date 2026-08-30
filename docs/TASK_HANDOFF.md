@@ -20,9 +20,9 @@ Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-ma
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P2-T04
-State: P2-T03 expected failing capability test verified; red-test commit and push pending
-Next required action: commit/push P2-T03, then claim P2-T04 and implement the minimal capability declaration.
+Master plan task: P2-T05
+State: P2-T04 capability implementation verified; implementation commit and push pending
+Next required action: commit/push P2-T04, then claim P2-T05 and write failing policy-preview/audit-envelope tests.
 
 ## Product Goal Snapshot
 
@@ -111,6 +111,46 @@ Quota state and closeout action:
 ```
 
 ## Handoff Log
+
+## 2026-08-31 - P2-T04 - exit
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `61b4aef`
+Scope: implement only the capability declaration required by P2-T03
+Files intended: adapter contract, master tracker, and handoff
+Actions: added immutable `CapabilityDeclaration`; converted tuple operations to an ordered JSON-compatible list
+Verification: targeted adapter contract suite passed 3 tests; `git diff --check` passed
+Evidence: unittest output
+Files changed: `forma_ai/adapter_contract.py`, master tracker, and handoff
+Commit: pending implementation commit
+Push: pending
+Decisions: declarations report capability evidence but do not assert successful runtime execution
+Assumptions: validation constraints will be introduced only through later explicit tests
+Blocked items: none
+Next exact action: commit/push P2-T04, then claim P2-T05
+Approval needed: none
+Secret/external-write status: no secrets
+Quota state and closeout action: no warning; verified unit ready to push
+
+## 2026-08-31 - P2-T04 - takeover
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `61b4aef`
+Scope: implement only the capability declaration required by P2-T03
+Files intended: `forma_ai/adapter_contract.py`, master tracker, and handoff
+Actions: claimed P2-T04 in plan order
+Verification: pending targeted unittest
+Evidence: P2-T03 expected missing-symbol failure
+Files changed: tracker and handoff at takeover
+Commit: none yet
+Push: none yet
+Decisions: immutable declaration; tuple operations serialize to a JSON-compatible ordered list
+Assumptions: field validation remains outside this planned minimal slice
+Blocked items: none
+Next exact action: implement the dataclass and run the adapter contract tests
+Approval needed: none
+Secret/external-write status: no secrets
+Quota state and closeout action: no warning; close and push on warning
 
 ## 2026-08-31 - P2-T03 - exit
 
