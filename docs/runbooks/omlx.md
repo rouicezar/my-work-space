@@ -39,14 +39,16 @@ API keys are read from the environment name supplied by `--api-key-env` (default
 
 The adapter contract is covered by deterministic simulated responses and a real local HTTP transport test. The official `v0.6.3` macOS 26–27 DMG has also passed size, SHA-256, signature, notarization, version, architecture, isolated empty-model startup, shallow health, model-list, and graceful-stop checks on the development Mac.
 
-No model has been downloaded, so deep inference remains unverified and the overall `health_contract` stays `pending-adapter-verification`.
+A later 2026-08-29 test reused the already-cached, file-verified `mlx-community/Qwen3-0.6B-4bit` revision `73e3e38d981303bc594367cd910ea6eb48349da8` through a product-owned external reference. A real `POST /v1/chat/completions` traversed the Forma broker and pinned oMLX runtime, returned HTTP 200, model ID `Qwen3-0.6B-4bit`, finish reason `stop`, non-empty output, and usage of 21 prompt plus 3 completion tokens. This verifies bounded chat generation for that exact runtime/model pair; it does not verify strict instruction equality, streaming, cancellation, pressure, or every model.
+
+The overall `health_contract` remains `pending-adapter-verification` because release acceptance is broader than one deep probe. Embedding inference also remains unverified: the reused Qwen model is catalogued only for `chat`, and no separately approved embedding model has been installed.
 
 The real startup also found two product blockers:
 
 1. `--base-path /tmp/...` did not fully isolate state. oMLX still created `~/.omlx/bin/omlx-cluster-python`. The exact link and newly empty directories were removed after the test. A product wrapper must prove a fully isolated home/config strategy before installation is enabled.
 2. The server logged CORS origins as `['*']`. The product must configure and test an explicit loopback/UI origin policy instead of accepting this default.
 
-The accepted containment design is documented in [ADR 0003](../adr/0003-omlx-process-security-boundary.md). The process specification and product broker have passed a pinned-artifact shallow regression. The known `~/.omlx` write was redirected into the product HOME and the real user's `~/.omlx` remained absent. Full filesystem auditing and deep inference are still required before the isolation contract can be considered release-ready.
+The accepted containment design is documented in [ADR 0003](../adr/0003-omlx-process-security-boundary.md). The process specification and product broker have passed a pinned-artifact shallow regression. The known `~/.omlx` write was redirected into the product HOME and the real user's `~/.omlx` remained absent. Full filesystem auditing and the remaining real-runtime gates are still required before the isolation contract can be considered release-ready.
 
 ## Product inference broker prototype
 

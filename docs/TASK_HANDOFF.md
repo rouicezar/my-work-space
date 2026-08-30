@@ -20,9 +20,9 @@ Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-ma
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P1-T05
-State: P1-T04 Herdr capability mapping verified; documentation commit and push pending
-Next required action: commit/push P1-T04, then claim P1-T05 and refresh oMLX v0.6.3 API, model, runtime, and real-inference evidence.
+Master plan task: P1-T06
+State: P1-T05 oMLX evidence refresh verified; documentation commit and push pending
+Next required action: commit/push P1-T05, then claim P1-T06 and reconcile the license matrix with future public open-source distribution.
 
 ## Product Goal Snapshot
 
@@ -111,6 +111,46 @@ Quota state and closeout action:
 ```
 
 ## Handoff Log
+
+## 2026-08-31 - P1-T05 - exit
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `85f7e54`
+Scope: refresh oMLX v0.6.3 API, runtime, model, release, inference-proof, and adapter-boundary evidence
+Files intended: upstream matrix, oMLX runbook, master tracker, and handoff
+Actions: resolved the lightweight tag; reviewed official release assets/digests, pinned server routes and package dependencies; reconciled local adapter, broker, manifest, generation, and embedding evidence; corrected the stale runbook statement that deep inference was wholly unverified
+Verification: `python3 -m unittest tests.test_omlx_adapter tests.test_manifest -v` passed 24 tests; required commit, artifact digest, API routes, chat proof, embedding boundary, pending gates, and health-contract terms are present; `git diff --check` passed
+Evidence: official `jundot/omlx` v0.6.3 tag/release API and pinned `server.py`/`pyproject.toml`; repository generation, embedding, isolation/broker evidence and current adapter/manifest tests
+Files changed: `docs/research/upstream-matrix.md`, `docs/runbooks/omlx.md`, master tracker, and this handoff
+Commit: pending documentation commit
+Push: pending
+Decisions: chat generation is verified only for the exact pinned oMLX/Qwen pair; route availability does not grant model capability; embedding, streaming, cancellation, pressure, sustained concurrency, restart, updater, and complete isolation remain open
+Assumptions: prior terminal evidence is valid repository evidence but does not substitute for future native user-flow acceptance
+Blocked items: no approved embedding model; no new real-runtime execution was required for this inventory correction
+Next exact action: commit/push P1-T05, then claim P1-T06
+Approval needed: none
+Secret/external-write status: no secrets; public read-only source access and local tests only
+Quota state and closeout action: normal; this verified unit is ready to commit and push
+
+## 2026-08-31 - P1-T05 - takeover
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `85f7e54`
+Scope: refresh oMLX v0.6.3 API, runtime, model, release, inference-proof, and adapter-boundary evidence
+Files intended: `docs/research/upstream-matrix.md`, master tracker, and handoff
+Actions: claimed P1-T05 in plan order
+Verification: pending official tag/source/API/release inspection and repository adapter scan
+Evidence: pending
+Files changed: tracker and handoff at takeover
+Commit: none yet
+Push: none yet
+Decisions: health and model listing remain readiness signals only; acceptance requires a real chat completion or embedding response tied to a model ID
+Assumptions: exact v0.6.3 artifacts and source must be bound before compatibility claims
+Blocked items: none
+Next exact action: inspect official repository tag, release assets/digests, API routes and schemas, runtime requirements, and existing Forma integration code
+Approval needed: none
+Secret/external-write status: no secrets; public read-only source access and local read-only inspection only
+Quota state and closeout action: normal; close and push this documentation unit on warning
 
 ## 2026-08-31 - P1-T04 - exit
 
