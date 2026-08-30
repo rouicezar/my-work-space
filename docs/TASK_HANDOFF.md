@@ -20,9 +20,9 @@ Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-ma
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P2-T03
-State: P2-T02 minimal dataclass implementation verified; implementation commit and push pending
-Next required action: commit/push P2-T02, then claim P2-T03 and write the failing capability-declaration test.
+Master plan task: P2-T04
+State: P2-T03 expected failing capability test verified; red-test commit and push pending
+Next required action: commit/push P2-T03, then claim P2-T04 and implement the minimal capability declaration.
 
 ## Product Goal Snapshot
 
@@ -111,6 +111,46 @@ Quota state and closeout action:
 ```
 
 ## Handoff Log
+
+## 2026-08-31 - P2-T03 - exit
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `947268d`
+Scope: define the intentionally failing capability-declaration contract test
+Files intended: `tests/test_adapter_contract.py`, master tracker, and handoff
+Actions: added a vendor-neutral `agent_execution` declaration requiring deterministic `dispatch`, `status`, `cancel`, and `resume` operations plus proof level; added no implementation
+Verification: targeted unittest failed at the intended boundary: `ImportError: cannot import name 'CapabilityDeclaration'`
+Evidence: unittest output and test contract
+Files changed: test, master tracker, and handoff
+Commit: pending red-test commit
+Push: pending
+Decisions: declaration reports supported operations and evidence; it does not imply runtime success
+Assumptions: tuple order is retained in serialized output
+Blocked items: none; failure is intentional
+Next exact action: commit/push P2-T03, then claim P2-T04
+Approval needed: none
+Secret/external-write status: no secrets
+Quota state and closeout action: no warning; red-test unit ready to push
+
+## 2026-08-31 - P2-T03 - takeover
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `947268d`
+Scope: define the intentionally failing capability-declaration contract test
+Files intended: `tests/test_adapter_contract.py`, master tracker, and handoff
+Actions: claimed P2-T03 in plan order and reconciled the prior baton with the already pushed P2-T02 commit
+Verification: pending expected failing unittest result
+Evidence: P2-T01/T02 identity and health contract plus upstream capability ledgers
+Files changed: tracker and handoff at takeover
+Commit: none yet
+Push: none yet
+Decisions: capability declaration is vendor-neutral and names stable operations plus evidence level; implementation belongs only to P2-T04
+Assumptions: operation order is part of deterministic serialized output for this minimal slice
+Blocked items: none
+Next exact action: add the test and capture the expected missing-symbol failure
+Approval needed: none
+Secret/external-write status: no secrets; repository-local test only
+Quota state and closeout action: no warning; close and push this red-test unit if a warning appears
 
 ## 2026-08-31 - P2-T02 - exit
 

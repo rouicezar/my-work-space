@@ -29,9 +29,9 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-08-31 Asia/Shanghai
 Current phase: P2 Adapter protocol and contracts
-Current task: P2-T03
+Current task: P2-T04
 Current status: pending
-Next action: commit and push P2-T02, then claim P2-T03 and write the failing capability-declaration test.
+Next action: commit/push P2-T03, then claim P2-T04 and implement only the capability declaration demanded by the red test.
 
 Known uncommitted implementation work that must not be overwritten by this documentation task:
 
@@ -143,7 +143,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 |---|---|---|---|---|---|
 | P2-T01 | verified | Write failing test for adapter identity and health envelope | `tests/test_adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Fails because contract is absent |
 | P2-T02 | verified | Add minimal protocol dataclasses | `forma_ai/adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Identity/health tests pass |
-| P2-T03 | pending | Write failing test for capability declaration | `tests/test_adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Fails on missing capabilities |
+| P2-T03 | verified | Write failing test for capability declaration | `tests/test_adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Fails on missing capabilities |
 | P2-T04 | pending | Implement capability declaration model | `forma_ai/adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Capabilities pass |
 | P2-T05 | pending | Write failing test for policy preview/audit fields | `tests/test_adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Fails on missing policy fields |
 | P2-T06 | pending | Implement policy preview/audit envelope | `forma_ai/adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Contract tests pass |
@@ -253,3 +253,4 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 - 2026-08-31 - P1-T08 - Codex root agent - audited the complete seven-commit upstream inventory chain, verified all P1 evidence files and four reuse decisions, confirmed documentation-only scope and origin/main synchronization - phase P1 verified - next P2-T01
 - 2026-08-31 - P2-T01 - Codex root agent - added vendor-neutral adapter identity and layered health-envelope contract tests - expected `ModuleNotFoundError: forma_ai.adapter_contract` observed before implementation - commit pending closeout - next P2-T02
 - 2026-08-31 - P2-T02 - Codex root agent - implemented immutable adapter identity and layered health envelopes with deterministic serialization - 2 targeted tests passed and whitespace check passed - commit pending closeout - next P2-T03
+- 2026-08-31 - P2-T03 - Codex root agent - added the vendor-neutral capability declaration red test for stable operation names and proof level - expected missing `CapabilityDeclaration` import observed - commit pending closeout - next P2-T04

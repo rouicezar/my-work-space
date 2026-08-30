@@ -1,6 +1,10 @@
 import unittest
 
-from forma_ai.adapter_contract import AdapterIdentity, HealthEnvelope
+from forma_ai.adapter_contract import (
+    AdapterIdentity,
+    CapabilityDeclaration,
+    HealthEnvelope,
+)
 
 
 class AdapterIdentityAndHealthContractTests(unittest.TestCase):
@@ -40,6 +44,19 @@ class AdapterIdentityAndHealthContractTests(unittest.TestCase):
             "proof": "shallow",
             "checked_at": "2026-08-31T12:00:00Z",
             "reason_code": "INFERENCE_UNVERIFIED",
+        })
+
+    def test_capability_declaration_names_operations_and_proof(self):
+        capability = CapabilityDeclaration(
+            capability_id="agent_execution",
+            operations=("dispatch", "status", "cancel", "resume"),
+            proof="contract_tested",
+        )
+
+        self.assertEqual(capability.to_dict(), {
+            "capability_id": "agent_execution",
+            "operations": ["dispatch", "status", "cancel", "resume"],
+            "proof": "contract_tested",
         })
 
 
