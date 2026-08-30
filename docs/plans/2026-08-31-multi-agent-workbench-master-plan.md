@@ -26,9 +26,9 @@ This is the authoritative execution and progress tracker for the Mac AI Work OS 
 
 Updated: 2026-08-31 Asia/Shanghai
 Current phase: P0 Governance correction
-Current task: P0-T05
+Current task: P0-T06
 Current status: in_progress
-Next action: commit and push only the documentation-control changes.
+Next action: commit this completion-record update and push the governance documentation commits.
 
 Known uncommitted implementation work that must not be overwritten by this documentation task:
 
@@ -111,8 +111,8 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | P0-T02 | verified | Create the takeover handoff document | `docs/TASK_HANDOFF.md` | `test -f docs/TASK_HANDOFF.md` | File exists |
 | P0-T03 | verified | Update startup and completion rules | `AGENTS.md` | `rg -n "Execution control documents|Task Handoff" AGENTS.md` | Required rules found |
 | P0-T04 | verified | Verify documentation-only diff | This file, `docs/TASK_HANDOFF.md`, `AGENTS.md` | `git diff --check -- AGENTS.md docs/plans/2026-08-31-multi-agent-workbench-master-plan.md docs/TASK_HANDOFF.md` | No whitespace errors |
-| P0-T05 | in_progress | Commit governance docs only | Same files | `git add AGENTS.md docs/plans/2026-08-31-multi-agent-workbench-master-plan.md docs/TASK_HANDOFF.md` then `git commit -m "docs: add workbench execution control"` | Commit created without staging implementation work |
-| P0-T06 | pending | Push governance docs | Same files | `git push` | Remote accepts commit |
+| P0-T05 | verified | Commit governance docs only | Same files | `git add AGENTS.md docs/plans/2026-08-31-multi-agent-workbench-master-plan.md docs/TASK_HANDOFF.md` then `git commit -m "docs: add workbench execution control"` | Commit `3756677` created without staging implementation work |
+| P0-T06 | in_progress | Push governance docs | Same files | `git push` | Remote accepts commit |
 
 ### P1: Upstream Capability and License Inventory
 
@@ -226,4 +226,5 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 
 - 2026-08-31 -- P0-T01/P0-T02/P0-T03 verified by Codex root agent. Created master tracker, handoff document, and updated `AGENTS.md`.
 - 2026-08-31 -- P0-T04 verified by Codex root agent. `git diff --check` passed for documentation-control files.
-- 2026-08-31 -- P0-T05 started by Codex root agent. Commit is limited to `AGENTS.md`, this tracker, and `docs/TASK_HANDOFF.md`.
+- 2026-08-31 -- P0-T05 verified by Codex root agent. Commit `3756677` includes only `AGENTS.md`, this tracker, and `docs/TASK_HANDOFF.md`.
+- 2026-08-31 -- P0-T06 started by Codex root agent. Push is pending after completion-record update.

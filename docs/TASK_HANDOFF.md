@@ -19,9 +19,9 @@ Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-ma
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P0-T05
-State: documentation-control files created and validated; committing docs only
-Next required action: commit only documentation-control changes, push, then update this handoff with the commit result.
+Master plan task: P0-T06
+State: documentation-control files created, validated, and committed; completion-record update is pending commit and push
+Next required action: commit this handoff/progress update, then push the governance documentation commits.
 
 ## Product Goal Snapshot
 
@@ -120,11 +120,30 @@ Actions: started governance correction after user confirmed the need for granula
 Verification: `rg -n "Execution control documents|Task Handoff|Current Baton|P0-T01|Herdr is the core|holaOS is a capability"` found required anchors; `git diff --check -- AGENTS.md docs/plans/2026-08-31-multi-agent-workbench-master-plan.md docs/TASK_HANDOFF.md` passed
 Evidence: `AGENTS.md` contains mandatory execution-control rules; master plan contains P0-P8 tracker; this file contains takeover protocol and current dirty-worktree baton
 Files changed: `AGENTS.md`, `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md`, `docs/TASK_HANDOFF.md`
-Commit: pending
+Commit: `3756677 docs: add workbench execution control`
 Push: pending
 Decisions: product-owned independent workbench plus adapter protocol; holaOS capability parity without uncleared public bundling; Herdr core multi-agent runtime
 Assumptions: documentation-control commit must not stage the interrupted implementation files
 Blocked items: none for documentation-control task
-Next exact action: update `AGENTS.md`, run documentation validation, commit and push docs only
+Next exact action: commit this completion-record update, then push governance docs
 Approval needed: none for documentation edits; separate approval still required for any cloud API call
 Secret/external-write status: no secrets handled; no external cloud calls in this task
+
+## 2026-08-31 - P0-T05 - exit
+
+Executor: Codex root agent
+Starting git state: dirty worktree with prior DeepSeek/settings changes preserved
+Scope: commit governance documents only
+Files intended: `AGENTS.md`, `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md`, `docs/TASK_HANDOFF.md`
+Actions: staged only governance documents and committed them
+Verification: `git diff --cached --name-only` listed only the three intended files before commit
+Evidence: commit `3756677 docs: add workbench execution control`
+Files changed: `AGENTS.md`, `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md`, `docs/TASK_HANDOFF.md`
+Commit: `3756677`
+Push: pending
+Decisions: completion evidence must be written back before push closeout
+Assumptions: second documentation commit is acceptable to avoid self-referential commit metadata
+Blocked items: none
+Next exact action: commit this completion-record update, push, then mark P0-T06 verified
+Approval needed: none
+Secret/external-write status: no secrets handled; no external cloud calls
