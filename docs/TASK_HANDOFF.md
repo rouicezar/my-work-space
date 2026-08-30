@@ -21,8 +21,8 @@ Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-ma
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
 Master plan task: P1-T01
-State: Forma AI rename and icon integration verified; pending commit/push closeout
-Next required action: commit and push P0-T08, confirm clean repository, then claim P1-T01 for the four-upstream inventory.
+State: Forma AI rename and icon integration committed; pending closeout push and clean-status confirmation
+Next required action: commit this closeout record, preserve untracked legacy artifacts in a named stash, push, confirm clean repository, then claim P1-T01 for the four-upstream inventory.
 
 ## Product Goal Snapshot
 
@@ -122,8 +122,8 @@ Actions: added missing automated icon assertions; confirmed product name/module/
 Verification: legacy-name scan outside preserved untracked historical build returned no match; full Python suite passed 225 with 1 skipped; targeted packaging suite passed 6; Swift suite passed 30 with 2 skipped; temporary signed `Forma AI.app` built successfully; Info.plist exposes `CFBundleName=Forma AI` and `CFBundleIconFile=FormaAI`; ICNS identified as a macOS icon; codesign verification passed; `git diff --check` passed
 Evidence: `assets/branding/forma-ai-app-icon-1024.png`, `prototypes/packaging/Resources/FormaAI.icns`, temporary validation bundle `/tmp/forma-ai-validation-20260831-0203/Forma AI.app`
 Files changed: tracked product source/tests/docs/config/packaging naming plus new branding and icon resources; earlier DeepSeek/settings edits are locally test-verified but the real DeepSeek closed loop remains pending under P5
-Commit: pending verified rename commit and closeout record
-Push: pending
+Commit: `7068cba feat: rename product to Forma AI`; this exit metadata follows in a documentation-only closeout commit
+Push: pending final closeout push
 Decisions: product and internal identity are Forma AI; no split legacy module/target/service identity remains in tracked files; generated build artifacts are not product source
 Assumptions: pre-existing local DeepSeek/settings edits can be included because full Python and Swift suites pass, without claiming P5 real-provider acceptance
 Blocked items: no P0-T08 blocker; real DeepSeek acceptance remains explicitly open
