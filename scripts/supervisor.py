@@ -52,6 +52,7 @@ from mac_ai_work_os.local_tasks import (
     MAXIMUM_TASK_BYTES, LocalTaskRequest, completion_body, normalize_local_result,
     parse_local_task,
 )
+from mac_ai_work_os.cloud_preferences import CloudPreferenceStore
 
 
 SCHEMA_VERSION = 1
@@ -159,6 +160,16 @@ def parser() -> argparse.ArgumentParser:
             command.add_argument("--maximum-cost-usd", type=float, required=True)
         if name == "cloud-execute":
             command.add_argument("--catalog", type=Path, default=DEFAULT_CLOUD_PROVIDERS)
+    for name in ("cloud-settings", "set-cloud-settings"):
+        command = commands.add_parser(name)
+        command.add_argument("--root", type=Path, required=True)
+        command.add_argument("--catalog", type=Path, default=DEFAULT_CLOUD_PROVIDERS)
+        command.add_argument("--provider-id", default="deepseek")
+        if name == "set-cloud-settings":
+            selection = command.add_mutually_exclusive_group(required=True)
+            selection.add_argument("--enable", action="store_true")
+            selection.add_argument("--disable", action="store_true")
+            command.add_argument("--model-id")
     return result
 
 
@@ -194,8 +205,32 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
         "activate-embedding",
     }:
         _validate_product_root(args.root)
-    if args.command in {"cloud-preview", "cloud-approve", "cloud-reject", "cloud-execute"}:
+    if args.command in {
+        "cloud-preview", "cloud-approve", "cloud-reject", "cloud-execute",
+        "cloud-settings", "set-cloud-settings",
+    }:
         _validate_product_root(args.root)
+    if args.command in {"cloud-settings", "set-cloud-settings"}:
+        if not args.catalog.is_absolute() or not args.catalog.is_file():
+            raise ValueError("cloud catalog must be an existing absolute file")
+        provider = load_cloud_provider(args.catalog, args.provider_id)
+        store = CloudPreferenceStore(args.root)
+        if args.command == "cloud-settings":
+            state = store.load(provider)
+        elif args.enable:
+            if not args.model_id:
+                raise ValueError("enabled cloud requires a model")
+            state = store.save(
+                enabled=True, provider=provider, model_id=args.model_id,
+                now=datetime.now(timezone.utc),
+            )
+        else:
+            if args.model_id is not None:
+                raise ValueError("disabled cloud cannot retain a model")
+            state = store.save(enabled=False, now=datetime.now(timezone.utc))
+        return envelope(
+            command=args.command, request_id=request_id, status="ok", payload=asdict(state),
+        )
     if args.command == "cloud-preview":
         if input_data is None or not input_data or len(input_data) > MAXIMUM_CLOUD_PAYLOAD_BYTES:
             raise ValueError("cloud payload is missing or too large")
@@ -839,6 +874,7 @@ def main(argv: list[str] | None = None) -> int:
                 "runtime-status", "start-runtime", "stop-runtime", "sample-task", "local-task", "internal-broker",
                 "internal-memory-service", "semantica-status",
                 "cloud-preview", "cloud-approve", "cloud-reject", "cloud-execute",
+                "cloud-settings", "set-cloud-settings",
             )
             if item in raw
         ),

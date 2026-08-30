@@ -411,6 +411,25 @@ public struct CloudPreviewPayload: Decodable, Sendable {
     }
 }
 
+public struct CloudPreferencePayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let enabled: Bool
+    public let providerID: String?
+    public let modelID: String?
+    public let valid: Bool
+    public let code: String
+    public let updatedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case enabled
+        case providerID = "provider_id"
+        case modelID = "model_id"
+        case valid, code
+        case updatedAt = "updated_at"
+    }
+}
+
 public struct CloudApprovalRecordPayload: Decodable, Sendable {
     public let proposalID: String
     public let maximumCostUSD: Double
@@ -806,6 +825,35 @@ public struct SupervisorClient: Sendable {
         return try request(
             command: "cloud-preview", arguments: arguments, requestID: requestID,
             inputData: outboundBody
+        )
+    }
+
+    public func cloudSettings(
+        rootURL: URL,
+        catalogURL: URL,
+        requestID: UUID = UUID()
+    ) throws -> CloudPreferencePayload {
+        try request(
+            command: "cloud-settings",
+            arguments: ["--root", rootURL.path, "--catalog", catalogURL.path],
+            requestID: requestID
+        )
+    }
+
+    public func setCloudSettings(
+        rootURL: URL,
+        catalogURL: URL,
+        enabled: Bool,
+        modelID: String? = nil,
+        requestID: UUID = UUID()
+    ) throws -> CloudPreferencePayload {
+        var arguments = [
+            "--root", rootURL.path, "--catalog", catalogURL.path,
+            enabled ? "--enable" : "--disable",
+        ]
+        if let modelID { arguments += ["--model-id", modelID] }
+        return try request(
+            command: "set-cloud-settings", arguments: arguments, requestID: requestID
         )
     }
 

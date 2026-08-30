@@ -270,6 +270,42 @@ import RuntimeSecurity
     #expect(result.result.toolProposals.count == 1)
 }
 
+@Test func cloudSettingsExposeDefaultDisabledAndExplicitEnableState() throws {
+    let temporary = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(at: temporary, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: temporary) }
+    let executable = temporary.appendingPathComponent("fixture-supervisor")
+    let status = #"{"schema_version":1,"command":"cloud-settings","request_id":"00000000-0000-0000-0000-000000000001","status":"ok","payload":{"schema_version":1,"enabled":false,"provider_id":null,"model_id":null,"valid":true,"code":"CLOUD_DISABLED_DEFAULT","updated_at":null},"error":null,"emitted_at":"2026-08-30T00:00:00+00:00"}"#
+    let enabled = #"{"schema_version":1,"command":"set-cloud-settings","request_id":"00000000-0000-0000-0000-000000000002","status":"ok","payload":{"schema_version":1,"enabled":true,"provider_id":"deepseek","model_id":"deepseek-v4-flash","valid":true,"code":"CLOUD_ENABLED","updated_at":"2026-08-30T00:00:00+00:00"},"error":null,"emitted_at":"2026-08-30T00:00:00+00:00"}"#
+    let script = """
+    #!/bin/sh
+    case " $* " in
+      *" cloud-settings "*) printf '%s' '\(status)' ;;
+      *" set-cloud-settings "*) printf '%s' '\(enabled)' ;;
+      *) exit 9 ;;
+    esac
+    """
+    try script.write(to: executable, atomically: true, encoding: .utf8)
+    try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
+    let client = try SupervisorClient(executableURL: executable)
+    let root = temporary.appendingPathComponent("Product")
+    let catalog = temporary.appendingPathComponent("cloud.json")
+    let disabled = try client.cloudSettings(
+        rootURL: root, catalogURL: catalog,
+        requestID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+    )
+    #expect(!disabled.enabled)
+    #expect(disabled.code == "CLOUD_DISABLED_DEFAULT")
+    let selection = try client.setCloudSettings(
+        rootURL: root, catalogURL: catalog, enabled: true,
+        modelID: "deepseek-v4-flash",
+        requestID: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
+    )
+    #expect(selection.enabled)
+    #expect(selection.modelID == "deepseek-v4-flash")
+}
+
 @Test func localTaskPromptUsesStandardInputAndRuntimeSecretsUseEnvironment() throws {
     let temporary = FileManager.default.temporaryDirectory
         .appendingPathComponent(UUID().uuidString, isDirectory: true)

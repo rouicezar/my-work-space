@@ -28,6 +28,27 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class SupervisorProtocolTests(unittest.TestCase):
+    def test_cloud_settings_are_default_disabled_and_explicitly_persisted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "Product"
+            catalog = self.write_current_cloud_catalog(base)
+            common = ["--root", str(root), "--catalog", str(catalog)]
+            status = supervisor.parser().parse_args([
+                "--request-id", str(uuid.uuid4()), "cloud-settings", *common,
+            ])
+            self.assertEqual(supervisor.run(status)["payload"]["code"], "CLOUD_DISABLED_DEFAULT")
+            enable = supervisor.parser().parse_args([
+                "--request-id", str(uuid.uuid4()), "set-cloud-settings", *common,
+                "--enable", "--model-id", "deepseek-v4-flash",
+            ])
+            self.assertTrue(supervisor.run(enable)["payload"]["enabled"])
+            self.assertEqual(supervisor.run(status)["payload"]["model_id"], "deepseek-v4-flash")
+            disable = supervisor.parser().parse_args([
+                "--request-id", str(uuid.uuid4()), "set-cloud-settings", *common, "--disable",
+            ])
+            self.assertFalse(supervisor.run(disable)["payload"]["enabled"])
+
     def test_local_task_parses_private_standard_input_and_returns_explicit_route(self):
         request_id = str(uuid.uuid4())
         with tempfile.TemporaryDirectory() as directory:

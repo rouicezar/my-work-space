@@ -16,6 +16,10 @@ class PackagingScriptTests(unittest.TestCase):
             'config/cloud-providers.json" "$APP/Contents/Resources/cloud-providers.json',
             script,
         )
+        self.assertIn(
+            'config/local-model-profiles.json" "$APP/Contents/Resources/local-model-profiles.json',
+            script,
+        )
         self.assertIn('Contents/Helpers/MemoryRuntime', script)
         self.assertIn('semantica_memory_runtime.py', script)
         self.assertIn('semantica_backend.py', script)

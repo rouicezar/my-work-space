@@ -19,6 +19,9 @@
 - **ADR-015 — Private local task protocol:** daily user text reaches the authenticated
   local broker through Supervisor standard input, with bounded output, redacted audit,
   and no silent cloud fallback.
+- **ADR-016 — Unified task routing state:** product-owned local capability profiles,
+  runtime health, private cloud preferences, and current provider catalogs determine
+  routing; UI state and model self-assessment are not authoritative.
 
 ## Pending evidence
 
