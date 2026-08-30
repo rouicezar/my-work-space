@@ -16,6 +16,12 @@ remain optional replaceable adapters and are not bundled into the primary UI.
   capability unavailability, and safe failure.
 - Cloud proposal copy states that no data has left the Mac and exposes data classes,
   processing location, model, maximum cost, and audit correlation.
+- Settings accepts a user-provided DeepSeek credential only through a secure field,
+  stores it in Keychain, and separately persists explicit cloud enablement. Disablement
+  revokes future routing and removes the credential without deleting audit history.
+- Proposal approval binds the displayed maximum cost, then executes only the saved
+  proposal through the existing one-shot protocol. Rejection removes the pending
+  payload. Execution displays normalized output, actual cost, model, and correlation.
 - Installation, model, runtime, component, and recovery details remain in Settings.
 
 ## Verification
@@ -33,8 +39,8 @@ remain optional replaceable adapters and are not bundled into the primary UI.
 
 ## Remaining boundary
 
-This is the first daily-workbench slice, not final usability acceptance. Task history
-persistence, task cancellation, cloud credential setup and approval execution UI,
-dark-mode and keyboard/accessibility inspection, visual checks of every result state,
-and an unfamiliar-user test remain open. A real approved DeepSeek request also remains
-an independent release gate.
+This is an integrated daily-workbench slice, not final usability acceptance. Task
+history persistence, task cancellation, dark-mode and keyboard/accessibility
+inspection, visual checks of every result state, and an unfamiliar-user test remain
+open. The cloud UI is implemented against synthetic protocol evidence; a real approved
+DeepSeek request remains an independent release gate and has not been performed.

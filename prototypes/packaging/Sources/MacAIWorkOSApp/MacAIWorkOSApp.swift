@@ -23,6 +23,8 @@ struct ManifestOverview: View {
     @State private var prompt = ""
     @State private var currentTaskPrompt = ""
     @State private var taskState: WorkbenchTaskState = .idle
+    @State private var cloudSetupState: CloudSetupViewState = .loading
+    @State private var deepSeekAPIKey = ""
     @State private var result: Result<ProductManifest, Error>?
     @State private var supervisorState: SupervisorViewState = .loading
     @State private var installationState: InstallationViewState = .loading
@@ -69,6 +71,7 @@ struct ManifestOverview: View {
             await loadModelPlan()
             await loadEmbeddingPlan()
             await loadRuntimeStatus()
+            await loadCloudSettings()
         }
     }
 
@@ -127,7 +130,30 @@ struct ManifestOverview: View {
                             }
                             Text("Cloud approval and execution will be enabled only after a user-provided credential is configured in Settings.")
                                 .font(.callout).foregroundStyle(.secondary)
+                            HStack {
+                                Button("Approve and run") { Task { await approveAndExecute(proposal) } }
+                                    .buttonStyle(.borderedProminent)
+                                Button("Don't send", role: .cancel) { Task { await rejectProposal(proposal) } }
+                            }
                             metadata("Proposal only · no network request", correlation: proposal.correlationID)
+                        }
+                    case .cloudExecuting:
+                        taskBubble(currentTaskPrompt)
+                        resultCard(title: "Running approved cloud task", icon: "arrow.up.forward.circle.fill", color: .blue) {
+                            ProgressView("Sending only the approved payload and validating the response…")
+                        }
+                    case .cloudResult(let text, let model, let cost, let correlation):
+                        taskBubble(currentTaskPrompt)
+                        resultCard(title: "Completed with approved cloud use", icon: "checkmark.shield.fill", color: .green) {
+                            Text(text).textSelection(.enabled)
+                            Text("Actual cost · \(String(format: "$%.6f", cost))")
+                                .font(.caption).foregroundStyle(.secondary)
+                            metadata("Approved cloud · \(model)", correlation: correlation)
+                        }
+                    case .denied:
+                        taskBubble(currentTaskPrompt)
+                        resultCard(title: "Cloud request not sent", icon: "hand.raised.fill", color: .secondary) {
+                            Text("You declined this proposal. Its pending payload was removed.")
                         }
                     case .unavailable(let message):
                         taskBubble(currentTaskPrompt)
@@ -195,6 +221,7 @@ struct ManifestOverview: View {
             installationSection
             modelSection
             embeddingSection
+            cloudSettingsSection
             runtimeSection
 
             switch result {
@@ -228,6 +255,44 @@ struct ManifestOverview: View {
             Spacer()
         }
         .padding(24)
+        }
+    }
+
+    @ViewBuilder
+    private var cloudSettingsSection: some View {
+        GroupBox("Optional cloud AI") {
+            VStack(alignment: .leading, spacing: 10) {
+                switch cloudSetupState {
+                case .loading:
+                    ProgressView("Checking private cloud settings…")
+                case .disabled:
+                    Label("Cloud AI is off", systemImage: "cloud.slash")
+                    Text("Local AI remains the default. Add your own DeepSeek API key to allow task-bound approval proposals.")
+                        .font(.callout).foregroundStyle(.secondary)
+                    SecureField("DeepSeek API key", text: $deepSeekAPIKey)
+                        .textFieldStyle(.roundedBorder)
+                        .accessibilityLabel("DeepSeek API key")
+                    Button("Save in Keychain and enable") { Task { await saveAndEnableCloud() } }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(deepSeekAPIKey.isEmpty)
+                case .enabled(let model):
+                    Label("Cloud AI available with approval", systemImage: "checkmark.shield.fill")
+                        .foregroundStyle(.green)
+                    Text("\(model) · every request still requires a separate preview and approval")
+                        .font(.callout).foregroundStyle(.secondary)
+                    Button("Disable cloud and remove key", role: .destructive) {
+                        Task { await disableCloud() }
+                    }
+                case .saving:
+                    ProgressView("Updating Keychain and private routing preference…")
+                case .failed(let message):
+                    Label("Cloud settings need attention", systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                    Text(message).font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
+                    Button("Check again") { Task { await loadCloudSettings() } }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -351,6 +416,133 @@ struct ManifestOverview: View {
                 default:
                     return .failed("The task router returned an unsupported state.")
                 }
+            } catch {
+                return .failed(String(describing: error))
+            }
+        }.value
+    }
+
+    @MainActor
+    private func loadCloudSettings() async {
+        guard let context = taskContext() else {
+            cloudSetupState = .failed("The cloud provider catalog or Supervisor is missing.")
+            return
+        }
+        cloudSetupState = .loading
+        cloudSetupState = await Task.detached { () -> CloudSetupViewState in
+            do {
+                let credentialExists = try CloudCredentialCoordinator().status()
+                let preference = try SupervisorClient(executableURL: context.supervisor)
+                    .cloudSettings(rootURL: context.root, catalogURL: context.cloud)
+                guard preference.valid else { return .failed("Cloud preference state is invalid and was disabled.") }
+                if preference.enabled {
+                    guard credentialExists, let model = preference.modelID else {
+                        return .failed("Cloud routing is enabled but its Keychain credential is missing.")
+                    }
+                    return .enabled(model)
+                }
+                return .disabled
+            } catch {
+                return .failed(String(describing: error))
+            }
+        }.value
+    }
+
+    @MainActor
+    private func saveAndEnableCloud() async {
+        guard let context = taskContext() else {
+            cloudSetupState = .failed("The cloud provider catalog or Supervisor is missing.")
+            return
+        }
+        let key = deepSeekAPIKey
+        deepSeekAPIKey = ""
+        cloudSetupState = .saving
+        cloudSetupState = await Task.detached { () -> CloudSetupViewState in
+            let credentials = CloudCredentialCoordinator()
+            do {
+                try credentials.saveDeepSeekAPIKey(key)
+                let preference = try SupervisorClient(executableURL: context.supervisor).setCloudSettings(
+                    rootURL: context.root, catalogURL: context.cloud, enabled: true,
+                    modelID: "deepseek-v4-flash"
+                )
+                guard preference.valid, preference.enabled, let model = preference.modelID else {
+                    try? credentials.deleteDeepSeekAPIKey()
+                    return .failed("Cloud routing did not persist a valid enabled state.")
+                }
+                return .enabled(model)
+            } catch {
+                try? credentials.deleteDeepSeekAPIKey()
+                return .failed(String(describing: error))
+            }
+        }.value
+    }
+
+    @MainActor
+    private func disableCloud() async {
+        guard let context = taskContext() else {
+            cloudSetupState = .failed("The cloud provider catalog or Supervisor is missing.")
+            return
+        }
+        cloudSetupState = .saving
+        cloudSetupState = await Task.detached { () -> CloudSetupViewState in
+            do {
+                let preference = try SupervisorClient(executableURL: context.supervisor).setCloudSettings(
+                    rootURL: context.root, catalogURL: context.cloud, enabled: false
+                )
+                guard preference.valid, !preference.enabled else {
+                    return .failed("Cloud routing did not persist a disabled state.")
+                }
+                try CloudCredentialCoordinator().deleteDeepSeekAPIKey()
+                return .disabled
+            } catch {
+                return .failed(String(describing: error))
+            }
+        }.value
+    }
+
+    @MainActor
+    private func approveAndExecute(_ proposal: CloudProposalPayload) async {
+        guard let context = taskContext() else {
+            taskState = .failed("The cloud execution context is missing.")
+            return
+        }
+        taskState = .cloudExecuting
+        taskState = await Task.detached { () -> WorkbenchTaskState in
+            do {
+                guard let key = try CloudCredentialCoordinator().readDeepSeekAPIKey() else {
+                    return .unavailable("Cloud approval requires a user-provided API key in Settings & Recovery.")
+                }
+                let client = try SupervisorClient(executableURL: context.supervisor)
+                _ = try client.approveCloud(
+                    rootURL: context.root, proposalID: proposal.proposalID,
+                    maximumCostUSD: proposal.estimatedCost.maximum
+                )
+                let execution = try client.executeCloud(
+                    rootURL: context.root, catalogURL: context.cloud,
+                    proposalID: proposal.proposalID, deepSeekAPIKey: key
+                )
+                return .cloudResult(
+                    execution.result.content, execution.result.model,
+                    execution.result.usage.costUSD, proposal.correlationID
+                )
+            } catch {
+                return .failed(String(describing: error))
+            }
+        }.value
+    }
+
+    @MainActor
+    private func rejectProposal(_ proposal: CloudProposalPayload) async {
+        guard let context = taskContext() else {
+            taskState = .failed("The cloud proposal context is missing.")
+            return
+        }
+        taskState = await Task.detached { () -> WorkbenchTaskState in
+            do {
+                let decision = try SupervisorClient(executableURL: context.supervisor)
+                    .rejectCloud(rootURL: context.root, proposalID: proposal.proposalID)
+                return decision.outcome == "denied"
+                    ? .denied : .failed("The proposal was not rejected cleanly.")
             } catch {
                 return .failed(String(describing: error))
             }
@@ -1124,6 +1316,9 @@ private enum WorkbenchTaskState: Sendable {
     case submitting(String)
     case localResult(String, String, String)
     case cloudProposal(CloudProposalPayload)
+    case cloudExecuting
+    case cloudResult(String, String, Double, String)
+    case denied
     case unavailable(String)
     case failed(String)
 
@@ -1131,6 +1326,14 @@ private enum WorkbenchTaskState: Sendable {
         if case .submitting = self { return true }
         return false
     }
+}
+
+private enum CloudSetupViewState: Sendable {
+    case loading
+    case disabled
+    case enabled(String)
+    case saving
+    case failed(String)
 }
 
 private struct TaskContext: Sendable {
