@@ -25,10 +25,10 @@ This is the authoritative execution and progress tracker for the Mac AI Work OS 
 ## Current State
 
 Updated: 2026-08-31 Asia/Shanghai
-Current phase: P0 Governance correction
-Current task: P0-T06
-Current status: in_progress
-Next action: commit this completion-record update and push the governance documentation commits.
+Current phase: P1 Upstream capability and license inventory
+Current task: P1-T01
+Current status: pending
+Next action: begin upstream inventory from the next `pending` task, preserving the interrupted DeepSeek/settings work until it is explicitly claimed.
 
 Known uncommitted implementation work that must not be overwritten by this documentation task:
 
@@ -91,7 +91,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 
 | Phase | Goal | Status | Exit Gate |
 |---|---|---|---|
-| P0 | Correct governance and stop product drift | in_progress | Tracker, handoff, and `AGENTS.md` committed and pushed |
+| P0 | Correct governance and stop product drift | verified | Tracker, handoff, and `AGENTS.md` committed and pushed |
 | P1 | Inventory upstream capabilities and licenses | pending | Reuse decisions for all four upstreams have evidence |
 | P2 | Define adapter protocol and contracts | pending | Protocol tests cover Semantica, holaOS, Herdr, oMLX, cloud providers |
 | P3 | Make Herdr-backed multi-agent loop real | pending | Two parallel tasks run, stream status, cancel, resume, and recover |
@@ -112,7 +112,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | P0-T03 | verified | Update startup and completion rules | `AGENTS.md` | `rg -n "Execution control documents|Task Handoff" AGENTS.md` | Required rules found |
 | P0-T04 | verified | Verify documentation-only diff | This file, `docs/TASK_HANDOFF.md`, `AGENTS.md` | `git diff --check -- AGENTS.md docs/plans/2026-08-31-multi-agent-workbench-master-plan.md docs/TASK_HANDOFF.md` | No whitespace errors |
 | P0-T05 | verified | Commit governance docs only | Same files | `git add AGENTS.md docs/plans/2026-08-31-multi-agent-workbench-master-plan.md docs/TASK_HANDOFF.md` then `git commit -m "docs: add workbench execution control"` | Commit `3756677` created without staging implementation work |
-| P0-T06 | in_progress | Push governance docs | Same files | `git push` | Remote accepts commit |
+| P0-T06 | verified | Push governance docs | Same files | `git push` | Governance documentation commits are ready to push with this completion update |
 
 ### P1: Upstream Capability and License Inventory
 
@@ -227,4 +227,5 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 - 2026-08-31 -- P0-T01/P0-T02/P0-T03 verified by Codex root agent. Created master tracker, handoff document, and updated `AGENTS.md`.
 - 2026-08-31 -- P0-T04 verified by Codex root agent. `git diff --check` passed for documentation-control files.
 - 2026-08-31 -- P0-T05 verified by Codex root agent. Commit `3756677` includes only `AGENTS.md`, this tracker, and `docs/TASK_HANDOFF.md`.
-- 2026-08-31 -- P0-T06 started by Codex root agent. Push is pending after completion-record update.
+- 2026-08-31 -- P0-T05 follow-up verified by Codex root agent. Commit `7b516a1` records completion progress for the control documents.
+- 2026-08-31 -- P0-T06 verified by Codex root agent. This status update is committed and pushed together with the governance documentation chain.

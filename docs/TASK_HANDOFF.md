@@ -19,9 +19,9 @@ Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-ma
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P0-T06
-State: documentation-control files created, validated, and committed; completion-record update is pending commit and push
-Next required action: commit this handoff/progress update, then push the governance documentation commits.
+Master plan task: P1-T01
+State: P0 governance correction complete; next work is upstream capability and license inventory
+Next required action: claim P1-T01, inspect current git status, and preserve the interrupted DeepSeek/settings work unless explicitly claimed.
 
 ## Product Goal Snapshot
 
@@ -121,11 +121,11 @@ Verification: `rg -n "Execution control documents|Task Handoff|Current Baton|P0-
 Evidence: `AGENTS.md` contains mandatory execution-control rules; master plan contains P0-P8 tracker; this file contains takeover protocol and current dirty-worktree baton
 Files changed: `AGENTS.md`, `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md`, `docs/TASK_HANDOFF.md`
 Commit: `3756677 docs: add workbench execution control`
-Push: pending
+Push: governance documentation chain is pushed together with this final completion update
 Decisions: product-owned independent workbench plus adapter protocol; holaOS capability parity without uncleared public bundling; Herdr core multi-agent runtime
 Assumptions: documentation-control commit must not stage the interrupted implementation files
 Blocked items: none for documentation-control task
-Next exact action: commit this completion-record update, then push governance docs
+Next exact action: claim P1-T01 or explicitly resume P5 DeepSeek work if the user chooses that path
 Approval needed: none for documentation edits; separate approval still required for any cloud API call
 Secret/external-write status: no secrets handled; no external cloud calls in this task
 
@@ -146,4 +146,23 @@ Assumptions: second documentation commit is acceptable to avoid self-referential
 Blocked items: none
 Next exact action: commit this completion-record update, push, then mark P0-T06 verified
 Approval needed: none
+Secret/external-write status: no secrets handled; no external cloud calls
+
+## 2026-08-31 - P0-T06 - exit
+
+Executor: Codex root agent
+Starting git state: dirty worktree with prior DeepSeek/settings changes preserved
+Scope: push governance documentation chain
+Files intended: `AGENTS.md`, `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md`, `docs/TASK_HANDOFF.md`
+Actions: marked P0 governance correction verified and set next task to P1-T01
+Verification: documentation anchors and whitespace checks passed before commits; staged file checks excluded implementation work
+Evidence: commits `3756677` and `7b516a1`, plus this final completion update, form the governance documentation chain
+Files changed: `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md`, `docs/TASK_HANDOFF.md`
+Commit: this completion update is committed after editing
+Push: pushed with governance documentation chain
+Decisions: next default task is P1-T01; DeepSeek real closed loop remains P5 unless the user explicitly reprioritizes it
+Assumptions: no cloud calls are authorized by this documentation-control task
+Blocked items: none
+Next exact action: begin P1-T01 or explicitly resume P5-T01/P5-T04
+Approval needed: DeepSeek real-provider calls still need explicit per-run approval and test credential confirmation
 Secret/external-write status: no secrets handled; no external cloud calls
