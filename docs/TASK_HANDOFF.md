@@ -20,9 +20,9 @@ Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-ma
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P1-T04
-State: P1-T03 holaOS capability/reuse mapping verified; documentation commit and push pending
-Next required action: commit/push P1-T03, then claim P1-T04 and map the pinned Herdr v0.8.2 CLI/socket and lifecycle surface.
+Master plan task: P1-T05
+State: P1-T04 Herdr capability mapping verified; documentation commit and push pending
+Next required action: commit/push P1-T04, then claim P1-T05 and refresh oMLX v0.6.3 API, model, runtime, and real-inference evidence.
 
 ## Product Goal Snapshot
 
@@ -111,6 +111,46 @@ Quota state and closeout action:
 ```
 
 ## Handoff Log
+
+## 2026-08-31 - P1-T04 - exit
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `fcf9308`
+Scope: map Herdr v0.8.2 CLI/socket capabilities, multi-agent lifecycle, source entry points, release artifacts, and license obligations
+Files intended: `docs/research/herdr-capability-ledger.md`, master tracker, and handoff
+Actions: resolved the annotated tag to its commit; reviewed immutable release assets/digests, Cargo manifest, Apache license, pinned source tree, bundled protocol schema, socket API, and session/recovery semantics
+Verification: ledger exists; exact commit and macOS digest, snapshot/events, parallel dispatch, prompt/wait, state, cancel policy gap, native resume, restart recovery, handoff, security, source entry points, and validation gaps are present; `git diff --check` passed
+Evidence: official `herdrdev/herdr` v0.8.2 tag/release API and commit-pinned README, Cargo manifest, LICENSE, recursive source tree, socket API, session-state documentation, and API schema
+Files changed: `docs/research/herdr-capability-ledger.md`, master tracker, and this handoff
+Commit: pending documentation commit
+Push: pending
+Decisions: integrate the verified official binary through CLI and local socket; Herdr remains the mandatory runtime authority while Forma AI owns policy, orchestration intent, UI, and audit
+Assumptions: upstream protocol surfaces remain unaccepted until the exact binary is downloaded, digest-verified, and exercised locally
+Blocked items: no local runtime test yet; cancellation requires a Forma policy over pane/process controls because no single high-level `agent.cancel` appeared in the reviewed map
+Next exact action: commit/push P1-T04, then claim P1-T05
+Approval needed: none
+Secret/external-write status: no secrets; public read-only source access only
+Quota state and closeout action: normal; this verified unit is ready to commit and push
+
+## 2026-08-31 - P1-T04 - takeover
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `fcf9308`
+Scope: map Herdr v0.8.2 CLI/socket capabilities, multi-agent lifecycle, source entry points, release artifacts, and license obligations
+Files intended: `docs/research/herdr-capability-ledger.md`, master tracker, and handoff
+Actions: claimed P1-T04 in plan order
+Verification: pending official tag/source/protocol/release/license inspection and ledger completeness scan
+Evidence: pending
+Files changed: tracker and handoff at takeover
+Commit: none yet
+Push: none yet
+Decisions: Herdr remains the required core execution runtime; the ledger must prevent cosmetic or product-owned replacement of upstream multi-agent lifecycle behavior
+Assumptions: v0.8.2 must resolve to an immutable commit and artifacts before integration
+Blocked items: none
+Next exact action: inspect official repository metadata, tag, release assets, source tree, CLI/socket documentation, Cargo manifest, and license
+Approval needed: none
+Secret/external-write status: no secrets; public read-only source access only
+Quota state and closeout action: normal; close and push this documentation unit on warning
 
 ## 2026-08-31 - P1-T03 - exit
 

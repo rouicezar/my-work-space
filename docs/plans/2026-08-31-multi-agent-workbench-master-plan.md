@@ -29,9 +29,9 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-08-31 Asia/Shanghai
 Current phase: P1 Upstream capability and license inventory
-Current task: P1-T04
+Current task: P1-T05
 Current status: pending
-Next action: claim P1-T04 and inspect the pinned Herdr v0.8.2 source, CLI/socket protocol, lifecycle, and release artifacts to create its capability ledger.
+Next action: commit and push P1-T04, then claim P1-T05 and refresh oMLX v0.6.3 API, model, runtime, and real-inference assumptions.
 
 Known uncommitted implementation work that must not be overwritten by this documentation task:
 
@@ -131,7 +131,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | P1-T01 | verified | List available local upstream checkouts and pins | `docs/research/upstream-matrix.md` | `rg --files . | rg "(hola|herdr|semantica|omlx)"` | Local sources, installed oMLX artifact, declared pins, search boundaries, and gaps documented |
 | P1-T02 | verified | Refresh Semantica API/capability evidence | `docs/research/upstream-matrix.md` | `rg -n "semantica|mcp|server|memory" .` | Commit, release digests, entry points, dependencies, capability reuse map, and product boundary documented from official v0.6.7 sources |
 | P1-T03 | verified | Refresh holaOS capability and reusable-implementation map | `docs/research/holaos-capability-ledger.md` | `test -f docs/research/holaos-capability-ledger.md` | Capability map distinguishes reusable code, required notices, visual assets, and distribution restrictions |
-| P1-T04 | pending | Refresh Herdr socket/CLI capability map | `docs/research/herdr-capability-ledger.md` | `test -f docs/research/herdr-capability-ledger.md` | Multi-agent capabilities mapped |
+| P1-T04 | verified | Refresh Herdr socket/CLI capability map | `docs/research/herdr-capability-ledger.md` | `test -f docs/research/herdr-capability-ledger.md` | Multi-agent capabilities mapped |
 | P1-T05 | pending | Refresh oMLX API and model capability evidence | `docs/research/upstream-matrix.md` | `rg -n "omlx|OpenAI-compatible|/v1" docs/research/upstream-matrix.md` | Runtime assumptions updated |
 | P1-T06 | pending | Reconcile license matrix with public open-source intent | `docs/research/license-matrix.md` | `rg -n "public|redistribution|holaOS" docs/research/license-matrix.md` | Public distribution constraints explicit |
 | P1-T07 | pending | Add a reuse decision record for each upstream | `docs/decisions.md` | `rg -n "Reuse decision" docs/decisions.md` | Four decisions recorded |
@@ -246,3 +246,4 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 - 2026-08-31 - P1-T01 - Codex root agent - inventoried local four-upstream sources, declared pins, installed artifacts, and exact gaps - repository/local read-only scans plus oMLX bundle and active-record inspection - commit pending closeout - next P1-T02
 - 2026-08-31 - P1-T02 - Codex root agent - refreshed Semantica v0.6.7 capabilities and reuse boundary - official tag/release/manifest/pinned-source evidence and repository scan - commit pending closeout - next P1-T03
 - 2026-08-31 - P1-T03 - Codex root agent - mapped holaOS at commit `4684714ee133794cdbb86630e42b7d93447fb2e2` - official repository, README, license, workspace, runtime, and package-tree evidence - commit pending closeout - next P1-T04
+- 2026-08-31 - P1-T04 - Codex root agent - mapped Herdr v0.8.2 CLI/socket, event, lifecycle, resume, recovery, and handoff surfaces - official immutable release, pinned source, schema, and documentation evidence - commit pending closeout - next P1-T05
