@@ -310,6 +310,43 @@ public struct SampleTaskPayload: Decodable, Sendable {
     }
 }
 
+public struct LocalTaskPayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let route: String
+    public let correlationID: String
+    public let model: String
+    public let output: String
+    public let finishReason: String
+    public let promptTokens: Int?
+    public let completionTokens: Int?
+    public let totalTokens: Int?
+    public let auditPath: String
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case route
+        case correlationID = "correlation_id"
+        case model, output
+        case finishReason = "finish_reason"
+        case promptTokens = "prompt_tokens"
+        case completionTokens = "completion_tokens"
+        case totalTokens = "total_tokens"
+        case auditPath = "audit_path"
+    }
+}
+
+private struct LocalTaskInput: Encodable {
+    let schemaVersion = 1
+    let prompt: String
+    let maximumOutputTokens: Int
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case prompt
+        case maximumOutputTokens = "maximum_output_tokens"
+    }
+}
+
 public struct CloudCostEstimatePayload: Decodable, Sendable {
     public let currency: String
     public let minimum: Double
@@ -705,6 +742,39 @@ public struct SupervisorClient: Sendable {
                 "MAC_AI_WORK_OS_BROKER_TOKEN": brokerToken,
                 "MAC_AI_WORK_OS_MEMORY_TOKEN": memoryToken,
             ]
+        )
+    }
+
+    public func localTask(
+        rootURL: URL,
+        prompt: String,
+        maximumOutputTokens: Int,
+        omlxAPIKey: String,
+        brokerToken: String,
+        memoryToken: String,
+        requestID: UUID = UUID()
+    ) throws -> LocalTaskPayload {
+        guard prompt.lengthOfBytes(using: .utf8) <= 262_144 else {
+            throw SupervisorProtocolError.requestTooLarge
+        }
+        let input: Data
+        do {
+            input = try JSONEncoder().encode(LocalTaskInput(
+                prompt: prompt, maximumOutputTokens: maximumOutputTokens
+            ))
+        } catch {
+            throw SupervisorProtocolError.invalidResponse("could not encode local task")
+        }
+        return try request(
+            command: "local-task",
+            arguments: ["--root", rootURL.path],
+            requestID: requestID,
+            environmentOverrides: [
+                "OMLX_API_KEY": omlxAPIKey,
+                "MAC_AI_WORK_OS_BROKER_TOKEN": brokerToken,
+                "MAC_AI_WORK_OS_MEMORY_TOKEN": memoryToken,
+            ],
+            inputData: input
         )
     }
 

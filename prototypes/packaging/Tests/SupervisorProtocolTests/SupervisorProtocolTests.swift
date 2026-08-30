@@ -270,6 +270,48 @@ import RuntimeSecurity
     #expect(result.result.toolProposals.count == 1)
 }
 
+@Test func localTaskPromptUsesStandardInputAndRuntimeSecretsUseEnvironment() throws {
+    let temporary = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(at: temporary, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: temporary) }
+    let executable = temporary.appendingPathComponent("fixture-supervisor")
+    let response = #"{"schema_version":1,"command":"local-task","request_id":"00000000-0000-0000-0000-000000000001","status":"ok","payload":{"schema_version":1,"route":"local","correlation_id":"00000000-0000-0000-0000-000000000001","model":"qwen","output":"local result","finish_reason":"stop","prompt_tokens":10,"completion_tokens":2,"total_tokens":12,"audit_path":"logs/audit/inference.jsonl"},"error":null,"emitted_at":"2026-08-30T00:00:00+00:00"}"#
+    let script = """
+    #!/bin/sh
+    case " $* " in *private-local-prompt*|*runtime-secret*) exit 9;; esac
+    [ "$OMLX_API_KEY" = "omlx-runtime-secret" ] || exit 8
+    [ "$MAC_AI_WORK_OS_BROKER_TOKEN" = "broker-runtime-secret" ] || exit 7
+    [ "$MAC_AI_WORK_OS_MEMORY_TOKEN" = "memory-runtime-secret" ] || exit 6
+    body=$(cat)
+    case "$body" in *private-local-prompt*) ;; *) exit 5;; esac
+    printf '%s' '\(response)'
+    """
+    try script.write(to: executable, atomically: true, encoding: .utf8)
+    try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
+    let payload = try SupervisorClient(executableURL: executable).localTask(
+        rootURL: temporary.appendingPathComponent("Product"),
+        prompt: "private-local-prompt", maximumOutputTokens: 128,
+        omlxAPIKey: "omlx-runtime-secret", brokerToken: "broker-runtime-secret",
+        memoryToken: "memory-runtime-secret",
+        requestID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+    )
+    #expect(payload.route == "local")
+    #expect(payload.output == "local result")
+    #expect(payload.totalTokens == 12)
+}
+
+@Test func localTaskRejectsOversizePromptBeforeLaunchingSupervisor() throws {
+    let client = try SupervisorClient(executableURL: URL(fileURLWithPath: "/not/launched"))
+    #expect(throws: SupervisorProtocolError.requestTooLarge) {
+        try client.localTask(
+            rootURL: URL(fileURLWithPath: "/tmp/Product"),
+            prompt: String(repeating: "x", count: 262_145), maximumOutputTokens: 1,
+            omlxAPIKey: "a", brokerToken: "b", memoryToken: "c"
+        )
+    }
+}
+
 @Test func cloudPreviewRejectsOversizeBodyBeforeLaunchingSupervisor() throws {
     let client = try SupervisorClient(
         executableURL: URL(fileURLWithPath: "/does/not/need/to/exist"), maximumRequestBytes: 3

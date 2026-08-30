@@ -48,6 +48,10 @@ from mac_ai_work_os.cloud_catalog import load_cloud_provider
 from mac_ai_work_os.cloud_proposals import CloudProposalStore
 from mac_ai_work_os.deepseek_adapter import DeepSeekAdapter
 from mac_ai_work_os.inference_routing import TaskRequirements, create_cloud_proposal
+from mac_ai_work_os.local_tasks import (
+    MAXIMUM_TASK_BYTES, LocalTaskRequest, completion_body, normalize_local_result,
+    parse_local_task,
+)
 
 
 SCHEMA_VERSION = 1
@@ -117,14 +121,14 @@ def parser() -> argparse.ArgumentParser:
         )
         if name in {"link-model", "download-embedding", "activate-embedding"}:
             command.add_argument("--approve-revision", required=True)
-    for name in ("runtime-status", "start-runtime", "stop-runtime", "sample-task"):
+    for name in ("runtime-status", "start-runtime", "stop-runtime", "sample-task", "local-task"):
         command = commands.add_parser(name)
         command.add_argument("--root", type=Path, required=True)
         if name == "start-runtime":
             command.add_argument("--omlx-port", type=int, default=8000)
             command.add_argument("--broker-port", type=int, default=43110)
             command.add_argument("--memory-port", type=int, default=43111)
-        if name == "sample-task":
+        if name in {"sample-task", "local-task"}:
             command.add_argument("--broker-port", type=int, default=43110)
     semantica_status = commands.add_parser("semantica-status")
     semantica_status.add_argument("--root", type=Path, required=True)
@@ -349,7 +353,7 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
             payload={"schema_version": 1, "reference": asdict(reference)},
         )
     if args.command in {
-        "runtime-status", "start-runtime", "stop-runtime", "sample-task",
+        "runtime-status", "start-runtime", "stop-runtime", "sample-task", "local-task",
         "internal-broker", "internal-memory-service", "semantica-status",
     }:
         _validate_product_root(args.root)
@@ -490,6 +494,18 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
             raise ValueError("runtime is not running")
         payload = _sample_task(args.broker_port, broker_token, request_id)
         return envelope(command=args.command, request_id=request_id, status="ok", payload=payload)
+    if args.command == "local-task":
+        if input_data is None:
+            raise ValueError("local task body is required")
+        _, broker_token, _ = _runtime_secrets()
+        status = RuntimeManager(args.root).status()
+        if status["phase"] != "running":
+            raise ValueError("runtime is not running")
+        task = parse_local_task(input_data)
+        result = _local_task(args.broker_port, broker_token, request_id, task)
+        return envelope(
+            command=args.command, request_id=request_id, status="ok", payload=asdict(result),
+        )
     if args.command == "installation-status":
         journal = LifecycleJournal(OMLXInstallLayout(args.root).operations)
         state = journal.load_optional()
@@ -793,6 +809,24 @@ def _sample_task(port: int, token: str, correlation_id: str) -> dict[str, Any]:
     }
 
 
+def _local_task(port: int, token: str, correlation_id: str, task: LocalTaskRequest):
+    models = _broker_request(port, token, "/v1/models", correlation_id)
+    entries = models.get("data")
+    if (
+        not isinstance(entries, list) or not entries or not isinstance(entries[0], dict)
+        or not isinstance(entries[0].get("id"), str)
+    ):
+        raise ValueError("broker returned no usable local model")
+    model = entries[0]["id"]
+    completion = _broker_request(
+        port, token, "/v1/chat/completions", correlation_id,
+        completion_body(task, model),
+    )
+    return normalize_local_result(
+        completion, correlation_id=correlation_id, expected_model=model,
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     raw = list(sys.argv[1:] if argv is None else argv)
     command = next(
@@ -802,7 +836,7 @@ def main(argv: list[str] | None = None) -> int:
                 "preflight", "installation-plan", "installation-status", "install-omlx",
                 "model-plan", "link-model", "embedding-plan", "download-embedding",
                 "activate-embedding",
-                "runtime-status", "start-runtime", "stop-runtime", "sample-task", "internal-broker",
+                "runtime-status", "start-runtime", "stop-runtime", "sample-task", "local-task", "internal-broker",
                 "internal-memory-service", "semantica-status",
                 "cloud-preview", "cloud-approve", "cloud-reject", "cloud-execute",
             )
@@ -820,6 +854,8 @@ def main(argv: list[str] | None = None) -> int:
         input_data = None
         if args.command == "cloud-preview":
             input_data = sys.stdin.buffer.read(MAXIMUM_CLOUD_PAYLOAD_BYTES + 1)
+        elif args.command == "local-task":
+            input_data = sys.stdin.buffer.read(MAXIMUM_TASK_BYTES + 1)
         response = run(args, input_data=input_data)
         exit_code = 0
     except Exception as exc:

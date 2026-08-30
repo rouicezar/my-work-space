@@ -16,6 +16,9 @@
   DeepSeek is optional and disabled by default. Every cloud transmission requires an
   exact, one-shot, audited approval and provider/model/price data remain replaceable
   catalog entries.
+- **ADR-015 — Private local task protocol:** daily user text reaches the authenticated
+  local broker through Supervisor standard input, with bounded output, redacted audit,
+  and no silent cloud fallback.
 
 ## Pending evidence
 

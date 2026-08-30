@@ -41,6 +41,7 @@ Mac AI Work OS 是一套面向普通 Mac 用户、通用且可分发的 AI 工�
 - [已有模型零复制引用 ADR](docs/adr/0008-zero-copy-model-reference.md)
 - [Supervisor 与原生 App 协议 ADR](docs/adr/0009-supervisor-app-protocol.md)
 - [自包含 Supervisor Helper ADR](docs/adr/0010-self-contained-supervisor-helper.md)
+- [私密本地任务协议 ADR](docs/adr/0015-private-local-task-protocol.md)
 - [Swift 打包原型](prototypes/packaging/README.md)
 - [oMLX 适配器运行手册](docs/runbooks/omlx.md)
 - [Semantica 受管运行环境手册](docs/runbooks/semantica.md)

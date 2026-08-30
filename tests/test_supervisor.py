@@ -21,12 +21,58 @@ from mac_ai_work_os.semantica_runtime import SemanticaRuntimeInspector
 from mac_ai_work_os.embedding_config import ApprovedEmbeddingRoute
 from mac_ai_work_os.runtime import RuntimeRecord
 from mac_ai_work_os.deepseek_adapter import DeepSeekResult, DeepSeekUsage
+from mac_ai_work_os.local_tasks import LocalTaskResult
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class SupervisorProtocolTests(unittest.TestCase):
+    def test_local_task_parses_private_standard_input_and_returns_explicit_route(self):
+        request_id = str(uuid.uuid4())
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "Product"
+            args = supervisor.parser().parse_args([
+                "--request-id", request_id, "local-task", "--root", str(root),
+            ])
+            body = json.dumps({
+                "schema_version": 1, "prompt": "private local prompt",
+                "maximum_output_tokens": 128,
+            }).encode()
+            expected = LocalTaskResult(
+                1, "local", request_id, "qwen", "local result", "stop",
+                10, 2, 12, "logs/audit/inference.jsonl",
+            )
+            with patch.object(supervisor, "_runtime_secrets", return_value=("a", "b", "c")), \
+                 patch.object(supervisor.RuntimeManager, "status", return_value={"phase": "running"}), \
+                 patch.object(supervisor, "_local_task", return_value=expected) as execute:
+                response = supervisor.run(args, input_data=body)
+            self.assertEqual(response["payload"]["route"], "local")
+            self.assertEqual(response["payload"]["output"], "local result")
+            task = execute.call_args.args[3]
+            self.assertEqual(task.prompt, "private local prompt")
+            self.assertNotIn(
+                "private local prompt", " ".join(str(value) for value in vars(args).values()),
+            )
+
+    def test_local_task_never_runs_or_proposes_cloud_when_runtime_is_stopped(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args = supervisor.parser().parse_args([
+                "--request-id", str(uuid.uuid4()), "local-task",
+                "--root", str(Path(directory) / "Product"),
+            ])
+            body = json.dumps({
+                "schema_version": 1, "prompt": "x", "maximum_output_tokens": 1,
+            }).encode()
+            with patch.object(supervisor, "_runtime_secrets", return_value=("a", "b", "c")), \
+                 patch.object(supervisor.RuntimeManager, "status", return_value={"phase": "stopped"}), \
+                 patch.object(supervisor, "_local_task") as execute, \
+                 patch.object(supervisor, "create_cloud_proposal") as cloud:
+                with self.assertRaisesRegex(ValueError, "runtime is not running"):
+                    supervisor.run(args, input_data=body)
+            execute.assert_not_called()
+            cloud.assert_not_called()
+
     def write_current_cloud_catalog(self, directory: Path) -> Path:
         catalog = json.loads((ROOT / "config/cloud-providers.json").read_text(encoding="utf-8"))
         catalog["updated_at"] = datetime.now(timezone.utc).isoformat()
