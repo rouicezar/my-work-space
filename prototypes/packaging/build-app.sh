@@ -28,6 +28,8 @@ install -m 0644 "$REPOSITORY_ROOT/config/upstreams.json" "$APP/Contents/Resource
 install -m 0644 "$REPOSITORY_ROOT/config/models.json" "$APP/Contents/Resources/models.json"
 install -m 0644 "$REPOSITORY_ROOT/config/cloud-providers.json" "$APP/Contents/Resources/cloud-providers.json"
 install -m 0644 "$REPOSITORY_ROOT/config/local-model-profiles.json" "$APP/Contents/Resources/local-model-profiles.json"
+mkdir -p "$APP/Contents/Resources/evidence/runtime"
+install -m 0644 "$REPOSITORY_ROOT/evidence/runtime/private-local-task-2026-08-30.md" "$APP/Contents/Resources/evidence/runtime/private-local-task-2026-08-30.md"
 "$SCRIPT_DIR/build-supervisor.sh" "$APP/Contents/Helpers/Supervisor"
 
 MEMORY_RUNTIME="$APP/Contents/Helpers/MemoryRuntime"

@@ -22,9 +22,10 @@ class LocalProfileCatalogTests(unittest.TestCase):
     def test_real_profile_is_evidence_bound_and_conservative(self):
         profile = self.load()
         self.assertEqual(profile.capabilities, frozenset({"chat"}))
-        self.assertEqual(profile.context_window_tokens, 4096)
-        self.assertEqual(profile.maximum_output_tokens, 1024)
-        self.assertEqual(profile.evidence_status, "provisional_single_machine")
+        self.assertEqual(profile.runtime_model_ids, frozenset({"Qwen3-0.6B-4bit"}))
+        self.assertEqual(profile.context_window_tokens, 96)
+        self.assertEqual(profile.maximum_output_tokens, 64)
+        self.assertEqual(profile.evidence_status, "verified_single_machine")
         self.assertTrue((ROOT / profile.evidence_path).is_file())
 
     def test_unknown_model_hardware_capability_and_missing_evidence_fail(self):

@@ -4,13 +4,14 @@
     {
       "id": "qwen3-0.6b-4bit-apple-silicon-alpha",
       "model_definition_id": "qwen3-0.6b-4bit-alpha",
+      "runtime_model_ids": ["Qwen3-0.6B-4bit"],
       "hardware_profile_ids": ["apple-silicon-16gb", "apple-silicon-32gb", "apple-silicon-64gb"],
       "capabilities": ["chat"],
-      "context_window_tokens": 4096,
-      "maximum_output_tokens": 1024,
-      "minimum_available_memory_mb": 1024,
+      "context_window_tokens": 96,
+      "maximum_output_tokens": 64,
+      "minimum_available_memory_mb": 1,
       "validator": "nonempty-text-v1",
-      "evidence_status": "provisional_single_machine",
+      "evidence_status": "verified_single_machine",
       "evidence_path": "evidence/runtime/private-local-task-2026-08-30.md"
     }
   ]

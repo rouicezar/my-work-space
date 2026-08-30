@@ -14,8 +14,9 @@ creating a cloud proposal.
 
 ## Automated evidence
 
-- Full Python suite: `203` passed, `1` skipped.
-- Swift package: `27` passed, `2` environment-gated tests skipped in the ordinary run.
+- Full Python suite after unified routing integration: `223` passed, `1` skipped.
+- Swift package after native protocol integration: `29` passed, `2` environment-gated
+  tests skipped in the ordinary run.
 - Standard-input and secret-environment fixtures prove that prompt and runtime secrets
   do not enter arguments.
 - Process identity now binds the observed command digest and process start time. This
@@ -26,7 +27,7 @@ creating a cloud proposal.
 
 The environment-gated native-client integration was then enabled against:
 
-- Product root: `/Users/rouice/Library/Application Support/Mac AI Work OS`
+- Product root: an isolated per-user Application Support directory
 - Managed runtime: oMLX v0.6.3
 - Model: the previously verified zero-copy Qwen reference
 
@@ -40,6 +41,20 @@ The test stopped the runtime. Final authoritative state was `phase=stopped`, all
 process records were null, and a process-table check found no remaining product oMLX,
 broker, or memory process.
 
+## Unified task routing evidence
+
+The versioned `task-submit` protocol now derives runtime health and measured available
+memory inside Supervisor, binds the discovered runtime model to the verified local
+profile, and returns exactly one of `local`, `cloud_proposal_required`, or
+`capability_unavailable`. Tests cover local execution, cloud disabled, offline proposal
+creation, blocked data, stale cloud pricing, and local-result validation failure. The
+cloud-proposal branches assert that no DeepSeek network execution occurs.
+
+A release-mode app bundle was built with the frozen Supervisor, routing catalogs, and
+this evidence file. The bundle's ad-hoc signature passed strict deep verification, and
+the frozen Supervisor exposed `task-submit`. This is packaging evidence only, not
+Developer ID signing, notarization, clean-machine installation, or release proof.
+
 ## Failure found and corrected during the run
 
 The first real run exposed a false-degraded state: broker and memory were alive, but
@@ -51,7 +66,7 @@ passed on retry with clean shutdown.
 
 ## Remaining boundary
 
-This proves the real native-client-to-Supervisor-to-broker-to-Qwen task path, but it is
-not yet ordinary-user acceptance. The daily workbench UI, visible progress/cancel
-behavior, local validation-to-cloud proposal journey, and novice-user test remain open.
-
+This proves the real native-client-to-Supervisor-to-broker-to-Qwen task path and the
+synthetic three-route orchestration contract, but it is not yet ordinary-user
+acceptance. A real approved DeepSeek request, the daily workbench UI, visible
+progress/cancel behavior, and the novice-user test remain open.

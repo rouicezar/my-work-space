@@ -337,6 +337,42 @@ import RuntimeSecurity
     #expect(payload.totalTokens == 12)
 }
 
+@Test func unifiedTaskSubmissionUsesOnePrivateLocalFirstProtocol() throws {
+    let temporary = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(at: temporary, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: temporary) }
+    let executable = temporary.appendingPathComponent("fixture-supervisor")
+    let response = #"{"schema_version":1,"command":"task-submit","request_id":"00000000-0000-0000-0000-000000000001","status":"ok","payload":{"schema_version":1,"plan":{"schema_version":1,"route":"local","reason_codes":[],"estimated_input_tokens":12,"maximum_output_tokens":32,"local_profile_id":"qwen-alpha","local_evidence_status":"verified_single_machine","cloud_enabled":true,"cloud_state_code":"CLOUD_ENABLED"},"resource":{"available_memory_mb":2048,"verified":true,"code":"AVAILABLE_MEMORY_MEASURED"},"runtime_phase":"running","cloud_unavailable_code":null,"result":{"schema_version":1,"route":"local","correlation_id":"00000000-0000-0000-0000-000000000001","model":"Qwen3-0.6B-4bit","output":"local result","finish_reason":"stop","prompt_tokens":8,"completion_tokens":2,"total_tokens":10,"audit_path":"logs/audit/inference.jsonl"},"proposal":null},"error":null,"emitted_at":"2026-08-30T00:00:00+00:00"}"#
+    let script = """
+    #!/bin/sh
+    case " $* " in *private-unified-prompt*|*runtime-secret*) exit 9;; esac
+    [ "$OMLX_API_KEY" = "omlx-runtime-secret" ] || exit 8
+    body=$(cat)
+    case "$body" in *private-unified-prompt*) ;; *) exit 7;; esac
+    printf '%s' '\(response)'
+    """
+    try script.write(to: executable, atomically: true, encoding: .utf8)
+    try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
+    let client = try SupervisorClient(executableURL: executable)
+    let result = try client.submitTask(
+        rootURL: temporary.appendingPathComponent("Product"),
+        modelCatalogURL: temporary.appendingPathComponent("models.json"),
+        hardwareProfilesURL: temporary.appendingPathComponent("hardware.json"),
+        localProfilesURL: temporary.appendingPathComponent("local.json"),
+        evidenceRootURL: temporary,
+        cloudCatalogURL: temporary.appendingPathComponent("cloud.json"),
+        prompt: "private-unified-prompt", maximumOutputTokens: 32,
+        omlxAPIKey: "omlx-runtime-secret", brokerToken: "broker-runtime-secret",
+        memoryToken: "memory-runtime-secret",
+        requestID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+    )
+    #expect(result.plan.route == "local")
+    #expect(result.plan.cloudEnabled)
+    #expect(result.result?.output == "local result")
+    #expect(result.proposal == nil)
+}
+
 @Test func localTaskRejectsOversizePromptBeforeLaunchingSupervisor() throws {
     let client = try SupervisorClient(executableURL: URL(fileURLWithPath: "/not/launched"))
     #expect(throws: SupervisorProtocolError.requestTooLarge) {

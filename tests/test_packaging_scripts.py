@@ -20,6 +20,7 @@ class PackagingScriptTests(unittest.TestCase):
             'config/local-model-profiles.json" "$APP/Contents/Resources/local-model-profiles.json',
             script,
         )
+        self.assertIn('evidence/runtime/private-local-task-2026-08-30.md', script)
         self.assertIn('Contents/Helpers/MemoryRuntime', script)
         self.assertIn('semantica_memory_runtime.py', script)
         self.assertIn('semantica_backend.py', script)

@@ -347,6 +347,75 @@ private struct LocalTaskInput: Encodable {
     }
 }
 
+private struct UnifiedTaskInput: Encodable {
+    let schemaVersion = 1
+    let prompt: String
+    let maximumOutputTokens: Int
+    let requiredCapabilities: [String]
+    let dataClasses: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case prompt
+        case maximumOutputTokens = "maximum_output_tokens"
+        case requiredCapabilities = "required_capabilities"
+        case dataClasses = "data_classes"
+    }
+}
+
+public struct UnifiedTaskPlanPayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let route: String
+    public let reasonCodes: [String]
+    public let estimatedInputTokens: Int
+    public let maximumOutputTokens: Int
+    public let localProfileID: String
+    public let localEvidenceStatus: String
+    public let cloudEnabled: Bool
+    public let cloudStateCode: String
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case route
+        case reasonCodes = "reason_codes"
+        case estimatedInputTokens = "estimated_input_tokens"
+        case maximumOutputTokens = "maximum_output_tokens"
+        case localProfileID = "local_profile_id"
+        case localEvidenceStatus = "local_evidence_status"
+        case cloudEnabled = "cloud_enabled"
+        case cloudStateCode = "cloud_state_code"
+    }
+}
+
+public struct MemoryEvidencePayload: Decodable, Sendable {
+    public let availableMemoryMB: Int
+    public let verified: Bool
+    public let code: String
+
+    enum CodingKeys: String, CodingKey {
+        case availableMemoryMB = "available_memory_mb"
+        case verified, code
+    }
+}
+
+public struct UnifiedTaskPayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let plan: UnifiedTaskPlanPayload
+    public let resource: MemoryEvidencePayload
+    public let runtimePhase: String
+    public let cloudUnavailableCode: String?
+    public let result: LocalTaskPayload?
+    public let proposal: CloudProposalPayload?
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case plan, resource
+        case runtimePhase = "runtime_phase"
+        case cloudUnavailableCode = "cloud_unavailable_code"
+        case result, proposal
+    }
+}
+
 public struct CloudCostEstimatePayload: Decodable, Sendable {
     public let currency: String
     public let minimum: Double
@@ -787,6 +856,54 @@ public struct SupervisorClient: Sendable {
         return try request(
             command: "local-task",
             arguments: ["--root", rootURL.path],
+            requestID: requestID,
+            environmentOverrides: [
+                "OMLX_API_KEY": omlxAPIKey,
+                "MAC_AI_WORK_OS_BROKER_TOKEN": brokerToken,
+                "MAC_AI_WORK_OS_MEMORY_TOKEN": memoryToken,
+            ],
+            inputData: input
+        )
+    }
+
+    public func submitTask(
+        rootURL: URL,
+        modelCatalogURL: URL,
+        hardwareProfilesURL: URL,
+        localProfilesURL: URL,
+        evidenceRootURL: URL,
+        cloudCatalogURL: URL,
+        prompt: String,
+        maximumOutputTokens: Int,
+        requiredCapabilities: [String] = ["chat"],
+        dataClasses: [String] = ["user_text"],
+        omlxAPIKey: String,
+        brokerToken: String,
+        memoryToken: String,
+        requestID: UUID = UUID()
+    ) throws -> UnifiedTaskPayload {
+        guard prompt.lengthOfBytes(using: .utf8) <= 262_144 else {
+            throw SupervisorProtocolError.requestTooLarge
+        }
+        let input: Data
+        do {
+            input = try JSONEncoder().encode(UnifiedTaskInput(
+                prompt: prompt, maximumOutputTokens: maximumOutputTokens,
+                requiredCapabilities: requiredCapabilities, dataClasses: dataClasses
+            ))
+        } catch {
+            throw SupervisorProtocolError.invalidResponse("could not encode task")
+        }
+        return try request(
+            command: "task-submit",
+            arguments: [
+                "--root", rootURL.path,
+                "--model-catalog", modelCatalogURL.path,
+                "--hardware-profiles", hardwareProfilesURL.path,
+                "--local-profiles", localProfilesURL.path,
+                "--evidence-root", evidenceRootURL.path,
+                "--cloud-catalog", cloudCatalogURL.path,
+            ],
             requestID: requestID,
             environmentOverrides: [
                 "OMLX_API_KEY": omlxAPIKey,

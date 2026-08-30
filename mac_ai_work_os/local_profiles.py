@@ -26,6 +26,7 @@ class LocalProfileError(RuntimeError):
 class VerifiedLocalProfile:
     id: str
     model_definition_id: str
+    runtime_model_ids: frozenset[str]
     hardware_profile_ids: frozenset[str]
     capabilities: frozenset[str]
     context_window_tokens: int
@@ -54,17 +55,24 @@ def load_local_profile(
         raise LocalProfileError("LOCAL_PROFILE_NOT_FOUND", profile_id)
     raw = matches[0]
     expected = {
-        "id", "model_definition_id", "hardware_profile_ids", "capabilities",
+        "id", "model_definition_id", "runtime_model_ids", "hardware_profile_ids", "capabilities",
         "context_window_tokens", "maximum_output_tokens", "minimum_available_memory_mb",
         "validator", "evidence_status", "evidence_path",
     }
     if set(raw) != expected or not IDENTIFIER.fullmatch(str(raw.get("id", ""))):
         raise LocalProfileError("LOCAL_PROFILE_INVALID", profile_id)
     model_id = raw["model_definition_id"]
+    runtime_models = raw["runtime_model_ids"]
     hardware = raw["hardware_profile_ids"]
     capabilities = raw["capabilities"]
     if model_id not in known_model_ids:
         raise LocalProfileError("LOCAL_PROFILE_MODEL_UNKNOWN", str(model_id))
+    if (
+        not isinstance(runtime_models, list) or not runtime_models
+        or any(not isinstance(item, str) or not item.strip() or len(item) > 160 for item in runtime_models)
+        or len(runtime_models) != len(set(runtime_models))
+    ):
+        raise LocalProfileError("LOCAL_PROFILE_RUNTIME_MODEL_INVALID", profile_id)
     if (
         not isinstance(hardware, list) or not hardware
         or any(item not in known_hardware_profile_ids for item in hardware)
@@ -94,6 +102,7 @@ def load_local_profile(
         raise LocalProfileError("LOCAL_PROFILE_EVIDENCE_MISSING", evidence)
     return VerifiedLocalProfile(
         id=raw["id"], model_definition_id=model_id,
+        runtime_model_ids=frozenset(runtime_models),
         hardware_profile_ids=frozenset(hardware), capabilities=frozenset(capabilities),
         context_window_tokens=numbers[0], maximum_output_tokens=numbers[1],
         minimum_available_memory_mb=numbers[2], validator=raw["validator"],

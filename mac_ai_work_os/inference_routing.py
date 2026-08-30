@@ -22,6 +22,7 @@ DATA_CLASSES = BLOCKED_DATA_CLASSES | frozenset({
 REASONS = frozenset({
     "local_unhealthy", "local_profile_unverified", "context_exceeds_local_limit",
     "required_capability_missing", "local_resource_insufficient", "local_validation_failed",
+    "local_output_limit_exceeded",
 })
 CORRELATION = re.compile(r"^[0-9a-f-]{36}$")
 

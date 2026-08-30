@@ -21,13 +21,166 @@ from mac_ai_work_os.semantica_runtime import SemanticaRuntimeInspector
 from mac_ai_work_os.embedding_config import ApprovedEmbeddingRoute
 from mac_ai_work_os.runtime import RuntimeRecord
 from mac_ai_work_os.deepseek_adapter import DeepSeekResult, DeepSeekUsage
-from mac_ai_work_os.local_tasks import LocalTaskResult
+from mac_ai_work_os.local_tasks import LocalTaskError, LocalTaskResult
+from mac_ai_work_os.cloud_preferences import CloudPreferenceStore
+from mac_ai_work_os.system_resources import MemoryEvidence
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class SupervisorProtocolTests(unittest.TestCase):
+    def task_submit_args(self, root: Path, cloud_catalog: Path, request_id: str):
+        return supervisor.parser().parse_args([
+            "--request-id", request_id, "task-submit", "--root", str(root),
+            "--model-catalog", str(ROOT / "config/models.json"),
+            "--hardware-profiles", str(ROOT / "config/hardware-profiles.yaml"),
+            "--local-profiles", str(ROOT / "config/local-model-profiles.json"),
+            "--evidence-root", str(ROOT), "--cloud-catalog", str(cloud_catalog),
+        ])
+
+    def task_submit_body(self, *, prompt="短任务", output=32, capabilities=("chat",), classes=("user_text",)):
+        return json.dumps({
+            "schema_version": 1, "prompt": prompt, "maximum_output_tokens": output,
+            "required_capabilities": list(capabilities), "data_classes": list(classes),
+        }, ensure_ascii=False).encode()
+
+    def test_task_submit_executes_verified_short_task_locally_without_cloud_proposal(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "Product"
+            catalog = self.write_current_cloud_catalog(base)
+            request_id = str(uuid.uuid4())
+            expected = LocalTaskResult(
+                1, "local", request_id, "Qwen3-0.6B-4bit", "result", "stop",
+                5, 2, 7, "logs/audit/inference.jsonl",
+            )
+            with patch.object(supervisor.RuntimeManager, "status", return_value={"phase": "running"}), \
+                 patch.object(supervisor, "measure_available_memory", return_value=MemoryEvidence(2048, True, "AVAILABLE_MEMORY_MEASURED")), \
+                 patch.object(supervisor, "_runtime_secrets", return_value=("a", "b", "c")), \
+                 patch.object(supervisor, "_local_task", return_value=expected) as execute, \
+                 patch.object(supervisor, "create_cloud_proposal") as cloud:
+                response = supervisor.run(
+                    self.task_submit_args(root, catalog, request_id),
+                    input_data=self.task_submit_body(),
+                )
+            self.assertEqual(response["payload"]["plan"]["route"], "local")
+            self.assertEqual(response["payload"]["result"]["output"], "result")
+            self.assertEqual(execute.call_args.args[4], frozenset({"Qwen3-0.6B-4bit"}))
+            cloud.assert_not_called()
+
+    def test_task_submit_creates_offline_proposal_only_when_cloud_is_enabled(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "Product"
+            catalog = self.write_current_cloud_catalog(base)
+            provider = supervisor.load_cloud_provider(catalog, "deepseek")
+            CloudPreferenceStore(root).save(
+                enabled=True, provider=provider, model_id="deepseek-v4-flash",
+                now=datetime.now(timezone.utc),
+            )
+            request_id = str(uuid.uuid4())
+            with patch.object(supervisor.RuntimeManager, "status", return_value={"phase": "stopped"}), \
+                 patch.object(supervisor, "measure_available_memory", return_value=MemoryEvidence(2048, True, "AVAILABLE_MEMORY_MEASURED")), \
+                 patch.object(supervisor.DeepSeekAdapter, "execute") as network:
+                response = supervisor.run(
+                    self.task_submit_args(root, catalog, request_id),
+                    input_data=self.task_submit_body(capabilities=("tools",)),
+                )
+            payload = response["payload"]
+            self.assertEqual(payload["plan"]["route"], "cloud_proposal_required")
+            self.assertIsNone(payload["result"])
+            self.assertTrue(payload["proposal"]["proposal_id"])
+            network.assert_not_called()
+
+    def test_task_submit_reports_unavailable_when_cloud_is_disabled(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "Product"
+            catalog = self.write_current_cloud_catalog(base)
+            with patch.object(supervisor.RuntimeManager, "status", return_value={"phase": "stopped"}), \
+                 patch.object(supervisor, "measure_available_memory", return_value=MemoryEvidence(2048, True, "AVAILABLE_MEMORY_MEASURED")), \
+                 patch.object(supervisor, "_local_task") as local, \
+                 patch.object(supervisor, "create_cloud_proposal") as cloud:
+                response = supervisor.run(
+                    self.task_submit_args(root, catalog, str(uuid.uuid4())),
+                    input_data=self.task_submit_body(),
+                )
+            self.assertEqual(response["payload"]["plan"]["route"], "capability_unavailable")
+            self.assertIsNone(response["payload"]["proposal"])
+            local.assert_not_called()
+            cloud.assert_not_called()
+
+    def test_task_submit_turns_cloud_policy_failure_into_honest_unavailable_state(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "Product"
+            catalog = self.write_current_cloud_catalog(base)
+            provider = supervisor.load_cloud_provider(catalog, "deepseek")
+            CloudPreferenceStore(root).save(
+                enabled=True, provider=provider, model_id="deepseek-v4-flash",
+                now=datetime.now(timezone.utc),
+            )
+            args = self.task_submit_args(root, catalog, str(uuid.uuid4()))
+            with patch.object(supervisor.RuntimeManager, "status", return_value={"phase": "stopped"}), \
+                 patch.object(supervisor, "measure_available_memory", return_value=MemoryEvidence(2048, True, "AVAILABLE_MEMORY_MEASURED")):
+                response = supervisor.run(
+                    args,
+                    input_data=self.task_submit_body(
+                        capabilities=("tools",), classes=("credentials",),
+                    ),
+                )
+            self.assertEqual(response["payload"]["plan"]["route"], "capability_unavailable")
+            self.assertEqual(response["payload"]["cloud_unavailable_code"], "CLOUD_DATA_CLASS_BLOCKED")
+            self.assertIsNone(response["payload"]["proposal"])
+
+    def test_task_submit_local_validation_failure_may_create_only_offline_proposal(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "Product"
+            catalog = self.write_current_cloud_catalog(base)
+            provider = supervisor.load_cloud_provider(catalog, "deepseek")
+            CloudPreferenceStore(root).save(
+                enabled=True, provider=provider, model_id="deepseek-v4-flash",
+                now=datetime.now(timezone.utc),
+            )
+            with patch.object(supervisor.RuntimeManager, "status", return_value={"phase": "running"}), \
+                 patch.object(supervisor, "measure_available_memory", return_value=MemoryEvidence(2048, True, "AVAILABLE_MEMORY_MEASURED")), \
+                 patch.object(supervisor, "_runtime_secrets", return_value=("a", "b", "c")), \
+                 patch.object(supervisor, "_local_task", side_effect=LocalTaskError("LOCAL_RESPONSE_INVALID", "fixture")), \
+                 patch.object(supervisor.DeepSeekAdapter, "execute") as network:
+                response = supervisor.run(
+                    self.task_submit_args(root, catalog, str(uuid.uuid4())),
+                    input_data=self.task_submit_body(),
+                )
+            self.assertEqual(response["payload"]["plan"]["route"], "cloud_proposal_required")
+            self.assertEqual(response["payload"]["plan"]["reason_codes"], ("local_validation_failed",))
+            self.assertTrue(response["payload"]["proposal"]["proposal_id"])
+            network.assert_not_called()
+
+    def test_task_submit_stale_cloud_price_is_unavailable_not_a_protocol_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "Product"
+            catalog = self.write_current_cloud_catalog(base)
+            provider = supervisor.load_cloud_provider(catalog, "deepseek")
+            CloudPreferenceStore(root).save(
+                enabled=True, provider=provider, model_id="deepseek-v4-flash",
+                now=datetime.now(timezone.utc),
+            )
+            raw = json.loads(catalog.read_text(encoding="utf-8"))
+            raw["providers"][0]["pricing"]["effective_at"] = "2025-01-01T00:00:00Z"
+            catalog.write_text(json.dumps(raw), encoding="utf-8")
+            with patch.object(supervisor.RuntimeManager, "status", return_value={"phase": "stopped"}), \
+                 patch.object(supervisor, "measure_available_memory", return_value=MemoryEvidence(2048, True, "AVAILABLE_MEMORY_MEASURED")):
+                response = supervisor.run(
+                    self.task_submit_args(root, catalog, str(uuid.uuid4())),
+                    input_data=self.task_submit_body(capabilities=("tools",)),
+                )
+            self.assertEqual(response["payload"]["plan"]["route"], "capability_unavailable")
+            self.assertEqual(response["payload"]["cloud_unavailable_code"], "CLOUD_PRICING_STALE")
+            self.assertIsNone(response["payload"]["proposal"])
+
     def test_cloud_settings_are_default_disabled_and_explicitly_persisted(self):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)

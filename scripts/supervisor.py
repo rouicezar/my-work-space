@@ -11,7 +11,7 @@ import sys
 import urllib.error
 import urllib.request
 import uuid
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -47,12 +47,18 @@ from mac_ai_work_os.cloud_approval import CloudApprovalStore
 from mac_ai_work_os.cloud_catalog import load_cloud_provider
 from mac_ai_work_os.cloud_proposals import CloudProposalStore
 from mac_ai_work_os.deepseek_adapter import DeepSeekAdapter
-from mac_ai_work_os.inference_routing import TaskRequirements, create_cloud_proposal
+from mac_ai_work_os.inference_routing import RoutingError, TaskRequirements, create_cloud_proposal
 from mac_ai_work_os.local_tasks import (
-    MAXIMUM_TASK_BYTES, LocalTaskRequest, completion_body, normalize_local_result,
+    MAXIMUM_TASK_BYTES, LocalTaskError, LocalTaskRequest, completion_body, normalize_local_result,
     parse_local_task,
 )
 from mac_ai_work_os.cloud_preferences import CloudPreferenceStore
+from mac_ai_work_os.local_profiles import load_local_profile
+from mac_ai_work_os.system_resources import measure_available_memory
+from mac_ai_work_os.task_orchestrator import (
+    MAXIMUM_UNIFIED_TASK_BYTES, local_task_from_unified, parse_unified_task,
+    plan_unified_task,
+)
 
 
 SCHEMA_VERSION = 1
@@ -61,6 +67,8 @@ DEFAULT_MODELS = REPOSITORY_ROOT / "config/models.json"
 DEFAULT_MODEL_ID = "qwen3-0.6b-4bit-alpha"
 DEFAULT_EMBEDDING_MODEL_ID = "multilingual-e5-small-mlx-alpha"
 DEFAULT_CLOUD_PROVIDERS = REPOSITORY_ROOT / "config/cloud-providers.json"
+DEFAULT_LOCAL_PROFILES = REPOSITORY_ROOT / "config/local-model-profiles.json"
+DEFAULT_HARDWARE_PROFILES = REPOSITORY_ROOT / "config/hardware-profiles.yaml"
 MAXIMUM_CLOUD_PAYLOAD_BYTES = 8 * 1024 * 1024
 
 
@@ -170,6 +178,17 @@ def parser() -> argparse.ArgumentParser:
             selection.add_argument("--enable", action="store_true")
             selection.add_argument("--disable", action="store_true")
             command.add_argument("--model-id")
+    task_submit = commands.add_parser("task-submit")
+    task_submit.add_argument("--root", type=Path, required=True)
+    task_submit.add_argument("--broker-port", type=int, default=43110)
+    task_submit.add_argument("--model-catalog", type=Path, default=DEFAULT_MODELS)
+    task_submit.add_argument("--hardware-profiles", type=Path, default=DEFAULT_HARDWARE_PROFILES)
+    task_submit.add_argument("--local-profiles", type=Path, default=DEFAULT_LOCAL_PROFILES)
+    task_submit.add_argument("--evidence-root", type=Path, default=REPOSITORY_ROOT)
+    task_submit.add_argument(
+        "--local-profile-id", default="qwen3-0.6b-4bit-apple-silicon-alpha",
+    )
+    task_submit.add_argument("--cloud-catalog", type=Path, default=DEFAULT_CLOUD_PROVIDERS)
     return result
 
 
@@ -205,6 +224,110 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
         "activate-embedding",
     }:
         _validate_product_root(args.root)
+    if args.command == "task-submit":
+        _validate_product_root(args.root)
+        for path in (
+            args.model_catalog, args.hardware_profiles, args.local_profiles, args.cloud_catalog,
+        ):
+            if not path.is_absolute() or not path.is_file():
+                raise ValueError("task routing catalogs must be existing absolute files")
+        if not args.evidence_root.is_absolute() or not args.evidence_root.is_dir():
+            raise ValueError("task evidence root must be an existing absolute directory")
+        model_ids = _catalog_ids(args.model_catalog, "models")
+        hardware_ids = _catalog_ids(args.hardware_profiles, "profiles")
+        profile = load_local_profile(
+            args.local_profiles, args.local_profile_id,
+            known_model_ids=model_ids, known_hardware_profile_ids=hardware_ids,
+            repository_root=args.evidence_root,
+        )
+        provider = load_cloud_provider(args.cloud_catalog, "deepseek")
+        cloud = CloudPreferenceStore(args.root).load(provider)
+        memory = measure_available_memory()
+        runtime = RuntimeManager(args.root).status()
+        if input_data is None:
+            raise ValueError("task body is required")
+        task = parse_unified_task(input_data)
+        plan, requirements, _ = plan_unified_task(
+            task, profile=profile, runtime_healthy=runtime["phase"] == "running",
+            available_memory_mb=memory.available_memory_mb, cloud=cloud,
+        )
+        audit = JsonlAuditSink(args.root / "logs/audit/tasks.jsonl")
+        audit.record({
+            "schema_version": 1, "event": "task_route",
+            "correlation_id": request_id, "route": plan.route,
+            "reason_codes": list(plan.reason_codes),
+            "local_profile_id": profile.id,
+            "local_evidence_status": profile.evidence_status,
+            "runtime_phase": runtime["phase"],
+            "memory_evidence_code": memory.code,
+            "available_memory_mb": memory.available_memory_mb,
+            "cloud_state_code": cloud.code,
+        })
+        common = {
+            "schema_version": 1, "plan": asdict(plan),
+            "resource": asdict(memory), "runtime_phase": runtime["phase"],
+            "cloud_unavailable_code": None,
+        }
+        if plan.route == "local":
+            _, broker_token, _ = _runtime_secrets()
+            try:
+                result = _local_task(
+                    args.broker_port, broker_token, request_id,
+                    local_task_from_unified(task), profile.runtime_model_ids,
+                )
+            except LocalTaskError:
+                plan = replace(
+                    plan,
+                    route="cloud_proposal_required" if cloud.valid and cloud.enabled
+                    else "capability_unavailable",
+                    reason_codes=("local_validation_failed",),
+                )
+                common["plan"] = asdict(plan)
+                audit.record({
+                    "schema_version": 1, "event": "task_route_transition",
+                    "correlation_id": request_id, "route": plan.route,
+                    "reason_codes": ["local_validation_failed"],
+                })
+            else:
+                return envelope(
+                    command=args.command, request_id=request_id, status="ok",
+                    payload={**common, "result": asdict(result), "proposal": None},
+                )
+        if plan.route == "cloud_proposal_required":
+            try:
+                proposal, payload = create_cloud_proposal(
+                    correlation_id=request_id, provider=provider, model_id=cloud.model_id,
+                    requirements=requirements, reason_codes=plan.reason_codes,
+                    outbound_body={
+                        "model": cloud.model_id,
+                        "messages": [{"role": "user", "content": task.prompt}],
+                        "max_tokens": task.maximum_output_tokens, "stream": False,
+                    },
+                    redactions=(), now=datetime.now(timezone.utc),
+                )
+            except RoutingError as exc:
+                plan = replace(plan, route="capability_unavailable")
+                common["plan"] = asdict(plan)
+                common["cloud_unavailable_code"] = exc.code
+                audit.record({
+                    "schema_version": 1, "event": "task_route_transition",
+                    "correlation_id": request_id, "route": plan.route,
+                    "reason_codes": list(plan.reason_codes),
+                    "cloud_unavailable_code": exc.code,
+                })
+                return envelope(
+                    command=args.command, request_id=request_id, status="ok",
+                    payload={**common, "result": None, "proposal": None},
+                )
+            CloudProposalStore(args.root).save(proposal, payload)
+            return envelope(
+                command=args.command, request_id=request_id, status="ok",
+                payload={**common, "result": None, "proposal": proposal.to_dict()},
+            )
+        return envelope(
+            command=args.command, request_id=request_id, status="ok",
+            payload={**common, "result": None, "proposal": None},
+        )
     if args.command in {
         "cloud-preview", "cloud-approve", "cloud-reject", "cloud-execute",
         "cloud-settings", "set-cloud-settings",
@@ -625,6 +748,23 @@ def _validate_product_root(root: Path) -> None:
         raise ValueError("product root is unsafe")
 
 
+def _catalog_ids(path: Path, collection: str) -> frozenset[str]:
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        entries = raw[collection]
+    except (OSError, KeyError, TypeError, json.JSONDecodeError) as exc:
+        raise ValueError("routing catalog is invalid") from exc
+    if (
+        raw.get("schema_version") != 1 or not isinstance(entries, list) or not entries
+        or any(not isinstance(item, dict) or not isinstance(item.get("id"), str) for item in entries)
+    ):
+        raise ValueError("routing catalog is invalid")
+    ids = frozenset(item["id"] for item in entries)
+    if len(ids) != len(entries):
+        raise ValueError("routing catalog contains duplicate identifiers")
+    return ids
+
+
 def _matches_active_bundle(layout: OMLXInstallLayout, release: str, digest: str) -> bool:
     if not layout.active_record.is_file() or layout.active_record.is_symlink():
         return False
@@ -844,7 +984,10 @@ def _sample_task(port: int, token: str, correlation_id: str) -> dict[str, Any]:
     }
 
 
-def _local_task(port: int, token: str, correlation_id: str, task: LocalTaskRequest):
+def _local_task(
+    port: int, token: str, correlation_id: str, task: LocalTaskRequest,
+    allowed_model_ids: frozenset[str] | None = None,
+):
     models = _broker_request(port, token, "/v1/models", correlation_id)
     entries = models.get("data")
     if (
@@ -853,6 +996,8 @@ def _local_task(port: int, token: str, correlation_id: str, task: LocalTaskReque
     ):
         raise ValueError("broker returned no usable local model")
     model = entries[0]["id"]
+    if allowed_model_ids is not None and model not in allowed_model_ids:
+        raise ValueError("runtime model does not match the verified local profile")
     completion = _broker_request(
         port, token, "/v1/chat/completions", correlation_id,
         completion_body(task, model),
@@ -875,6 +1020,7 @@ def main(argv: list[str] | None = None) -> int:
                 "internal-memory-service", "semantica-status",
                 "cloud-preview", "cloud-approve", "cloud-reject", "cloud-execute",
                 "cloud-settings", "set-cloud-settings",
+                "task-submit",
             )
             if item in raw
         ),
@@ -892,6 +1038,8 @@ def main(argv: list[str] | None = None) -> int:
             input_data = sys.stdin.buffer.read(MAXIMUM_CLOUD_PAYLOAD_BYTES + 1)
         elif args.command == "local-task":
             input_data = sys.stdin.buffer.read(MAXIMUM_TASK_BYTES + 1)
+        elif args.command == "task-submit":
+            input_data = sys.stdin.buffer.read(MAXIMUM_UNIFIED_TASK_BYTES + 1)
         response = run(args, input_data=input_data)
         exit_code = 0
     except Exception as exc:

@@ -20,10 +20,10 @@ None of those decisions may be delegated to model self-assessment or hidden UI l
 1. Add a strict, versioned local-capability catalog. A profile binds the product model
    definition, tested capabilities, context and output ceilings, minimum available
    memory, validation policy, evidence path, and evidence status.
-2. Treat single-machine evidence honestly. The initial Qwen profile remains
-   `provisional_single_machine` until its declared context, output, memory, latency, and
-   validation boundaries pass a real benchmark. Even then it is not a general
-   multi-machine claim.
+2. Treat single-machine evidence honestly. The initial Qwen profile exposes only the
+   short-text context and output ceiling already proven by the real local-task run and
+   is `verified_single_machine`, not a general benchmark claim. Larger local boundaries
+   require a separate real benchmark before the catalog may expand them.
 3. Store cloud preferences separately from credentials. Missing state means disabled.
    Enabling records only provider/model selection; the API key remains in Keychain.
 4. Cloud preference files are product-owned private state. Unknown fields, unsafe
