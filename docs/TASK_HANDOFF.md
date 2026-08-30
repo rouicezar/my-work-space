@@ -20,9 +20,9 @@ Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-ma
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P1-T03
-State: P1-T02 Semantica evidence refresh verified; pending commit/push closeout
-Next required action: commit/push P1-T02, then claim P1-T03 and map holaOS reusable implementation surfaces.
+Master plan task: P1-T04
+State: P1-T03 holaOS capability/reuse mapping verified; documentation commit and push pending
+Next required action: commit/push P1-T03, then claim P1-T04 and map the pinned Herdr v0.8.2 CLI/socket and lifecycle surface.
 
 ## Product Goal Snapshot
 
@@ -111,6 +111,46 @@ Quota state and closeout action:
 ```
 
 ## Handoff Log
+
+## 2026-08-31 - P1-T03 - exit
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `64bb3a9`
+Scope: map holaOS capabilities, source entry points, non-visual reuse candidates, visual/branding exclusions, and distribution obligations
+Files intended: `docs/research/holaos-capability-ledger.md`, master tracker, and handoff
+Actions: reviewed official commit, repository/workspace shape, runtime and package entry points, README claims, and modified license; recorded a granular upstream-first reuse boundary
+Verification: ledger exists; required revision, runtime/package entry points, license/public-distribution boundary, Semantica memory authority, Herdr role, and open validation gaps are present; `git diff --check` passed
+Evidence: official `holaboss-ai/holaOS` repository API and commit-pinned README, LICENSE, root manifest, runtime tree, and packages tree at `4684714ee133794cdbb86630e42b7d93447fb2e2`
+Files changed: `docs/research/holaos-capability-ledger.md`, master tracker, and this handoff
+Commit: pending documentation commit
+Push: pending
+Decisions: reuse eligible non-visual runtime/client/SDK implementation behind adapters; exclude shared UI and branded desktop frontend; keep holaOS memory transient and Semantica authoritative
+Assumptions: README capability descriptions require source-level and runtime validation before integration claims
+Blocked items: no local pinned checkout/build; exact file-level MCP/provider/browser/integration/automation paths remain a later acquisition/compatibility gate
+Next exact action: commit/push P1-T03, then claim P1-T04
+Approval needed: none
+Secret/external-write status: no secrets; public read-only source access only
+Quota state and closeout action: normal; this verified unit is ready to commit and push
+
+## 2026-08-31 - P1-T03 - takeover
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `64bb3a9`
+Scope: map holaOS capabilities, source entry points, non-visual reuse candidates, visual/branding exclusions, and distribution obligations
+Files intended: `docs/research/holaos-capability-ledger.md`, master tracker, and handoff
+Actions: claimed P1-T03 in plan order
+Verification: pending official source tree/package/license inspection and ledger completeness scan
+Evidence: pending
+Files changed: tracker and handoff at takeover
+Commit: none yet
+Push: none yet
+Decisions: maximize licensed non-visual reuse during personal non-commercial development while maintaining a separable public-distribution boundary
+Assumptions: exact main commit must be recorded because `latest` is rolling
+Blocked items: none
+Next exact action: inspect official repository metadata, current main commit, package/workspace manifests, source tree, README, and LICENSE
+Approval needed: none
+Secret/external-write status: no secrets; public read-only source access only
+Quota state and closeout action: normal; close and push this documentation unit on warning
 
 ## 2026-08-31 - P1-T02 - exit
 
