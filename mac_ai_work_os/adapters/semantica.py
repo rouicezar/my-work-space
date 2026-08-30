@@ -46,7 +46,8 @@ class SemanticaContextBackend:
     def retrieve(self, query: str, limit: int) -> list[dict[str, Any]]:
         if self.semantic_store is None:
             raise RuntimeError("SEMANTIC_INDEX_UNVERIFIED")
-        vector = self.semantic_store.embed(query)
+        embed_query = getattr(self.semantic_store, "embed_query", self.semantic_store.embed)
+        vector = embed_query(query)
         return [
             {"metadata": result.get("metadata", {})}
             for result in self.semantic_store.search_vectors(vector, k=limit)

@@ -26,6 +26,8 @@ def main() -> int:
     parser.add_argument("--omlx-port", type=int, required=True)
     parser.add_argument("--embedding-model", required=True)
     parser.add_argument("--expected-dimension", type=int, required=True)
+    parser.add_argument("--query-prefix", default="")
+    parser.add_argument("--document-prefix", default="")
     args = parser.parse_args()
     if not args.root.is_absolute() or not 1024 <= args.memory_port <= 65535:
         raise ValueError("unsafe memory runtime configuration")
@@ -36,6 +38,7 @@ def main() -> int:
     backend = create_managed_semantica_backend(
         product_root=args.root, omlx_port=args.omlx_port, omlx_api_key=omlx_key,
         embedding_model=args.embedding_model, expected_dimension=args.expected_dimension,
+        query_prefix=args.query_prefix, document_prefix=args.document_prefix,
     )
     memory = GovernedMemory(args.root, backend)
     service = GovernedMemoryService(

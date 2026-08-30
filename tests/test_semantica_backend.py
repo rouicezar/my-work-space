@@ -35,6 +35,7 @@ class ManagedSemanticaBackendFactoryTests(unittest.TestCase):
                 backend = create_managed_semantica_backend(
                     product_root=root, omlx_port=8000, omlx_api_key="o" * 40,
                     embedding_model="fixture/embedding", expected_dimension=384,
+                    query_prefix="query: ", document_prefix="passage: ",
                 )
             self.assertEqual(backend.embedding_route, "omlx://fixture/embedding")
             self.assertEqual(
@@ -53,5 +54,6 @@ class ManagedSemanticaBackendFactoryTests(unittest.TestCase):
                     create_managed_semantica_backend(
                         product_root=root, omlx_port=8000, omlx_api_key="o" * 40,
                         embedding_model="fixture/embedding", expected_dimension=384,
+                        query_prefix="query: ", document_prefix="passage: ",
                     )
             self.assertEqual(error.exception.code, "SEMANTICA_VERSION_MISMATCH")

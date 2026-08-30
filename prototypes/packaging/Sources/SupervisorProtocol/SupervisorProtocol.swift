@@ -156,7 +156,10 @@ public struct ModelPlanPayload: Decodable, Sendable {
     public let revision: String
     public let license: String
     public let capabilities: [String]
-    public let quantizationBits: Int
+    public let quantizationBits: Int?
+    public let embeddingDimension: Int?
+    public let queryPrefix: String?
+    public let documentPrefix: String?
     public let sizeBytes: Int64
     public let sourcePath: String
     public let availableVerified: Bool
@@ -168,6 +171,9 @@ public struct ModelPlanPayload: Decodable, Sendable {
         case modelID = "model_id"
         case repository, revision, license, capabilities
         case quantizationBits = "quantization_bits"
+        case embeddingDimension = "embedding_dimension"
+        case queryPrefix = "query_prefix"
+        case documentPrefix = "document_prefix"
         case sizeBytes = "size_bytes"
         case sourcePath = "source_path"
         case availableVerified = "available_verified"
@@ -183,6 +189,31 @@ public struct ModelLinkPayload: Decodable, Sendable {
     enum CodingKeys: String, CodingKey {
         case schemaVersion = "schema_version"
         case reference
+    }
+}
+
+public struct EmbeddingActivationPayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let route: EmbeddingRoutePayload
+    public let reference: ModelReferencePayload
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case route, reference
+    }
+}
+
+public struct EmbeddingRoutePayload: Decodable, Sendable {
+    public let modelID: String
+    public let apiModel: String
+    public let revision: String
+    public let expectedDimension: Int
+
+    enum CodingKeys: String, CodingKey {
+        case modelID = "model_id"
+        case apiModel = "api_model"
+        case revision
+        case expectedDimension = "expected_dimension"
     }
 }
 
@@ -383,6 +414,35 @@ public struct SupervisorClient: Sendable {
     ) throws -> ModelLinkPayload {
         try request(
             command: "link-model",
+            arguments: ["--root", rootURL.path, "--cache-root", cacheRootURL.path,
+                        "--catalog", catalogURL.path, "--approve-revision", approvedRevision],
+            requestID: requestID
+        )
+    }
+
+    public func embeddingPlan(
+        rootURL: URL,
+        cacheRootURL: URL,
+        catalogURL: URL,
+        requestID: UUID = UUID()
+    ) throws -> ModelPlanPayload {
+        try request(
+            command: "embedding-plan",
+            arguments: ["--root", rootURL.path, "--cache-root", cacheRootURL.path,
+                        "--catalog", catalogURL.path],
+            requestID: requestID
+        )
+    }
+
+    public func activateEmbedding(
+        rootURL: URL,
+        cacheRootURL: URL,
+        catalogURL: URL,
+        approvedRevision: String,
+        requestID: UUID = UUID()
+    ) throws -> EmbeddingActivationPayload {
+        try request(
+            command: "activate-embedding",
             arguments: ["--root", rootURL.path, "--cache-root", cacheRootURL.path,
                         "--catalog", catalogURL.path, "--approve-revision", approvedRevision],
             requestID: requestID

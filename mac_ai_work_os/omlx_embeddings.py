@@ -24,8 +24,9 @@ class EmbeddingError(RuntimeError):
 
 class OMLXEmbeddingClient:
     def __init__(self, *, port: int, api_key: str, model: str,
-                 timeout_seconds: float = 15.0, max_response_bytes: int = 16 * 1024 * 1024,
-                 expected_dimension: int | None = None):
+        timeout_seconds: float = 15.0, max_response_bytes: int = 16 * 1024 * 1024,
+                 expected_dimension: int | None = None, query_prefix: str = "",
+                 document_prefix: str = ""):
         if not 1 <= port <= 65535:
             raise ValueError("port must be between 1 and 65535")
         if len(api_key) < 32:
@@ -36,15 +37,25 @@ class OMLXEmbeddingClient:
             raise ValueError("timeout and response limit must be positive")
         if expected_dimension is not None and expected_dimension <= 0:
             raise ValueError("expected_dimension must be positive")
+        if not isinstance(query_prefix, str) or not isinstance(document_prefix, str):
+            raise ValueError("embedding prefixes must be strings")
         self.url = f"http://127.0.0.1:{port}/v1/embeddings"
         self.api_key = api_key
         self.model = model
         self.timeout_seconds = timeout_seconds
         self.max_response_bytes = max_response_bytes
         self.expected_dimension = expected_dimension
+        self.query_prefix = query_prefix
+        self.document_prefix = document_prefix
 
     def embed(self, text: str) -> list[float]:
-        return self.embed_many([text])[0]
+        return self.embed_document(text)
+
+    def embed_query(self, text: str) -> list[float]:
+        return self.embed_many([self.query_prefix + text])[0]
+
+    def embed_document(self, text: str) -> list[float]:
+        return self.embed_many([self.document_prefix + text])[0]
 
     def embed_many(self, texts: list[str]) -> list[list[float]]:
         if not texts or any(not isinstance(item, str) or not item.strip() for item in texts):
@@ -136,6 +147,10 @@ class PersistentOMLXVectorStore:
 
     def embed(self, text: str) -> list[float]:
         return self.client.embed(text)
+
+    def embed_query(self, text: str) -> list[float]:
+        embed_query = getattr(self.client, "embed_query", self.client.embed)
+        return embed_query(text)
 
     def store_vectors(self, vectors: Iterable[Iterable[float]], metadata: Iterable[dict[str, Any]]) -> list[str]:
         vector_list = [self._normalize_vector(vector) for vector in vectors]

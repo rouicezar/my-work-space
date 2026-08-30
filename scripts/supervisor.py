@@ -36,7 +36,7 @@ from mac_ai_work_os.processes import omlx_process_spec
 from mac_ai_work_os.runtime import RuntimeManager, SubprocessController
 from mac_ai_work_os.semantica_runtime import SemanticaLayout, SemanticaRuntimeInspector
 from mac_ai_work_os.governed_memory import GovernedMemory
-from mac_ai_work_os.embedding_config import load_approved_embedding_route
+from mac_ai_work_os.embedding_config import activate_embedding_route, load_approved_embedding_route
 from mac_ai_work_os.memory_service import (
     GovernedMemoryService,
     MemoryServicePolicy,
@@ -48,6 +48,7 @@ SCHEMA_VERSION = 1
 DEFAULT_UPSTREAMS = REPOSITORY_ROOT / "config/upstreams.json"
 DEFAULT_MODELS = REPOSITORY_ROOT / "config/models.json"
 DEFAULT_MODEL_ID = "qwen3-0.6b-4bit-alpha"
+DEFAULT_EMBEDDING_MODEL_ID = "multilingual-e5-small-mlx-alpha"
 
 
 class ProtocolArgumentParser(argparse.ArgumentParser):
@@ -94,13 +95,16 @@ def parser() -> argparse.ArgumentParser:
             command.add_argument("--upstreams", type=Path, default=DEFAULT_UPSTREAMS)
         if name == "install-omlx":
             command.add_argument("--approve-artifact-sha256", required=True)
-    for name in ("model-plan", "link-model"):
+    for name in ("model-plan", "link-model", "embedding-plan", "activate-embedding"):
         command = commands.add_parser(name)
         command.add_argument("--root", type=Path, required=True)
         command.add_argument("--cache-root", type=Path, required=True)
         command.add_argument("--catalog", type=Path, default=DEFAULT_MODELS)
-        command.add_argument("--model-id", default=DEFAULT_MODEL_ID)
-        if name == "link-model":
+        command.add_argument(
+            "--model-id",
+            default=DEFAULT_EMBEDDING_MODEL_ID if "embedding" in name else DEFAULT_MODEL_ID,
+        )
+        if name in {"link-model", "activate-embedding"}:
             command.add_argument("--approve-revision", required=True)
     for name in ("runtime-status", "start-runtime", "stop-runtime", "sample-task"):
         command = commands.add_parser(name)
@@ -150,15 +154,17 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         )
     if args.command in {"installation-plan", "installation-status", "install-omlx"}:
         _validate_product_root(args.root)
-    if args.command in {"model-plan", "link-model"}:
+    if args.command in {"model-plan", "link-model", "embedding-plan", "activate-embedding"}:
         _validate_product_root(args.root)
         if not args.cache_root.is_absolute() or not args.cache_root.is_dir():
             raise ValueError("model cache root must be an existing absolute directory")
         if not args.catalog.is_absolute() or not args.catalog.is_file():
             raise ValueError("model catalog must be an existing absolute file")
         model = load_model(args.catalog, args.model_id)
+        if args.command in {"embedding-plan", "activate-embedding"} and "embedding" not in model.capabilities:
+            raise ValueError("selected model is not embedding capable")
         snapshot = huggingface_snapshot(args.cache_root, model)
-        if args.command == "model-plan":
+        if args.command in {"model-plan", "embedding-plan"}:
             try:
                 verified = verify_snapshot(args.cache_root, model)
                 available = True
@@ -179,6 +185,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                     "license": model.license,
                     "capabilities": list(model.capabilities),
                     "quantization_bits": model.quantization_bits,
+                    "embedding_dimension": model.embedding_dimension,
+                    "query_prefix": model.query_prefix,
+                    "document_prefix": model.document_prefix,
                     "size_bytes": sum(item.size_bytes for item in model.files.values()),
                     "source_path": str(verified),
                     "available_verified": available,
@@ -188,11 +197,21 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             )
         if args.approve_revision != model.revision:
             raise ValueError("model approval does not match selected revision")
+        if args.command == "activate-embedding" and RuntimeManager(args.root).status()["phase"] != "stopped":
+            raise ValueError("embedding activation requires a stopped runtime")
         reference = link_external_model(
             product_root=args.root,
             cache_root=args.cache_root,
             model=model,
         )
+        if args.command == "activate-embedding":
+            route = activate_embedding_route(
+                args.root, model, reference, approved_revision=args.approve_revision,
+            )
+            return envelope(
+                command=args.command, request_id=request_id, status="ok",
+                payload={"schema_version": 1, "route": asdict(route), "reference": asdict(reference)},
+            )
         return envelope(
             command=args.command,
             request_id=request_id,
@@ -280,6 +299,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 "--memory-port", str(args.memory_port), "--omlx-port", str(args.omlx_port),
                 "--embedding-model", embedding_route.api_model,
                 "--expected-dimension", str(embedding_route.expected_dimension),
+                "--query-prefix", embedding_route.query_prefix,
+                "--document-prefix", embedding_route.document_prefix,
             ]
         memory_home = args.root / "state/homes/memory"
         memory_tmp = args.root / "state/runtime/memory/tmp"
@@ -649,7 +670,7 @@ def main(argv: list[str] | None = None) -> int:
             item
             for item in (
                 "preflight", "installation-plan", "installation-status", "install-omlx",
-                "model-plan", "link-model",
+                "model-plan", "link-model", "embedding-plan", "activate-embedding",
                 "runtime-status", "start-runtime", "stop-runtime", "sample-task", "internal-broker",
                 "internal-memory-service", "semantica-status",
             )

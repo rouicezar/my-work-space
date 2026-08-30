@@ -4,10 +4,21 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from mac_ai_work_os.embedding_config import EmbeddingConfigError, load_approved_embedding_route
+from mac_ai_work_os.embedding_config import (
+    EmbeddingConfigError, activate_embedding_route, load_approved_embedding_route,
+)
+from mac_ai_work_os.models import ModelDefinition, ModelReference
 
 
 class ApprovedEmbeddingRouteTests(unittest.TestCase):
+    def model(self):
+        return ModelDefinition(
+            id="fixture-embedding", repository="fixture/embedding", revision="a" * 40,
+            license="MIT", license_url="https://example.test/license", model_type="bert",
+            architecture="BertModel", capabilities=("embedding",), quantization_bits=None,
+            embedding_dimension=384, query_prefix="query: ", document_prefix="passage: ",
+            files={},
+        )
     def fixture(self, base: Path):
         root = base / "Product"
         source = base / "cache/snapshot"
@@ -29,6 +40,7 @@ class ApprovedEmbeddingRouteTests(unittest.TestCase):
             "schema_version": 1, "provider": "omlx", "capability": "embedding",
             "model_id": "fixture-embedding", "api_model": "fixture/embedding",
             "revision": "a" * 40, "expected_dimension": 384,
+            "query_prefix": "query: ", "document_prefix": "passage: ",
         }), encoding="utf-8")
         route.chmod(0o600)
         return root, route, link
@@ -46,6 +58,8 @@ class ApprovedEmbeddingRouteTests(unittest.TestCase):
             self.assertEqual(route.model_id, "fixture-embedding")
             self.assertEqual(route.api_model, "fixture/embedding")
             self.assertEqual(route.expected_dimension, 384)
+            self.assertEqual(route.query_prefix, "query: ")
+            self.assertEqual(route.document_prefix, "passage: ")
 
     def test_rejects_world_readable_or_broken_activation(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -59,3 +73,32 @@ class ApprovedEmbeddingRouteTests(unittest.TestCase):
             with self.assertRaises(EmbeddingConfigError) as error:
                 load_approved_embedding_route(root)
             self.assertEqual(error.exception.code, "EMBEDDING_REFERENCE_MISMATCH")
+
+    def test_activation_is_private_and_refuses_existing_incompatible_index(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root, _, link = self.fixture(Path(directory))
+            active = root / "state/models/embedding-active.json"
+            active.unlink()
+            reference = ModelReference(
+                1, "fixture-embedding", "fixture/embedding", "a" * 40,
+                str(link.resolve()), str(link), "external-reference",
+                "external-cache-not-product-owned", "now",
+            )
+            route = activate_embedding_route(
+                root, self.model(), reference, approved_revision="a" * 40,
+            )
+            self.assertEqual(route.expected_dimension, 384)
+            self.assertEqual(active.stat().st_mode & 0o777, 0o600)
+            self.assertEqual(load_approved_embedding_route(root), route)
+
+            import sqlite3
+            index = root / "data/semantica/vector-index.sqlite3"
+            index.parent.mkdir(parents=True, exist_ok=True)
+            with sqlite3.connect(index) as db:
+                db.execute("CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+                db.execute("INSERT INTO metadata VALUES ('model', 'different-model')")
+            with self.assertRaises(EmbeddingConfigError) as error:
+                activate_embedding_route(
+                    root, self.model(), reference, approved_revision="a" * 40,
+                )
+            self.assertEqual(error.exception.code, "VECTOR_INDEX_MIGRATION_REQUIRED")

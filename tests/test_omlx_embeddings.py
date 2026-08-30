@@ -59,6 +59,22 @@ class OMLXEmbeddingClientTests(unittest.TestCase):
         self.assertEqual(json.loads(request.data)["encoding_format"], "float")
 
     @patch("urllib.request.urlopen")
+    def test_applies_distinct_query_and_document_prefixes(self, urlopen):
+        urlopen.side_effect = [FakeResponse({
+            "model": "fixed/model", "data": [{"index": 0, "embedding": [1, 0]}],
+        }), FakeResponse({
+            "model": "fixed/model", "data": [{"index": 0, "embedding": [1, 0]}],
+        })]
+        client = OMLXEmbeddingClient(
+            port=8000, api_key="k" * 32, model="fixed/model", expected_dimension=2,
+            query_prefix="query: ", document_prefix="passage: ",
+        )
+        client.embed_query("alpha")
+        self.assertEqual(json.loads(urlopen.call_args.args[0].data)["input"], ["query: alpha"])
+        client.embed_document("alpha")
+        self.assertEqual(json.loads(urlopen.call_args.args[0].data)["input"], ["passage: alpha"])
+
+    @patch("urllib.request.urlopen")
     def test_rejects_wrong_model_and_nonfinite_vector(self, urlopen):
         urlopen.return_value = FakeResponse({"model": "wrong", "data": [{"index": 0, "embedding": [1, 0]}]})
         with self.assertRaisesRegex(EmbeddingError, "unexpected model") as error:

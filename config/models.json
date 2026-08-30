@@ -22,6 +22,27 @@
         "tokenizer_config.json": {"size_bytes": 9706, "sha256": "253153d0738ceb4c668d2eff957714dd2bea0b56de772a9fdccd96cbf517e6a0"},
         "vocab.json": {"size_bytes": 2776833, "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"}
       }
+    },
+    {
+      "id": "multilingual-e5-small-mlx-alpha",
+      "repository": "mlx-community/multilingual-e5-small-mlx",
+      "revision": "5030c7625865046d350eeea28f427d80353d0ac0",
+      "license": "MIT",
+      "license_url": "https://huggingface.co/intfloat/multilingual-e5-small/blob/main/LICENSE",
+      "model_type": "bert",
+      "architecture": "BertModel",
+      "capabilities": ["embedding"],
+      "quantization_bits": null,
+      "embedding_dimension": 384,
+      "query_prefix": "query: ",
+      "document_prefix": "passage: ",
+      "files": {
+        "config.json": {"size_bytes": 2339, "sha256": "e6cb8bbc6630ad19e64575d5bd5a3082790ac29db77e3f2429ee85bd0365ded1"},
+        "special_tokens_map.json": {"size_bytes": 965, "sha256": "38d989b0fdad0fec0c67c14b1f3c8b68184022cf6d4adc5444526ced8653f738"},
+        "tokenizer.json": {"size_bytes": 17082822, "sha256": "642eede941e22781e8b3c9a2dfe2015027b2fd855410b16cd66f07b0f3c76641"},
+        "tokenizer_config.json": {"size_bytes": 1173, "sha256": "ce30001b1b5e8e9cb010e74fdaff3025007f0330eb0fb7da81774f11efdd8845"},
+        "weights.00.safetensors": {"size_bytes": 235330776, "sha256": "7c053992ab110056cb93c5991ececbeea6232adb666d144785e90628e06780d0"}
+      }
     }
   ]
 }

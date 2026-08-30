@@ -5,7 +5,9 @@ import tempfile
 import unittest
 import uuid
 import hashlib
+import io
 from pathlib import Path
+from contextlib import redirect_stdout
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -21,11 +23,31 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class SupervisorProtocolTests(unittest.TestCase):
+    def test_embedding_plan_failure_preserves_command_identity(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            cache = root / "cache"
+            cache.mkdir()
+            catalog = root / "models.json"
+            catalog.write_text('{"schema_version":1,"models":[]}', encoding="utf-8")
+            output = io.StringIO()
+            with redirect_stdout(output):
+                exit_code = supervisor.main([
+                    "--request-id", "00000000-0000-0000-0000-000000000001",
+                    "embedding-plan", "--root", str(root / "product"),
+                    "--cache-root", str(cache), "--catalog", str(catalog),
+                ])
+            response = json.loads(output.getvalue())
+            self.assertEqual(exit_code, 2)
+            self.assertEqual(response["command"], "embedding-plan")
+            self.assertEqual(response["status"], "error")
+
     def model(self):
         return ModelDefinition(
             id="fixture-model", repository="test/model", revision="a" * 40,
             license="Apache-2.0", license_url="https://example.test/license",
             model_type="fixture", architecture="Fixture", capabilities=("chat",), quantization_bits=4,
+            embedding_dimension=None, query_prefix=None, document_prefix=None,
             files={"weights.bin": ModelFile(10, "b" * 64)},
         )
     def write_upstreams(self, directory: Path) -> Path:
@@ -409,7 +431,10 @@ class SupervisorProtocolTests(unittest.TestCase):
                 "MAC_AI_WORK_OS_BROKER_TOKEN": "b" * 40,
                 "MAC_AI_WORK_OS_MEMORY_TOKEN": "m" * 40,
             }
-            route = ApprovedEmbeddingRoute("fixture-embedding", "fixture/embedding", "a" * 40, 384)
+            route = ApprovedEmbeddingRoute(
+                "fixture-embedding", "fixture/embedding", "a" * 40, 384,
+                "query: ", "passage: ",
+            )
             with patch.dict("os.environ", environment, clear=True), \
                  patch.object(supervisor, "_installed_omlx_executable", return_value=Path("/fixture/omlx")), \
                  patch.object(supervisor, "omlx_process_spec", return_value=spec), \
@@ -422,6 +447,8 @@ class SupervisorProtocolTests(unittest.TestCase):
             memory = start.call_args.kwargs["memory"]
             self.assertEqual(memory["executable"], Path("/managed/python"))
             self.assertIn("fixture/embedding", memory["arguments"])
+            self.assertIn("query: ", memory["arguments"])
+            self.assertIn("passage: ", memory["arguments"])
             self.assertNotIn("o" * 40, memory["arguments"])
             self.assertNotIn("m" * 40, memory["arguments"])
             self.assertEqual(memory["environment"]["OMLX_API_KEY"], "o" * 40)

@@ -145,6 +145,45 @@ import RuntimeSecurity
     #expect(payload.approvalRequired)
 }
 
+@Test func embeddingPlanAndActivationExposePinnedMemoryContract() throws {
+    let temporary = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(at: temporary, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: temporary) }
+    let executable = temporary.appendingPathComponent("fixture-supervisor")
+    let plan = #"{"schema_version":1,"command":"embedding-plan","request_id":"00000000-0000-0000-0000-000000000001","status":"ok","payload":{"schema_version":1,"model_id":"e5","repository":"test/e5","revision":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","license":"MIT","capabilities":["embedding"],"quantization_bits":null,"embedding_dimension":384,"query_prefix":"query: ","document_prefix":"passage: ","size_bytes":252418075,"source_path":"/tmp/cache/e5","available_verified":false,"unavailable_reason":"MODEL_SNAPSHOT_MISSING","approval_required":true},"error":null,"emitted_at":"2026-08-30T00:00:00+00:00"}"#
+    let activation = #"{"schema_version":1,"command":"activate-embedding","request_id":"00000000-0000-0000-0000-000000000002","status":"ok","payload":{"schema_version":1,"route":{"model_id":"e5","api_model":"e5","revision":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","expected_dimension":384,"query_prefix":"query: ","document_prefix":"passage: "},"reference":{"model_id":"e5","revision":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","link_path":"/tmp/product/models/e5","storage_mode":"external-reference","source_ownership":"external-cache-not-product-owned"}},"error":null,"emitted_at":"2026-08-30T00:00:00+00:00"}"#
+    let script = """
+    #!/bin/sh
+    case " $* " in
+      *" embedding-plan "*) printf '%s' '\(plan)' ;;
+      *" activate-embedding "*) printf '%s' '\(activation)' ;;
+      *) exit 9 ;;
+    esac
+    """
+    try script.write(to: executable, atomically: true, encoding: .utf8)
+    try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
+    let client = try SupervisorClient(executableURL: executable)
+    let root = temporary.appendingPathComponent("Product")
+    let cache = temporary.appendingPathComponent("cache")
+    let catalog = temporary.appendingPathComponent("models.json")
+    let planned = try client.embeddingPlan(
+        rootURL: root, cacheRootURL: cache, catalogURL: catalog,
+        requestID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+    )
+    #expect(planned.quantizationBits == nil)
+    #expect(planned.embeddingDimension == 384)
+    #expect(planned.queryPrefix == "query: ")
+    #expect(!planned.availableVerified)
+    let activated = try client.activateEmbedding(
+        rootURL: root, cacheRootURL: cache, catalogURL: catalog,
+        approvedRevision: planned.revision,
+        requestID: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
+    )
+    #expect(activated.route.expectedDimension == 384)
+    #expect(activated.reference.storageMode == "external-reference")
+}
+
 @Test func runtimeSecretsTravelInEnvironmentNotArguments() throws {
     let temporary = FileManager.default.temporaryDirectory
         .appendingPathComponent(UUID().uuidString, isDirectory: true)

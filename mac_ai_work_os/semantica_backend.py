@@ -20,6 +20,7 @@ class ManagedSemanticaError(RuntimeError):
 def create_managed_semantica_backend(
     *, product_root: Path, omlx_port: int, omlx_api_key: str,
     embedding_model: str, expected_dimension: int | None = None,
+    query_prefix: str = "", document_prefix: str = "",
 ) -> SemanticaContextBackend:
     if not product_root.is_absolute():
         raise ManagedSemanticaError("MEMORY_ROOT_INVALID", "product root must be absolute")
@@ -42,6 +43,7 @@ def create_managed_semantica_backend(
     client = OMLXEmbeddingClient(
         port=omlx_port, api_key=omlx_api_key, model=embedding_model,
         expected_dimension=expected_dimension,
+        query_prefix=query_prefix, document_prefix=document_prefix,
     )
     vector_store = PersistentOMLXVectorStore(
         product_root / "data/semantica/vector-index.sqlite3", client

@@ -43,7 +43,10 @@ class ModelDefinition:
     model_type: str
     architecture: str
     capabilities: tuple[str, ...]
-    quantization_bits: int
+    quantization_bits: int | None
+    embedding_dimension: int | None
+    query_prefix: str | None
+    document_prefix: str | None
     files: dict[str, ModelFile]
 
 
@@ -94,6 +97,25 @@ def load_model(path: Path, model_id: str) -> ModelDefinition:
         or len(raw_capabilities) != len(set(raw_capabilities))
     ):
         raise ModelError("MODEL_CAPABILITIES_INVALID", model_id)
+    quantization_bits = item.get("quantization_bits")
+    if quantization_bits is not None and (
+        isinstance(quantization_bits, bool) or not isinstance(quantization_bits, int)
+        or quantization_bits < 2 or quantization_bits > 16
+    ):
+        raise ModelError("MODEL_QUANTIZATION_INVALID", model_id)
+    embedding_dimension = item.get("embedding_dimension")
+    query_prefix = item.get("query_prefix")
+    document_prefix = item.get("document_prefix")
+    if "embedding" in raw_capabilities:
+        if (
+            isinstance(embedding_dimension, bool) or not isinstance(embedding_dimension, int)
+            or embedding_dimension <= 0
+            or not isinstance(query_prefix, str) or len(query_prefix) > 80
+            or not isinstance(document_prefix, str) or len(document_prefix) > 80
+        ):
+            raise ModelError("EMBEDDING_CONTRACT_INVALID", model_id)
+    elif any(value is not None for value in (embedding_dimension, query_prefix, document_prefix)):
+        raise ModelError("EMBEDDING_CONTRACT_UNEXPECTED", model_id)
     return ModelDefinition(
         id=item["id"],
         repository=item["repository"],
@@ -103,7 +125,10 @@ def load_model(path: Path, model_id: str) -> ModelDefinition:
         model_type=item["model_type"],
         architecture=item["architecture"],
         capabilities=tuple(raw_capabilities),
-        quantization_bits=item["quantization_bits"],
+        quantization_bits=quantization_bits,
+        embedding_dimension=embedding_dimension,
+        query_prefix=query_prefix,
+        document_prefix=document_prefix,
         files=files,
     )
 
@@ -147,7 +172,11 @@ def verify_snapshot(cache_root: Path, model: ModelDefinition) -> Path:
         raise ModelError("MODEL_TYPE_MISMATCH", str(config.get("model_type")))
     if model.architecture not in config.get("architectures", []):
         raise ModelError("MODEL_ARCHITECTURE_MISMATCH", str(config.get("architectures")))
-    if config.get("quantization", {}).get("bits") != model.quantization_bits:
+    configured_bits = config.get("quantization", {}).get("bits")
+    if model.quantization_bits is None:
+        if configured_bits is not None:
+            raise ModelError("MODEL_QUANTIZATION_MISMATCH", str(config.get("quantization")))
+    elif configured_bits != model.quantization_bits:
         raise ModelError("MODEL_QUANTIZATION_MISMATCH", str(config.get("quantization")))
     return snapshot
 

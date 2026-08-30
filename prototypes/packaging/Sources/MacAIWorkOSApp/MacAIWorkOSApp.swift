@@ -26,6 +26,7 @@ struct ManifestOverview: View {
     @State private var supervisorState: SupervisorViewState = .loading
     @State private var installationState: InstallationViewState = .loading
     @State private var modelState: ModelViewState = .loading
+    @State private var embeddingState: EmbeddingViewState = .loading
     @State private var runtimeState: RuntimeViewState = .loading
 
     var body: some View {
@@ -39,6 +40,7 @@ struct ManifestOverview: View {
             supervisorSection
             installationSection
             modelSection
+            embeddingSection
             runtimeSection
 
             switch result {
@@ -78,6 +80,7 @@ struct ManifestOverview: View {
             await loadSupervisorPreflight()
             await loadInstallationPlan()
             await loadModelPlan()
+            await loadEmbeddingPlan()
             await loadRuntimeStatus()
         }
     }
@@ -147,7 +150,7 @@ struct ManifestOverview: View {
                     Label("Verified existing \(plan.repository)", systemImage: "checkmark.seal.fill")
                         .foregroundStyle(.green)
                     Text("Reuse \(byteCount(plan.sizeBytes)) without downloading or copying model weights.")
-                    Text("License: \(plan.license) · \(plan.quantizationBits)-bit · revision \(plan.revision.prefix(12))")
+                    Text("License: \(plan.license) · \(precision(plan)) · revision \(plan.revision.prefix(12))")
                         .font(.caption).foregroundStyle(.secondary)
                     Text("Verified capabilities: \(plan.capabilities.joined(separator: ", "))")
                         .font(.caption).foregroundStyle(.secondary)
@@ -176,6 +179,50 @@ struct ManifestOverview: View {
                         .foregroundStyle(.red)
                     Text(message).font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
                     Button("Verify again") { Task { await loadModelPlan() } }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    @ViewBuilder
+    private var embeddingSection: some View {
+        GroupBox("Semantic memory model") {
+            VStack(alignment: .leading, spacing: 8) {
+                switch embeddingState {
+                case .loading:
+                    ProgressView("Checking the pinned multilingual embedding model…")
+                case .planned(let plan):
+                    Label(
+                        plan.availableVerified ? "Verified model is ready to reuse" : "Embedding model is not downloaded",
+                        systemImage: plan.availableVerified ? "checkmark.seal.fill" : "arrow.down.circle"
+                    )
+                    .foregroundStyle(plan.availableVerified ? .green : .orange)
+                    Text("\(plan.repository) · \(byteCount(plan.sizeBytes)) · \(plan.license)")
+                    Text("Pinned revision \(plan.revision.prefix(12)) · \(plan.embeddingDimension ?? 0)-dimension vectors")
+                        .font(.caption).foregroundStyle(.secondary)
+                    if plan.availableVerified {
+                        Text("Approval creates a zero-copy reference and enables governed semantic search. The runtime must be stopped.")
+                            .font(.callout).foregroundStyle(.secondary)
+                        Button("Approve and activate semantic memory model") {
+                            Task { await activateEmbedding(plan) }
+                        }
+                        .buttonStyle(.borderedProminent)
+                    } else {
+                        Text("No download has started. A later download action must show this exact size and ask for approval first.")
+                            .font(.callout).foregroundStyle(.secondary)
+                    }
+                case .activating:
+                    ProgressView("Verifying files and activating semantic memory safely…")
+                case .active(let model, let dimension):
+                    Label("Semantic memory model active", systemImage: "brain.head.profile.fill")
+                        .foregroundStyle(.green)
+                    Text("\(model) · \(dimension)-dimension vectors")
+                case .failed(let message):
+                    Label("Semantic memory activation failed safely", systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                    Text(message).font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
+                    Button("Check again") { Task { await loadEmbeddingPlan() } }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -427,6 +474,61 @@ struct ManifestOverview: View {
     }
 
     @MainActor
+    private func loadEmbeddingPlan() async {
+        guard let context = modelContext() else {
+            embeddingState = .failed("The pinned model catalog or standard Hugging Face cache is missing.")
+            return
+        }
+        embeddingState = .loading
+        embeddingState = await Task.detached { () -> EmbeddingViewState in
+            do {
+                let plan = try SupervisorClient(executableURL: context.supervisor).embeddingPlan(
+                    rootURL: context.root,
+                    cacheRootURL: context.cacheRoot,
+                    catalogURL: context.catalog
+                )
+                guard plan.schemaVersion == 1, plan.approvalRequired,
+                      plan.revision.count == 40, plan.sizeBytes > 0,
+                      plan.capabilities.contains("embedding"),
+                      (plan.embeddingDimension ?? 0) > 0 else {
+                    return .failed("Supervisor returned an invalid embedding model plan.")
+                }
+                return .planned(plan)
+            } catch {
+                return .failed(String(describing: error))
+            }
+        }.value
+    }
+
+    @MainActor
+    private func activateEmbedding(_ plan: ModelPlanPayload) async {
+        guard let context = modelContext() else {
+            embeddingState = .failed("The embedding model context is no longer available.")
+            return
+        }
+        embeddingState = .activating
+        embeddingState = await Task.detached { () -> EmbeddingViewState in
+            do {
+                let activated = try SupervisorClient(executableURL: context.supervisor).activateEmbedding(
+                    rootURL: context.root,
+                    cacheRootURL: context.cacheRoot,
+                    catalogURL: context.catalog,
+                    approvedRevision: plan.revision
+                )
+                guard activated.schemaVersion == 1,
+                      activated.route.revision == plan.revision,
+                      activated.route.expectedDimension == plan.embeddingDimension,
+                      activated.reference.storageMode == "external-reference" else {
+                    return .failed("Supervisor returned an invalid embedding activation result.")
+                }
+                return .active(activated.route.apiModel, activated.route.expectedDimension)
+            } catch {
+                return .failed(String(describing: error))
+            }
+        }.value
+    }
+
+    @MainActor
     private func loadRuntimeStatus() async {
         guard let context = installationContext() else {
             runtimeState = .failed("Supervisor context is unavailable.")
@@ -561,6 +663,10 @@ struct ManifestOverview: View {
         ByteCountFormatter.string(fromByteCount: max(0, count), countStyle: .file)
     }
 
+    private func precision(_ plan: ModelPlanPayload) -> String {
+        plan.quantizationBits.map { "\($0)-bit" } ?? "unquantized MLX"
+    }
+
     private func supervisorExecutableURL() -> URL? {
         let bundled = Bundle.main.bundleURL
             .appendingPathComponent("Contents/Helpers/Supervisor", isDirectory: true)
@@ -641,6 +747,14 @@ private enum ModelViewState: Sendable {
     case planned(ModelPlanPayload)
     case linking
     case linked(String)
+    case failed(String)
+}
+
+private enum EmbeddingViewState: Sendable {
+    case loading
+    case planned(ModelPlanPayload)
+    case activating
+    case active(String, Int)
     case failed(String)
 }
 
