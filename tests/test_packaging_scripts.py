@@ -1,6 +1,7 @@
 import subprocess
 import tempfile
 import unittest
+import plistlib
 from pathlib import Path
 
 
@@ -8,6 +9,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class PackagingScriptTests(unittest.TestCase):
+    def test_app_bundle_declares_native_application_principal_class(self):
+        with (ROOT / "prototypes/packaging/App-Info.plist").open("rb") as handle:
+            info = plistlib.load(handle)
+        self.assertEqual(info["CFBundlePackageType"], "APPL")
+        self.assertEqual(info["NSPrincipalClass"], "NSApplication")
+
     def test_app_bundle_includes_pinned_upstream_manifest(self):
         script = (ROOT / "prototypes/packaging/build-app.sh").read_text(encoding="utf-8")
         self.assertIn('config/upstreams.json" "$APP/Contents/Resources/upstreams.json', script)

@@ -68,5 +68,6 @@ passed on retry with clean shutdown.
 
 This proves the real native-client-to-Supervisor-to-broker-to-Qwen task path and the
 synthetic three-route orchestration contract, but it is not yet ordinary-user
-acceptance. A real approved DeepSeek request, the daily workbench UI, visible
-progress/cancel behavior, and the novice-user test remain open.
+acceptance. The first native daily-workbench slice now consumes this protocol; task
+history, visible cancellation, cloud approval execution, a real approved DeepSeek
+request, and the novice-user test remain open.

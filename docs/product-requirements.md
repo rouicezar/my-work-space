@@ -4,7 +4,7 @@ Status: product baseline draft, 2026-08-28.
 
 ## 1. Objective
 
-Deliver a general-purpose Mac application that turns Semantica, holaOS, Herdr, and oMLX into one coherent AI work operating system. A non-expert must be able to install it, complete guided setup, run useful tasks, approve real-world actions, inspect what happened, recover from failures, update it, and remove it without learning the underlying protocols.
+Deliver a general-purpose Mac application that turns Semantica, holaOS, Herdr, and oMLX into one coherent AI work operating system. A product-owned native workbench is the default user experience; holaOS remains a replaceable interaction adapter and must not become a distribution dependency until its license and integration contract are approved. A non-expert must be able to install it, complete guided setup, run useful tasks, approve real-world actions, inspect what happened, recover from failures, update it, and remove it without learning the underlying protocols.
 
 The current developer Mac is a test environment. Personal files, MyNote, GBrain, private accounts, and existing workflows are not product dependencies.
 
@@ -38,7 +38,7 @@ Detect chip, macOS, memory, disk, and port conflicts; map supported Macs to test
 
 ### FR-3 Unified interaction
 
-holaOS is the default experience. Tasks, approvals, status, results, memory review, and recovery work without a terminal. Herdr is optional progressive disclosure.
+The product-owned native workbench is the default experience. Tasks, approvals, status, results, memory review, and recovery work without a terminal. holaOS and Herdr are optional progressive-disclosure adapters rather than competing primary shells.
 
 The guided setup/repair assistant and the daily workbench are distinct product modes.
 After setup is healthy, ordinary launch opens the workbench; installation manifests,

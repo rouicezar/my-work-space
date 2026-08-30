@@ -4,12 +4,12 @@ Status: product architecture baseline draft.
 
 ## Product shape
 
-Use a product-owned shell around four replaceable adapters. holaOS remains the default experience, while installation, policy, health, audit correlation, upgrades, and recovery belong to the product rather than four independent lifecycles.
+Use a product-owned native shell around four replaceable adapters. The native workbench is the default experience and owns installation, tasks, approvals, results, health, audit correlation, upgrades, and recovery. holaOS remains an optional replaceable interaction adapter until its distribution license and integration contract are approved.
 
 ```text
 Mac AI Work OS
 ├── Installer and First-Run Assistant
-├── Unified UI (holaOS-based)
+├── Product-owned Native Workbench
 ├── Policy and Approval Service
 ├── Orchestrator and Audit Correlator
 ├── Lifecycle and Health Supervisor
@@ -28,7 +28,7 @@ This avoids a loose bundle that exposes four installations and failure models, a
 
 ## User modes
 
-Standard mode presents tasks, approvals, results, memory, connectors, and simple health. Advanced mode adds model profiles, retention, audit, and agent status. Developer mode exposes Herdr, logs, APIs, and adapter diagnostics. Users move upward deliberately; primary setup never requires advanced layers.
+Standard mode presents tasks, approvals, results, memory, connectors, and simple health in a restrained conversation-centered native workbench inspired by proven AI coding workspaces. Advanced mode adds model profiles, retention, audit, and agent status. Developer mode exposes optional holaOS/Herdr adapters, logs, APIs, and adapter diagnostics. Users move upward deliberately; primary setup never requires advanced layers.
 
 ## Task and data flow
 

@@ -9,19 +9,20 @@ struct MacAIWorkOSPrototypeApp: App {
         WindowGroup("Mac AI Work OS") {
             ManifestOverview()
                 .frame(
-                    minWidth: 620,
-                    idealWidth: 720,
-                    maxWidth: 800,
-                    minHeight: 440,
-                    idealHeight: 560,
-                    maxHeight: 700
+                    minWidth: 900,
+                    idealWidth: 1120,
+                    minHeight: 620,
+                    idealHeight: 760
                 )
         }
-        .windowResizability(.contentSize)
     }
 }
 
 struct ManifestOverview: View {
+    @State private var section: WorkspaceSection? = .newTask
+    @State private var prompt = ""
+    @State private var currentTaskPrompt = ""
+    @State private var taskState: WorkbenchTaskState = .idle
     @State private var result: Result<ProductManifest, Error>?
     @State private var supervisorState: SupervisorViewState = .loading
     @State private var installationState: InstallationViewState = .loading
@@ -30,11 +31,164 @@ struct ManifestOverview: View {
     @State private var runtimeState: RuntimeViewState = .loading
 
     var body: some View {
+        NavigationSplitView {
+            List(selection: $section) {
+                Section {
+                    Label("New task", systemImage: "square.and.pencil")
+                        .tag(WorkspaceSection.newTask)
+                    Label("History", systemImage: "clock.arrow.circlepath")
+                        .tag(WorkspaceSection.history)
+                }
+                Section {
+                    Label("Settings & recovery", systemImage: "gearshape")
+                        .tag(WorkspaceSection.settings)
+                }
+            }
+            .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 260)
+            .safeAreaInset(edge: .bottom) {
+                HStack(spacing: 8) {
+                    Circle().fill(runtimeIndicatorColor).frame(width: 8, height: 8)
+                    Text(runtimeIndicatorTitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .padding(14)
+            }
+        } detail: {
+            switch section ?? .newTask {
+            case .newTask: workbench
+            case .history: history
+            case .settings: setupAssistant
+            }
+        }
+        .task {
+            loadManifest()
+            await loadSupervisorPreflight()
+            await loadInstallationPlan()
+            await loadModelPlan()
+            await loadEmbeddingPlan()
+            await loadRuntimeStatus()
+        }
+    }
+
+    private var workbench: some View {
+        VStack(spacing: 0) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("New task").font(.title2.weight(.semibold))
+                    Text("Private by default · cloud use always asks first")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                routeBadge
+            }
+            .padding(.horizontal, 28).padding(.vertical, 18)
+            Divider()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    switch taskState {
+                    case .idle:
+                        VStack(spacing: 14) {
+                            Image(systemName: "sparkles.rectangle.stack")
+                                .font(.system(size: 34, weight: .light))
+                                .foregroundStyle(.secondary)
+                            Text("What would you like to work on?")
+                                .font(.title3.weight(.medium))
+                            Text("Ask a question, draft something, or start a task. The workbench keeps local work on this Mac whenever the verified local route can handle it.")
+                                .multilineTextAlignment(.center)
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: 520)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 360)
+                    case .submitting(let text):
+                        taskBubble(text)
+                        HStack(spacing: 10) {
+                            ProgressView()
+                            Text("Checking the safest available route…")
+                                .foregroundStyle(.secondary)
+                        }
+                    case .localResult(let text, let model, let correlation):
+                        taskBubble(currentTaskPrompt)
+                        resultCard(title: "Completed locally", icon: "checkmark.circle.fill", color: .green) {
+                            Text(text).textSelection(.enabled)
+                            metadata("Local model · \(model)", correlation: correlation)
+                        }
+                    case .cloudProposal(let proposal):
+                        taskBubble(currentTaskPrompt)
+                        resultCard(title: "Your approval is required", icon: "lock.shield.fill", color: .orange) {
+                            Text("This task is outside the verified local boundary. Nothing has left this Mac.")
+                            Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 8) {
+                                GridRow { Text("Would send").foregroundStyle(.secondary); Text("\(proposal.payloadSizeBytes) bytes to \(proposal.modelID)") }
+                                GridRow { Text("Data").foregroundStyle(.secondary); Text(proposal.dataClasses.joined(separator: ", ")) }
+                                GridRow { Text("Location").foregroundStyle(.secondary); Text(proposal.processingLocation) }
+                                GridRow { Text("Maximum cost").foregroundStyle(.secondary); Text(String(format: "$%.6f", proposal.estimatedCost.maximum)) }
+                            }
+                            Text("Cloud approval and execution will be enabled only after a user-provided credential is configured in Settings.")
+                                .font(.callout).foregroundStyle(.secondary)
+                            metadata("Proposal only · no network request", correlation: proposal.correlationID)
+                        }
+                    case .unavailable(let message):
+                        taskBubble(currentTaskPrompt)
+                        resultCard(title: "This task cannot run safely", icon: "exclamationmark.triangle.fill", color: .orange) {
+                            Text(message)
+                            Button("Open recovery settings") { section = .settings }
+                        }
+                    case .failed(let message):
+                        if !currentTaskPrompt.isEmpty { taskBubble(currentTaskPrompt) }
+                        resultCard(title: "Task stopped safely", icon: "xmark.octagon.fill", color: .red) {
+                            Text(message).textSelection(.enabled)
+                        }
+                    }
+                }
+                .padding(28)
+            }
+
+            composer
+        }
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    private var composer: some View {
+        VStack(spacing: 10) {
+            HStack(alignment: .bottom, spacing: 12) {
+                TextField("Message Mac AI Work OS", text: $prompt, axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .lineLimit(1...8)
+                    .onSubmit { submitWorkbenchTask() }
+                Button { submitWorkbenchTask() } label: {
+                    Image(systemName: "arrow.up")
+                        .font(.headline).frame(width: 30, height: 30)
+                }
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.circle)
+                .disabled(prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || taskState.isBusy)
+                .accessibilityLabel("Submit task")
+            }
+            .padding(14)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(.separator.opacity(0.7)))
+            Text("Local by default. A cloud proposal never sends data until you approve the exact request.")
+                .font(.caption2).foregroundStyle(.tertiary)
+        }
+        .padding(.horizontal, 28).padding(.bottom, 22)
+    }
+
+    private var history: some View {
+        ContentUnavailableView(
+            "No task history yet", systemImage: "clock.arrow.circlepath",
+            description: Text("Completed and interrupted tasks will appear here with their audit status.")
+        )
+        .navigationTitle("History")
+    }
+
+    private var setupAssistant: some View {
         ScrollView {
         VStack(alignment: .leading, spacing: 18) {
-            Text("Mac AI Work OS")
+            Text("Settings & recovery")
                 .font(.largeTitle.bold())
-            Text("Alpha setup assistant")
+            Text("Installation, local runtime, models, and advanced diagnostics")
                 .foregroundStyle(.secondary)
 
             supervisorSection
@@ -75,13 +229,160 @@ struct ManifestOverview: View {
         }
         .padding(24)
         }
-        .task {
-            loadManifest()
-            await loadSupervisorPreflight()
-            await loadInstallationPlan()
-            await loadModelPlan()
-            await loadEmbeddingPlan()
-            await loadRuntimeStatus()
+    }
+
+    @ViewBuilder
+    private var routeBadge: some View {
+        Label(runtimeIndicatorTitle, systemImage: runtimeIndicatorIcon)
+            .font(.caption.weight(.medium))
+            .padding(.horizontal, 10).padding(.vertical, 6)
+            .background(runtimeIndicatorColor.opacity(0.12), in: Capsule())
+            .foregroundStyle(runtimeIndicatorColor)
+    }
+
+    private func taskBubble(_ text: String) -> some View {
+        HStack {
+            Spacer(minLength: 80)
+            Text(text)
+                .textSelection(.enabled)
+                .padding(.horizontal, 14).padding(.vertical, 10)
+                .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
+        }
+    }
+
+    private func resultCard<Content: View>(
+        title: String, icon: String, color: Color,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Label(title, systemImage: icon)
+                .font(.headline).foregroundStyle(color)
+            content()
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(.separator.opacity(0.65)))
+    }
+
+    private func metadata(_ route: String, correlation: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(route)
+            Text("Audit · \(correlation)").textSelection(.enabled)
+        }
+        .font(.caption).foregroundStyle(.secondary)
+    }
+
+    private var runtimeIndicatorTitle: String {
+        switch runtimeState {
+        case .running, .sampling, .sample: "Local AI ready"
+        case .starting, .loading: "Checking local AI"
+        case .stopped: "Local AI stopped"
+        case .degraded: "Recovery needed"
+        case .failed: "Status unavailable"
+        }
+    }
+
+    private var runtimeIndicatorIcon: String {
+        switch runtimeState {
+        case .running, .sampling, .sample: "checkmark.circle.fill"
+        case .starting, .loading: "circle.dotted"
+        case .stopped: "stop.circle"
+        case .degraded: "exclamationmark.triangle.fill"
+        case .failed: "xmark.circle.fill"
+        }
+    }
+
+    private var runtimeIndicatorColor: Color {
+        switch runtimeState {
+        case .running, .sampling, .sample: .green
+        case .starting, .loading: .secondary
+        case .stopped: .secondary
+        case .degraded: .orange
+        case .failed: .red
+        }
+    }
+
+    private func submitWorkbenchTask() {
+        let text = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, !taskState.isBusy else { return }
+        prompt = ""
+        currentTaskPrompt = text
+        taskState = .submitting(text)
+        Task { await runWorkbenchTask(text) }
+    }
+
+    @MainActor
+    private func runWorkbenchTask(_ text: String) async {
+        guard let context = taskContext() else {
+            taskState = .failed("The task router or one of its signed catalogs is missing.")
+            return
+        }
+        taskState = await Task.detached { () -> WorkbenchTaskState in
+            do {
+                let secrets = try RuntimeSecretCoordinator().ensure()
+                let payload = try SupervisorClient(executableURL: context.supervisor).submitTask(
+                    rootURL: context.root,
+                    modelCatalogURL: context.models,
+                    hardwareProfilesURL: context.hardware,
+                    localProfilesURL: context.localProfiles,
+                    evidenceRootURL: context.evidenceRoot,
+                    cloudCatalogURL: context.cloud,
+                    prompt: text,
+                    maximumOutputTokens: 64,
+                    omlxAPIKey: secrets.omlxAPIKey,
+                    brokerToken: secrets.brokerToken,
+                    memoryToken: secrets.memoryToken
+                )
+                switch payload.plan.route {
+                case "local":
+                    guard let result = payload.result else {
+                        return .failed("The local route returned no validated result.")
+                    }
+                    return .localResult(result.output, result.model, result.correlationID)
+                case "cloud_proposal_required":
+                    guard let proposal = payload.proposal else {
+                        return .failed("The cloud route returned no approval proposal.")
+                    }
+                    return .cloudProposal(proposal)
+                case "capability_unavailable":
+                    let code = payload.cloudUnavailableCode ?? payload.plan.reasonCodes.joined(separator: ", ")
+                    return .unavailable(userFacingRouteMessage(code))
+                default:
+                    return .failed("The task router returned an unsupported state.")
+                }
+            } catch {
+                return .failed(String(describing: error))
+            }
+        }.value
+    }
+
+    private func taskContext() -> TaskContext? {
+        guard let installation = installationContext(),
+              let models = bundledOrDevelopment("models", extension: "json", development: "config/models.json"),
+              let hardware = bundledOrDevelopment("hardware-profiles", extension: "json", development: "config/hardware-profiles.yaml"),
+              let local = bundledOrDevelopment("local-model-profiles", extension: "json", development: "config/local-model-profiles.json"),
+              let cloud = bundledOrDevelopment("cloud-providers", extension: "json", development: "config/cloud-providers.json")
+        else { return nil }
+        let evidenceRoot = Bundle.main.resourceURL ?? URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        return TaskContext(
+            supervisor: installation.supervisor, root: installation.root, models: models,
+            hardware: hardware, localProfiles: local, cloud: cloud, evidenceRoot: evidenceRoot
+        )
+    }
+
+    private func bundledOrDevelopment(_ name: String, extension suffix: String, development: String) -> URL? {
+        if let bundled = Bundle.main.url(forResource: name, withExtension: suffix) { return bundled }
+        let url = URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent(development)
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
+    }
+
+    nonisolated private func userFacingRouteMessage(_ code: String) -> String {
+        switch code {
+        case "CLOUD_DATA_CLASS_BLOCKED": "This task contains data that is not allowed to leave the Mac. Remove credentials or sensitive third-party data and try again."
+        case "CLOUD_PRICING_STALE": "Current cloud pricing cannot be verified, so the task was not sent. Refresh the provider catalog in Settings."
+        case "local_unhealthy": "Local AI is not ready and cloud use is disabled. Open recovery settings to start or repair it."
+        default: "The verified local route cannot handle this task, and no safe cloud route is currently available."
         }
     }
 
@@ -810,4 +1111,34 @@ private enum RuntimeViewState: Sendable {
     case sample(String, String, String)
     case degraded(String)
     case failed(String)
+}
+
+private enum WorkspaceSection: String, Hashable {
+    case newTask
+    case history
+    case settings
+}
+
+private enum WorkbenchTaskState: Sendable {
+    case idle
+    case submitting(String)
+    case localResult(String, String, String)
+    case cloudProposal(CloudProposalPayload)
+    case unavailable(String)
+    case failed(String)
+
+    var isBusy: Bool {
+        if case .submitting = self { return true }
+        return false
+    }
+}
+
+private struct TaskContext: Sendable {
+    let supervisor: URL
+    let root: URL
+    let models: URL
+    let hardware: URL
+    let localProfiles: URL
+    let cloud: URL
+    let evidenceRoot: URL
 }
