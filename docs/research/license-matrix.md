@@ -1,22 +1,25 @@
 # Upstream License and Distribution Matrix
 
-Verified: 2026-08-28. This is engineering risk classification, not legal advice. Transitive dependencies, bundled models, trademarks, and release assets require their own review before public distribution.
+Verified: 2026-08-28. Product intent clarified 2026-08-31. This is engineering risk classification, not legal advice. Transitive dependencies, bundled models, trademarks, and release assets require their own review before public distribution.
+
+Development policy: the current phase is personal, non-commercial learning and exchange. Reuse existing non-visual functionality from all four upstream projects as far as each license permits, preserving required notices and modification records. Non-commercial intent does not itself waive license conditions. Public open-source distribution is a later, separate gate and must not inherit an unverified assumption from the private development phase.
 
 | Component | Declared license | Source redistribution | Embedding in Mac AI Work OS | Required action |
 |---|---|---|---|---|
 | Semantica | MIT | Permitted with copyright and permission notice | Candidate | Preserve notice; audit dependency licenses and optional backends |
-| holaOS | Modified Apache 2.0 with additional commercial-distribution and branding conditions | Conditional | **Not cleared** for a generally distributable embedded product | Obtain written commercial/redistribution clarification; until then support only a separately installed user copy through an adapter and preserve branding |
+| holaOS | Modified Apache 2.0 with additional commercial-distribution and branding conditions | Conditional | Personal non-commercial reuse subject to license; **not cleared** for a generally distributable embedded product | Reuse permitted non-visual capability in development with notices; retain adapter boundary and obtain written clarification before public embedding |
 | Herdr | Apache-2.0 | Permitted subject to Apache notice obligations | Candidate | Preserve LICENSE/NOTICE obligations; audit vendored `portable-pty` and all distributed assets |
 | oMLX | Apache-2.0 | Permitted subject to Apache notice obligations | Candidate, but operationally prefer official DMG acquisition first | Preserve notices; audit transitive wheels, native kernels, updater, model licenses, and DMG signing/notarization provenance |
 
 ## Decisive holaOS constraint
 
-The official license says a commercial license is required to embed holaOS source as a component of a product or service sold, licensed, or otherwise commercially distributed to third parties. It also prohibits removing or modifying frontend logo or copyright information. Because our target is a general distributable product and future commercial status is not fixed, the safe engineering policy is:
+The official license says a commercial license is required to embed holaOS source as a component of a product or service sold, licensed, or otherwise commercially distributed to third parties. It also prohibits removing or modifying frontend logo or copyright information. Because the current phase is personal and non-commercial but future public distribution is intended, the engineering policy is:
 
-1. do not copy, modify, rebadge, or bundle the holaOS frontend in a public release;
-2. do not describe the current combined product as legally cleared for commercial distribution;
-3. build a versioned adapter against a separately installed holaOS instance;
-4. seek written authorization or select/implement a differently licensed unified UI before claiming a single bundled installer.
+1. reuse holaOS non-visual workflow and application code during personal development where its license permits, preserving notices, branding obligations, and modification records;
+2. keep the product-owned visual workbench independent and do not copy, modify, rebadge, or bundle restricted holaOS frontend assets in a public release;
+3. maintain a versioned adapter boundary so a separately installed holaOS remains supported and public packaging can exclude uncleared material;
+4. do not describe the combined product as cleared for public or commercial distribution until the exact source, assets, dependencies, notices, and distribution shape are reviewed;
+5. seek written clarification before a public release includes any holaOS portion whose redistribution scope remains ambiguous.
 
 Merely downloading holaOS during first run may still create an integrated commercial offering; it is not assumed to bypass the license. That deployment shape also needs written clearance.
 

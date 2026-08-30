@@ -19,9 +19,17 @@ does not yet provide a daily task experience.
    model details, component names, ports, and diagnostics live in Settings & Recovery.
 4. Task state exposes only honest user-facing routes: completed locally, approval
    required with no transmission, or unavailable with a recovery action.
-5. holaOS remains a replaceable optional adapter behind a versioned contract. It does
-   not own lifecycle, policy, audit, memory authority, or the default distribution UI.
-6. Herdr remains the optional advanced multi-agent and process console.
+5. holaOS does not own the default distribution UI, but its licensed non-visual
+   workflow and application capabilities are reused through a versioned integration
+   boundary wherever compatible. Visual assets, branding, and public bundling are
+   reviewed separately.
+6. Herdr is the required core multi-agent execution runtime. Its terminal and process
+   console may be hidden from ordinary users, but parallel execution, status,
+   cancellation, resume, recovery, and handoff must use or extend Herdr rather than
+   reimplementing an independent competing runtime.
+7. Before product-owned implementation of a non-visual capability, record whether it
+   already exists in Semantica, holaOS, Herdr, or oMLX and why direct reuse or a thin
+   adapter is or is not viable.
 
 ## Required evidence
 

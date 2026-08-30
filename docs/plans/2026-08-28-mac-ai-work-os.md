@@ -1,10 +1,12 @@
-# Mac AI Work OS Product Implementation Plan
+# Mac AI Work OS Product Implementation Plan (Superseded Baseline)
+
+> Superseded on 2026-08-31 by `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md`. Retained as historical context only. Where this file conflicts with the master plan, `AGENTS.md`, or ADR-0017, the newer documents control.
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Deliver a general-purpose, distributable, out-of-the-box Mac AI work operating system based on Semantica, holaOS, Herdr, and oMLX.
 
-**Architecture:** A product-owned installer, lifecycle supervisor, policy/approval service, orchestrator, audit correlator, and thin adapters create one coherent experience. holaOS is the default UI, Herdr is optional advanced runtime, Semantica owns governed memory, and oMLX provides local inference.
+**Architecture:** A product-owned independent workbench and adapter protocol integrate reusable capabilities from all four upstream projects. Herdr is the core multi-agent runtime, Semantica owns governed memory, oMLX provides local inference, and holaOS supplies reusable workflow capabilities subject to its license and visual/distribution boundary.
 
 **Tech Stack:** macOS, packaging spike, shell, Python, JSON Schema, pytest, Semantica, holaOS, Herdr, oMLX, MCP, compatible model APIs.
 
@@ -46,7 +48,7 @@ Test provenance, candidates, confirmation, conflict, correction, history, export
 
 ### Task 7: Herdr adapter
 
-Test parallel execution, status, approval wait, detach/reconnect, logs, cancellation, crash recovery, and result handoff while keeping it optional for ordinary users.
+Test parallel execution, status, approval wait, detach/reconnect, logs, cancellation, crash recovery, and result handoff. Herdr is required for the core multi-agent loop, although its advanced console can remain hidden from ordinary users.
 
 ### Task 8: holaOS adapter and UI boundary
 

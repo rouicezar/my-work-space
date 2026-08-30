@@ -4,7 +4,7 @@ Status: product architecture baseline draft.
 
 ## Product shape
 
-Use a product-owned native shell around four replaceable adapters. The native workbench is the default experience and owns installation, tasks, approvals, results, health, audit correlation, upgrades, and recovery. holaOS remains an optional replaceable interaction adapter until its distribution license and integration contract are approved.
+Use a product-owned native shell and versioned adapter protocol around four upstream foundations. The native workbench is the default experience and owns the unified interaction, policy, lifecycle, and audit contract. Licensed non-visual capabilities from Semantica, holaOS, Herdr, and oMLX are reused before product-owned equivalents are considered. holaOS visual assets and public bundling remain separately gated by license and branding terms.
 
 ```text
 Mac AI Work OS
@@ -15,8 +15,8 @@ Mac AI Work OS
 ├── Lifecycle and Health Supervisor
 ├── Component Adapters
 │   ├── Semantica — governed memory and decision evidence
-│   ├── holaOS — interaction and application workspace
-│   ├── Herdr — advanced agent/process runtime
+│   ├── holaOS — reusable workflow and application capabilities
+│   ├── Herdr — core multi-agent execution runtime
 │   └── oMLX — local inference
 ├── Inference Router
 │   ├── Local Qwen route — default
@@ -24,15 +24,15 @@ Mac AI Work OS
 └── Connector and Extension Contracts
 ```
 
-This avoids a loose bundle that exposes four installations and failure models, and a deep fork that creates unsustainable maintenance. Thin tested adapters plus a product lifecycle layer preserve replaceability and coherence.
+This avoids a loose bundle that exposes four installations and failure models and avoids rebuilding functionality already maintained upstream. Thin tested adapters plus a product lifecycle layer preserve reuse, replaceability, and coherence. New product-owned capability requires a documented upstream search and a license, compatibility, security, maintainability, or verified capability-gap reason.
 
 ## User modes
 
-Standard mode presents tasks, approvals, results, memory, connectors, and simple health in a restrained conversation-centered native workbench inspired by proven AI coding workspaces. Advanced mode adds model profiles, retention, audit, and agent status. Developer mode exposes optional holaOS/Herdr adapters, logs, APIs, and adapter diagnostics. Users move upward deliberately; primary setup never requires advanced layers.
+Standard mode presents tasks, approvals, results, memory, connectors, and simple health in a restrained conversation-centered native workbench inspired by proven AI coding workspaces. Advanced mode adds model profiles, retention, audit, and agent status. Developer mode exposes the holaOS integration surface, Herdr console, logs, APIs, and adapter diagnostics. Users move upward deliberately; primary setup never requires advanced layers.
 
 ## Task and data flow
 
-Every task receives a correlation ID and risk classification. Policy determines allowed tools, data routes, approval, and retention. The orchestrator retrieves only governed Semantica knowledge, selects a visible model route, and runs ordinary work through holaOS. Long or parallel work uses the Herdr adapter. Tool mutations are previewed and approved. Validation precedes completion. Audit links all phases. Candidate memory is promoted only after provenance, conflict, and policy gates.
+Every task receives a correlation ID and risk classification. Policy determines allowed tools, data routes, approval, and retention. The orchestrator retrieves only governed Semantica knowledge, selects a visible model route, reuses holaOS workflow/application capabilities where applicable, and executes agent work through Herdr. Tool mutations are previewed and approved. Validation precedes completion. Audit links all phases. Candidate memory is promoted only after provenance, conflict, and policy gates.
 
 Inference routing is a product policy decision, not an opaque model choice. A task
 contract declares required input types, approximate context, tool schemas, quality

@@ -4,7 +4,7 @@ Status: product baseline draft, 2026-08-28.
 
 ## 1. Objective
 
-Deliver a general-purpose Mac application that turns Semantica, holaOS, Herdr, and oMLX into one coherent AI work operating system. A product-owned native workbench is the default user experience; holaOS remains a replaceable interaction adapter and must not become a distribution dependency until its license and integration contract are approved. A non-expert must be able to install it, complete guided setup, run useful tasks, approve real-world actions, inspect what happened, recover from failures, update it, and remove it without learning the underlying protocols.
+Deliver a general-purpose Mac application that turns Semantica, holaOS, Herdr, and oMLX into one coherent AI work operating system. A product-owned native workbench is the default user experience. Existing licensed non-visual functionality from all four upstream projects is reused through pinned source/package/API integrations before product-owned equivalents are considered. holaOS visual assets and public bundling remain separately gated by its license and branding terms. A non-expert must be able to install it, complete guided setup, run useful tasks, approve real-world actions, inspect what happened, recover from failures, update it, and remove it without learning the underlying protocols.
 
 The current developer Mac is a test environment. Personal files, MyNote, GBrain, private accounts, and existing workflows are not product dependencies.
 
@@ -38,7 +38,7 @@ Detect chip, macOS, memory, disk, and port conflicts; map supported Macs to test
 
 ### FR-3 Unified interaction
 
-The product-owned native workbench is the default experience. Tasks, approvals, status, results, memory review, and recovery work without a terminal. holaOS and Herdr are optional progressive-disclosure adapters rather than competing primary shells.
+The product-owned native workbench is the default experience. Tasks, approvals, status, results, memory review, and recovery work without a terminal. holaOS supplies reusable workflow/application capabilities through the adapter boundary and may also be connected as an advanced external interface. Herdr is the required core multi-agent execution runtime; its terminal/process console may be progressively disclosed, but its execution capability is not optional.
 
 The guided setup/repair assistant and the daily workbench are distinct product modes.
 After setup is healthy, ordinary launch opens the workbench; installation manifests,
@@ -56,6 +56,8 @@ Every material run has a correlation ID linking request, agent, model, retrieval
 ### FR-6 Parallel agents
 
 Run, observe, pause, approve, cancel, and recover multiple agents. Aggregate results only after validation. Reconnect without falsely marking work complete.
+
+The workbench must use a versioned agent-tool adapter so a local model can discover capabilities and coordinate Codex, Claude, and other compatible AI tools without hard-coding one vendor. Each adapter declares identity, capabilities, permissions, lifecycle operations, context/handoff format, artifacts, status, cancellation, resume, and audit correlation.
 
 ### FR-7 Local-first inference
 
@@ -101,7 +103,11 @@ Report component health and workflow health separately. Missing capability canno
 
 ### FR-10 Extensibility
 
-Versioned contracts isolate UI, policy, orchestration, inference, memory, agents, and connectors. The four projects are the default distribution rather than hard-coded business assumptions.
+Versioned contracts isolate UI, policy, orchestration, inference, memory, agents, and connectors. The four upstream projects are the functional foundation. Product-owned code must not duplicate a reusable upstream non-visual capability unless the reuse ledger records a license, compatibility, security, maintainability, or verified capability-gap reason.
+
+### FR-11 Product settings
+
+Settings is a normal product surface, distinct from first-run setup and recovery. It includes General, Models & Providers, Agents & Tools, Memory, Permissions & Approvals, Local Runtime, Data & Privacy, and Diagnostics & Recovery. Users can see credential state without exposing secrets, test and remove providers, choose local/cloud policies, manage agent adapters and tool permissions, inspect memory policy, and reach repair controls without making diagnostics the primary experience.
 
 ## 5. Quality requirements
 

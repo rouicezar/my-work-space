@@ -8,6 +8,12 @@ The product is a local-first, multi-agent Mac AI workbench. Its default distribu
 
 Do not let the project drift into a setup-only utility, a model downloader, a single-chat demo, or a thin wrapper around one upstream project.
 
+## Upstream-first implementation rule
+
+Semantica, holaOS, Herdr, and oMLX are the functional foundation of the product. Reuse their existing non-visual capabilities as far as their licenses and verified APIs permit. The product-owned implementation is limited to the independent workbench UI, adapter protocol, integration/orchestration/policy/lifecycle layers, license-blocked portions, and capabilities proven absent upstream.
+
+Before implementing any capability that may already exist in one of the four upstream projects, the executing agent must record the upstream search result, reusable entry point, license obligation, and integration decision in the master plan evidence or the relevant capability ledger. If an upstream implementation exists and its license permits the intended use, duplicating it is a drift stop condition. Personal, non-commercial development does not waive license terms; future public distribution has a separate release-time license, notice, asset, and trademark gate.
+
 ## Execution control documents
 
 The project has two required control documents:
@@ -66,6 +72,7 @@ Stop and ask for direction before proceeding if a task would:
 - treat oMLX health as proof of inference without an actual completion or embedding call;
 - send data to a cloud model without credential state, preview, explicit approval, and audit;
 - copy or ship upstream assets whose redistribution is not cleared;
+- reimplement a non-visual capability already available from Semantica, holaOS, Herdr, or oMLX without a documented license, compatibility, security, or capability-gap reason;
 - mark a screenshot, failed provider response, or unverified manual observation as acceptance evidence;
 - skip updating the master tracker or handoff document.
 

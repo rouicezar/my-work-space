@@ -20,8 +20,8 @@ Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-ma
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
 Master plan task: P1-T01
-State: P0 governance correction complete; next work is upstream capability and license inventory
-Next required action: claim P1-T01, inspect current git status, and preserve the interrupted DeepSeek/settings work unless explicitly claimed.
+State: P0-T07 verified; role documents are aligned and upstream-first reuse is mandatory
+Next required action: claim P1-T01, inventory the four upstream checkouts/pins, and build reuse ledgers before implementing capabilities.
 
 ## Product Goal Snapshot
 
@@ -109,6 +109,44 @@ Secret/external-write status:
 ```
 
 ## Handoff Log
+
+## 2026-08-31 01:57 Asia/Shanghai - P0-T07 - exit
+
+Executor: Codex root agent
+Starting git state: dirty worktree with previously recorded DeepSeek/settings implementation changes
+Scope: reconcile product-role documents and make upstream-first reuse enforceable
+Files intended: governance, requirements, decisions, ADR-0017, active/legacy plans, license matrix, tracker, and handoff
+Actions: corrected active role conflicts; marked the old plan superseded; made Herdr core; required licensed non-visual reuse from all four upstreams; separated personal non-commercial development from future public distribution; added universal Codex/Claude-compatible agent adapters and complete product Settings to requirements and the master plan
+Verification: repository-wide role scan found no unmarked active conflict; `git diff --check` passed for all documentation files
+Evidence: upstream-first implementation rule in `AGENTS.md`; ADR-003 superseded by ADR-017; ADR-0017 and product requirements require Herdr and upstream reuse; master plan contains CAP-11, CAP-12, P2-T07, and P4-T07
+Files changed: `AGENTS.md`, `docs/decisions.md`, `docs/product-requirements.md`, `docs/adr/0017-product-owned-native-workbench.md`, both 2026-08-28 plans, license matrix, master tracker, and this handoff
+Commit: pending documentation-only closeout commit
+Push: pending
+Decisions: independent visual workbench plus adapter protocol; reuse all license-permitted non-visual upstream capability; do not duplicate upstream functionality without recorded justification
+Assumptions: personal non-commercial use does not waive license obligations; future public distribution requires a fresh exact-artifact review
+Blocked items: none
+Next exact action: commit and push documentation only, then claim P1-T01
+Approval needed: none for documentation; cloud calls remain separately approval-gated
+Secret/external-write status: no secrets handled; no cloud API calls
+
+## 2026-08-31 - P0-T07 - takeover
+
+Executor: Codex root agent
+Starting git state: dirty worktree with the previously recorded DeepSeek/settings implementation changes
+Scope: align active and legacy product documents with the confirmed independent-workbench, adapter-protocol, and upstream-first reuse target
+Files intended: `AGENTS.md`, product requirements, decisions, ADR-0017, active/legacy plans, license matrix, master tracker, and this handoff
+Actions: claimed P0-T07 after repository-wide conflict scan found documents that still called holaOS the default UI and Herdr optional
+Verification: pending repository-wide role/reuse conflict scan and whitespace validation
+Evidence: conflicts found in `docs/decisions.md`, `docs/product-requirements.md`, `docs/adr/0017-product-owned-native-workbench.md`, and `docs/plans/2026-08-28-mac-ai-work-os.md`
+Files changed: master tracker and this handoff at takeover
+Commit: none yet
+Push: none yet
+Decisions: reuse existing upstream functionality before product-owned implementation; new implementation is limited to the independent workbench, adapter/protocol/integration/policy gaps, license-blocked portions, or verified upstream capability gaps
+Assumptions: non-commercial personal development does not waive license terms; public distribution remains a separate release gate
+Blocked items: none
+Next exact action: update conflicting documents, scan, verify, commit documentation only, and push
+Approval needed: none for repository documentation edits
+Secret/external-write status: no secrets handled; no cloud API calls
 
 ## 2026-08-31 - P0-T01 - takeover
 

@@ -4,7 +4,7 @@
 
 - **ADR-001 — General-purpose product:** ordinary Mac users are the target; the current Mac is only an initial test environment.
 - **ADR-002 — Product shell and adapters:** product-owned installer, lifecycle, policy, orchestration, and audit layers integrate replaceable upstream components.
-- **ADR-003 — Progressive disclosure:** holaOS is the default UI; Herdr is optional for advanced multi-agent and terminal control.
+- **ADR-003 — Superseded interaction split:** the earlier holaOS-default/Herdr-optional split is superseded by ADR-017 and the 2026-08-31 master plan. The product-owned workbench is the default UI; holaOS contributes reusable non-visual capabilities through the licensed integration boundary; Herdr is the core multi-agent runtime.
 - **ADR-004 — Governed memory authority:** Semantica owns confirmed long-term knowledge; raw input, audit, candidates, and UI session state remain distinct.
 - **ADR-005 — Local-first inference:** oMLX is default; hardware profiles choose models and silent cloud fallback is prohibited.
 - **ADR-006 — Safety and honest degradation:** real actions require scoped preview/approval/verification/audit; missing capability is never represented as success.
@@ -22,6 +22,7 @@
 - **ADR-016 — Unified task routing state:** product-owned local capability profiles,
   runtime health, private cloud preferences, and current provider catalogs determine
   routing; UI state and model self-assessment are not authoritative.
+- **ADR-017 — Independent workbench with upstream-first reuse:** implement the product-owned workbench and adapter protocol, while reusing licensed non-visual functionality from Semantica, holaOS, Herdr, and oMLX before creating new equivalents. Herdr is required for the core multi-agent loop. Public distribution is gated separately from personal non-commercial development.
 
 ## Pending evidence
 

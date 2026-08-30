@@ -4,9 +4,11 @@
 
 **Goal:** Build a local-first Mac AI workbench where a small local model can coordinate parallel agents, reuse Semantica, holaOS, Herdr, and oMLX through adapters, and combine local and approved cloud models for real work.
 
-**Architecture:** The product-owned native workbench is the default distributable UI. holaOS is a capability and workflow reference plus optional separately installed adapter until redistribution is cleared. Herdr is the core multi-agent execution runtime, Semantica is the governed memory authority, and oMLX is the local inference runtime.
+**Architecture:** The product-owned native workbench is the default distributable UI. Licensed non-visual holaOS workflow/application capabilities are reused behind the adapter boundary, while its visual assets and public bundling remain separately gated. Herdr is the core multi-agent execution runtime, Semantica is the governed memory authority, and oMLX is the local inference runtime.
 
 **Tech Stack:** SwiftUI macOS app, Python supervisor/adapters, Herdr socket/CLI integration, oMLX OpenAI-compatible API, Semantica REST/MCP, Keychain-held cloud credentials, repository-local tests and fixtures.
+
+**Build rule:** Reuse licensed non-visual capabilities from Semantica, holaOS, Herdr, and oMLX before implementing product-owned equivalents. Product-owned development is reserved for the independent visual workbench, adapter protocol, integration/orchestration/policy/lifecycle, license-blocked portions, or evidenced upstream gaps.
 
 ---
 
@@ -28,7 +30,7 @@ Updated: 2026-08-31 Asia/Shanghai
 Current phase: P1 Upstream capability and license inventory
 Current task: P1-T01
 Current status: pending
-Next action: begin upstream inventory from the next `pending` task, preserving the interrupted DeepSeek/settings work until it is explicitly claimed.
+Next action: inventory local upstream checkouts and pins, then build per-capability reuse ledgers before any new implementation.
 
 Known uncommitted implementation work that must not be overwritten by this documentation task:
 
@@ -60,13 +62,16 @@ Known evidence from the interrupted task:
 8. oMLX is the local inference layer and must prove real inference, not only health.
 9. holaOS capability parity is required, but public distribution must avoid copying or rebadging holaOS frontend/source/assets until license clearance.
 10. Future public open-source distribution must preserve license notices, secrets boundaries, and a clean adapter-based reuse story.
+11. A local model must be able to discover and coordinate Codex, Claude, and other compatible AI tools through a vendor-neutral agent adapter contract.
+12. Settings must be a complete product surface: General, Models & Providers, Agents & Tools, Memory, Permissions & Approvals, Local Runtime, Data & Privacy, and Diagnostics & Recovery.
+13. No non-visual upstream capability may be reimplemented without a recorded upstream search and a license, compatibility, security, maintainability, or verified capability-gap reason.
 
 ## Upstream Reuse Ledger
 
 | Upstream | Role | Reuse mode | Must not do | Verification gate |
 |---|---|---|---|---|
 | Semantica | Governed memory, decisions, provenance | Reuse via REST/MCP/package where licensed | Create a competing long-term memory authority | Memory write/read contract test plus audit event |
-| holaOS | Workflow/capability reference, optional external adapter | Separately installed adapter unless license clearance changes | Copy, rebadge, or bundle restricted frontend in public release | Capability parity ledger and adapter smoke test |
+| holaOS | Workflow/application capability source plus optional external interface | Reuse licensed non-visual code/APIs in personal development; retain adapter boundary for distribution | Copy, rebadge, or bundle restricted frontend assets in public release | Capability/reuse ledger, notices, and adapter smoke test |
 | Herdr | Core multi-agent execution runtime | Pin and integrate CLI/socket/API | Treat multi-agent as cosmetic UI only | Parallel task execution, cancel, resume, reconnect tests |
 | oMLX | Local inference runtime | Verified runtime or official artifact acquisition | Treat `/health` as inference proof | Chat completion or embedding inference proof with model ID |
 
@@ -86,12 +91,14 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | CAP-08 | Tool/process console | Herdr | Task execution logs and external tool lifecycle | not_started | None |
 | CAP-09 | Permission and audit | Product policy layer | External writes and cloud calls require preview/approval/audit | partial | Policy intent exists; full UI not verified |
 | CAP-10 | Distribution readiness | Packaging/lifecycle | Clean install, upgrade, rollback, uninstall, recovery gates | partial | Packaging tests exist; product experience incomplete |
+| CAP-11 | Universal agent adapters | Codex/Claude/compatible tools | Capability discovery, dispatch, status, handoff, cancel, resume, artifacts, audit | not_started | None |
+| CAP-12 | Complete product settings | Product workbench | General, providers, agents/tools, memory, permissions, runtime, privacy, diagnostics/recovery | not_started | Current screen is setup/recovery only |
 
 ## Milestone Tracker
 
 | Phase | Goal | Status | Exit Gate |
 |---|---|---|---|
-| P0 | Correct governance and stop product drift | verified | Tracker, handoff, and `AGENTS.md` committed and pushed |
+| P0 | Correct governance and stop product drift | verified | Tracker, handoff, role documents, and upstream-first reuse rules agree |
 | P1 | Inventory upstream capabilities and licenses | pending | Reuse decisions for all four upstreams have evidence |
 | P2 | Define adapter protocol and contracts | pending | Protocol tests cover Semantica, holaOS, Herdr, oMLX, cloud providers |
 | P3 | Make Herdr-backed multi-agent loop real | pending | Two parallel tasks run, stream status, cancel, resume, and recover |
@@ -113,6 +120,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | P0-T04 | verified | Verify documentation-only diff | This file, `docs/TASK_HANDOFF.md`, `AGENTS.md` | `git diff --check -- AGENTS.md docs/plans/2026-08-31-multi-agent-workbench-master-plan.md docs/TASK_HANDOFF.md` | No whitespace errors |
 | P0-T05 | verified | Commit governance docs only | Same files | `git add AGENTS.md docs/plans/2026-08-31-multi-agent-workbench-master-plan.md docs/TASK_HANDOFF.md` then `git commit -m "docs: add workbench execution control"` | Commit `3756677` created without staging implementation work |
 | P0-T06 | verified | Push governance docs | Same files | `git push` | Governance documentation commits are ready to push with this completion update |
+| P0-T07 | verified | Reconcile product-role conflicts and enforce upstream-first reuse | `AGENTS.md`, requirements, decisions, ADRs, active/legacy plans, handoff | `rg` conflict scan plus `git diff --check` | Conflicting role statements are superseded or corrected; upstream-first rule, universal agent adapter, and full Settings scope are explicit |
 
 ### P1: Upstream Capability and License Inventory
 
@@ -120,7 +128,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 |---|---|---|---|---|---|
 | P1-T01 | pending | List available local upstream checkouts and pins | `docs/research/upstream-matrix.md` | `rg --files . | rg "(hola|herdr|semantica|omlx)"` | Local sources and gaps documented |
 | P1-T02 | pending | Refresh Semantica API/capability evidence | `docs/research/upstream-matrix.md` | `rg -n "semantica|mcp|server|memory" .` | Version, API, and reuse boundary updated |
-| P1-T03 | pending | Refresh holaOS capability map without copying code | `docs/research/holaos-capability-ledger.md` | `test -f docs/research/holaos-capability-ledger.md` | Capability map exists |
+| P1-T03 | pending | Refresh holaOS capability and reusable-implementation map | `docs/research/holaos-capability-ledger.md` | `test -f docs/research/holaos-capability-ledger.md` | Capability map distinguishes reusable code, required notices, visual assets, and distribution restrictions |
 | P1-T04 | pending | Refresh Herdr socket/CLI capability map | `docs/research/herdr-capability-ledger.md` | `test -f docs/research/herdr-capability-ledger.md` | Multi-agent capabilities mapped |
 | P1-T05 | pending | Refresh oMLX API and model capability evidence | `docs/research/upstream-matrix.md` | `rg -n "omlx|OpenAI-compatible|/v1" docs/research/upstream-matrix.md` | Runtime assumptions updated |
 | P1-T06 | pending | Reconcile license matrix with public open-source intent | `docs/research/license-matrix.md` | `rg -n "public|redistribution|holaOS" docs/research/license-matrix.md` | Public distribution constraints explicit |
@@ -137,7 +145,8 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | P2-T04 | pending | Implement capability declaration model | `mac_ai_work_os/adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Capabilities pass |
 | P2-T05 | pending | Write failing test for policy preview/audit fields | `tests/test_adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Fails on missing policy fields |
 | P2-T06 | pending | Implement policy preview/audit envelope | `mac_ai_work_os/adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Contract tests pass |
-| P2-T07 | pending | Commit adapter contract | `mac_ai_work_os/adapter_contract.py`, `tests/test_adapter_contract.py` | `git diff --check` then `git commit` | Commit created |
+| P2-T07 | pending | Specify vendor-neutral AI agent adapter for Codex, Claude, and compatible tools | `docs/contracts/agent-adapter.md`, contract tests | Contract validation command | Discovery, dispatch, status, handoff, cancel, resume, artifacts, and audit are covered |
+| P2-T08 | pending | Commit adapter contract | Adapter contract, agent contract, and tests | `git diff --check` then `git commit` | Commit created |
 
 ### P3: Herdr Core Multi-Agent Runtime
 
@@ -163,8 +172,9 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | P4-T04 | pending | Implement cloud/local model selector state | Swift app and manifest files | `swift test --package-path prototypes/packaging` | Selector state passes tests |
 | P4-T05 | pending | Add task history visible state contract | Swift tests | `swift test --package-path prototypes/packaging` | History state test passes |
 | P4-T06 | pending | Add recovery action visible state contract | Swift tests | `swift test --package-path prototypes/packaging` | Recovery state test passes |
-| P4-T07 | pending | Capture foreground UI evidence | `evidence/ui/workbench-first-screen-YYYY-MM-DD.png` | Manual launch plus screenshot review | Screenshot proves first screen is workbench |
-| P4-T08 | pending | Commit workbench product experience slice | Swift files, tests, evidence if allowed | `git diff --check` then `git commit` | Commit created |
+| P4-T07 | pending | Add complete Settings information architecture and contracts | Swift app, manifest, and tests | `swift test --package-path prototypes/packaging` | All eight settings sections are reachable and setup/recovery is separated |
+| P4-T08 | pending | Capture foreground UI evidence | `evidence/ui/workbench-first-screen-YYYY-MM-DD.png` | Manual launch plus screenshot review | Screenshot proves first screen is workbench |
+| P4-T09 | pending | Commit workbench product experience slice | Swift files, tests, evidence if allowed | `git diff --check` then `git commit` | Commit created |
 
 ### P5: Local and Cloud Model Cooperation
 
@@ -229,3 +239,4 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 - 2026-08-31 -- P0-T05 verified by Codex root agent. Commit `3756677` includes only `AGENTS.md`, this tracker, and `docs/TASK_HANDOFF.md`.
 - 2026-08-31 -- P0-T05 follow-up verified by Codex root agent. Commit `7b516a1` records completion progress for the control documents.
 - 2026-08-31 -- P0-T06 verified by Codex root agent. This status update is committed and pushed together with the governance documentation chain.
+- 2026-08-31 01:57 Asia/Shanghai - P0-T07 - Codex root agent - reconciled role conflicts and enforced upstream-first reuse - repository-wide conflict scan and `git diff --check` passed - commit pending documentation closeout - next P1-T01
