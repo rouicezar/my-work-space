@@ -67,6 +67,33 @@ private final class MemorySecretStore: SecretStore {
     #expect(first.allSatisfy { $0.isLetter || $0.isNumber || $0 == "-" || $0 == "_" })
 }
 
+@Test func cloudCredentialIsNeverGeneratedAndCanBeReplacedOrRevokedSeparately() throws {
+    let store = MemorySecretStore()
+    let cloud = CloudCredentialCoordinator(store: store)
+    #expect(try !cloud.status())
+    #expect(try cloud.readDeepSeekAPIKey() == nil)
+
+    try cloud.saveDeepSeekAPIKey("first-user-provided-deepseek-key")
+    #expect(try cloud.status())
+    #expect(try cloud.readDeepSeekAPIKey() == "first-user-provided-deepseek-key")
+
+    try cloud.saveDeepSeekAPIKey("replacement-user-provided-deepseek-key")
+    #expect(try cloud.readDeepSeekAPIKey() == "replacement-user-provided-deepseek-key")
+    try cloud.deleteDeepSeekAPIKey()
+    #expect(try !cloud.status())
+}
+
+@Test func cloudCredentialRejectsWhitespaceNewlinesAndShortValues() throws {
+    let store = MemorySecretStore()
+    let cloud = CloudCredentialCoordinator(store: store)
+    for invalid in ["short", " leading-value-with-enough-length", "line1\nline2-value-with-length"] {
+        #expect(throws: RuntimeSecretError.invalidExistingSecret(CloudCredentialCoordinator.deepSeekAccount)) {
+            try cloud.saveDeepSeekAPIKey(invalid)
+        }
+    }
+    #expect(store.values.isEmpty)
+}
+
 @Test(.enabled(if: ProcessInfo.processInfo.environment["MAC_AI_WORK_OS_KEYCHAIN_INTEGRATION"] == "1"))
 func realTemporaryKeychainRoundTripAndCleanup() throws {
     let service = "app.mac-ai-work-os.test.\(UUID().uuidString)"

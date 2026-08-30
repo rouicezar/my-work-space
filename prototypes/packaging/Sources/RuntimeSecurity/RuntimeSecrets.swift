@@ -145,3 +145,42 @@ public struct RuntimeSecretCoordinator {
             .replacingOccurrences(of: "=", with: "")
     }
 }
+
+public struct CloudCredentialCoordinator {
+    public static let deepSeekAccount = "deepseek-api-key"
+
+    private let store: SecretStore
+
+    public init(store: SecretStore = KeychainSecretStore()) {
+        self.store = store
+    }
+
+    public func status() throws -> Bool {
+        try readDeepSeekAPIKey() != nil
+    }
+
+    public func readDeepSeekAPIKey() throws -> String? {
+        guard let data = try store.read(account: Self.deepSeekAccount) else { return nil }
+        guard let value = String(data: data, encoding: .utf8), Self.valid(value) else {
+            throw RuntimeSecretError.invalidExistingSecret(Self.deepSeekAccount)
+        }
+        return value
+    }
+
+    public func saveDeepSeekAPIKey(_ value: String) throws {
+        guard Self.valid(value) else {
+            throw RuntimeSecretError.invalidExistingSecret(Self.deepSeekAccount)
+        }
+        try store.write(Data(value.utf8), account: Self.deepSeekAccount)
+    }
+
+    public func deleteDeepSeekAPIKey() throws {
+        try store.delete(account: Self.deepSeekAccount)
+    }
+
+    private static func valid(_ value: String) -> Bool {
+        (16...512).contains(value.utf8.count)
+            && value == value.trimmingCharacters(in: .whitespacesAndNewlines)
+            && !value.contains("\r") && !value.contains("\n")
+    }
+}
