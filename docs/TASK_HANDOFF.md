@@ -20,9 +20,9 @@ Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-ma
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P1-T02
-State: P1-T01 local source/pin inventory verified; pending commit/push closeout
-Next required action: commit and push P1-T01, then claim P1-T02 and refresh Semantica evidence from primary sources.
+Master plan task: P1-T03
+State: P1-T02 Semantica evidence refresh verified; pending commit/push closeout
+Next required action: commit/push P1-T02, then claim P1-T03 and map holaOS reusable implementation surfaces.
 
 ## Product Goal Snapshot
 
@@ -111,6 +111,46 @@ Quota state and closeout action:
 ```
 
 ## Handoff Log
+
+## 2026-08-31 - P1-T02 - exit
+
+Executor: Codex root agent
+Starting git state: clean after `b799a63`
+Scope: refresh Semantica v0.6.7 version, API, capability, packaging, storage, and reuse-boundary evidence
+Files intended: upstream matrix, master tracker, and handoff
+Actions: verified official v0.6.7 tag target, release assets/digests, Python manifest, entry points, dependency shape, AgentContext surface, and current Forma AI integration boundary
+Verification: expected repository `rg` scan passed; matrix contains exact commit, asset digests, five entry points, upstream capability table, and product responsibility boundary; whitespace check passed
+Evidence: official Semantica GitHub tag/release API, versioned `pyproject.toml`, pinned `AgentContext` source, Forma AI adapter/backend/runbook and ADR-0011
+Files changed: `docs/research/upstream-matrix.md`, master tracker, and this handoff
+Commit: pending documentation commit
+Push: pending
+Decisions: directly reuse AgentContext and upstream decision/causal/provenance/graph/MCP capabilities; product-owned code remains governance, isolation, approval, audit, and UI integration only
+Assumptions: unsigned tag and mutable release metadata require commit plus asset-digest binding
+Blocked items: real managed Semantica runtime and production embedding approval remain later implementation gates, not blockers for inventory
+Next exact action: commit/push P1-T02, then claim P1-T03
+Approval needed: none
+Secret/external-write status: no secrets; official public sources only
+Quota state and closeout action: normal; independently verified unit ready to commit and push
+
+## 2026-08-31 - P1-T02 - takeover
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `b799a63`
+Scope: refresh Semantica v0.6.7 API, capability, packaging, storage, and reuse-boundary evidence
+Files intended: `docs/research/upstream-matrix.md`, master tracker, and handoff
+Actions: claimed P1-T02 in plan order
+Verification: pending official repository/tag/package inspection and repository boundary scan
+Evidence: pending
+Files changed: tracker and handoff at takeover
+Commit: none yet
+Push: none yet
+Decisions: Semantica remains the governed memory authority; reuse upstream APIs/packages rather than reconstructing memory primitives
+Assumptions: versioned v0.6.7 evidence controls the current pin even if `main` has moved
+Blocked items: none
+Next exact action: inspect official v0.6.7 release, manifest, CLI/MCP/server/storage surfaces, and compare with Forma AI adapters
+Approval needed: none
+Secret/external-write status: no secrets; public read-only source access only
+Quota state and closeout action: normal; close and push this documentation unit on warning
 
 ## 2026-08-31 - P1-T01 - exit
 

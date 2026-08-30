@@ -17,7 +17,7 @@ Repository-local integration code currently exists only for Semantica and oMLX a
 
 | Component | Stable reference | Runtime/platform | Product interface | Official distribution evidence | Current integration conclusion |
 |---|---|---|---|---|---|
-| Semantica | `v0.6.7` | Python `>=3.8`; project labels OS-independent | CLI, REST server, worker, Explorer, stdio MCP | Release wheel and source archive | Pin wheel in a product-owned Python environment; test REST/MCP contracts and local storage before bundling |
+| Semantica | `v0.6.7`, annotated tag targets commit `ecb33a5b7d1c232da77527da89d861e2b10e9c42` | Python `>=3.8`; project labels OS-independent | Python library, five CLI entry points, REST server, worker, Explorer, stdio MCP | Wheel SHA-256 `94786f20cd2c91144247d78c1baa2256160709c2fe6c332118c1f95d80232204`; sdist SHA-256 `c32ab9ae2829284e2cc109829ab7fd3497ce8912d2302f198ab583f4af790d58` | Reuse the pinned library surface inside a product-managed environment; expose product governance through a thin adapter and use MCP selectively for external compatible agents |
 | holaOS | rolling `latest` release, source on `main` | Node `>=24`; `.nvmrc` pins `24.14.1`; Electron; README claims macOS Apple Silicon and Intel, Windows, Linux | Desktop UI, local runtime, MCP and agent workspace | Latest release contains no binary assets; official OSS path clones/builds source | Treat as an externally installed, version-fingerprinted adapter until license and reproducible binary distribution are resolved |
 | Herdr | `v0.8.2` | Single Rust binary; official macOS arm64 and x86_64 assets | CLI and socket/API-oriented agent terminal control | Versioned binaries for macOS, Linux, Windows | Pin the macOS arm64 binary for first Apple Silicon release; verify checksum, protocol, update channel, state path, detach/reconnect |
 | oMLX | `v0.6.3` | macOS 15+; Apple Silicon; Python `>=3.11,<3.14` for source; official app includes runtime | OpenAI-compatible HTTP API at `/v1`; CLI; admin UI; native menu-bar app | Versioned DMGs for macOS 15 and macOS 26–27 plus CPython 3.11–3.13 wheels | Prefer verified official DMG acquisition for the initial product; adapter owns health/routing while upstream app owns its runtime/update until lifecycle tests justify rebundling |
@@ -26,9 +26,24 @@ Repository-local integration code currently exists only for Semantica and oMLX a
 
 ### Semantica
 
-- The `v0.6.7` package declares MIT and exposes `semantica`, `semantica-server`, `semantica-worker`, `semantica-explorer`, and `semantica-mcp` entry points.
+- The `v0.6.7` package declares MIT and exposes `semantica`, `semantica-server`, `semantica-worker`, `semantica-explorer`, and `semantica-mcp` entry points. Its annotated tag object is unsigned and the GitHub release metadata reports `immutable: false`; Forma AI must bind the target commit and release-asset digest rather than trust the tag name alone.
 - The official CLI guide says the REST server binds to port 8000 by default and MCP uses stdio. oMLX also defaults to port 8000, so the product must assign and persist non-conflicting ports rather than accept upstream defaults.
-- Its base dependency set is large, including Torch, FAISS, ONNX Runtime, document and media libraries. A separate managed environment is safer than sharing oMLX's Python runtime.
+- Its base dependency set is large, including Torch, FAISS, ONNX Runtime, document and media libraries. Most runtime dependencies use minimum-version ranges rather than an exact lock. A separate managed environment and a Forma AI-reviewed lock are required; sharing oMLX's Python runtime would undermine reproducibility.
+- `AgentContext` already provides store, retrieve, forget, conversation, save/load, decision recording, precedent lookup, causal-chain analysis, policy access, GraphRAG expansion, and graph analytics. Forma AI must reuse those capabilities rather than build a parallel memory/decision engine.
+- The release also includes provenance, ontology/reasoning, export, pipeline parallelism, ContextGraph persistence, LangChain integration, and provider integrations. These are upstream capability candidates and require explicit ledger decisions before any product-owned equivalent is implemented.
+
+#### Semantica reuse boundary for Forma AI
+
+| Capability | Upstream surface to reuse | Forma AI responsibility | Current evidence status |
+|---|---|---|---|
+| Confirmed memory content and lifecycle | `semantica.context.AgentContext` store/get/retrieve/forget/save/load | Candidate/confirmation policy, approval state, correlation, redacted audit, and fail-closed service boundary | Contract-tested locally; real managed runtime and approved embedding route remain pending |
+| Decisions and causal evidence | `AgentContext` decision, precedent, causal-chain, explainability, and policy surfaces | Decide which task events become governed decisions and validate provenance before promotion | Mapped from pinned source; not yet integrated end to end |
+| Knowledge graph, provenance, reasoning, export | ContextGraph, provenance manager, ontology/reasoning/export modules | Capability exposure, permission policy, artifact validation, and UI review | Available upstream; product reuse decision pending per surface |
+| External agent access | `semantica-mcp` stdio and versioned Python/CLI surfaces | Authenticate/isolate invocation, declare capabilities through the Forma agent adapter, and correlate audits | Official entry point verified; MCP runtime contract not yet tested in Forma AI |
+| REST/Explorer | Upstream server and Explorer | Do not expose as the product authority by default; place behind authenticated loopback/product policy if later needed | Not selected for the current governed-memory path |
+| Embeddings/vector index | Semantica vector interfaces plus Forma AI's verified oMLX embedding route | Select and approve exact local embedding model, bind dimension/model revision, and validate real inference | Product adapter exists; production embedding model remains unapproved |
+
+The product-owned governed envelope is an integration and policy layer, not a replacement memory implementation. Raw task input and unconfirmed candidates remain outside Semantica; confirmed sourced knowledge and decision evidence are written through the pinned Semantica authority.
 
 ### holaOS
 
