@@ -22,6 +22,9 @@ The current developer Mac is a test environment. Personal files, MyNote, GBrain,
 4. Connect a real tool, preview scope, approve one action, verify its outcome, audit it, and revoke access.
 5. Diagnose a failed component, retry safely, recover state, or deliberately select an explained degraded mode.
 6. Upgrade without losing governed data, roll back failure, and uninstall with keep/export/delete choices.
+7. Run a task locally by default; when the verified local capability boundary is exceeded,
+   inspect an exact cloud-transmission and cost preview, approve or deny it, and audit the
+   resulting DeepSeek request without silent fallback.
 
 ## 4. Functional requirements
 
@@ -37,6 +40,11 @@ Detect chip, macOS, memory, disk, and port conflicts; map supported Macs to test
 
 holaOS is the default experience. Tasks, approvals, status, results, memory review, and recovery work without a terminal. Herdr is optional progressive disclosure.
 
+The guided setup/repair assistant and the daily workbench are distinct product modes.
+After setup is healthy, ordinary launch opens the workbench; installation manifests,
+component versions, ports, and adapter diagnostics remain behind Settings or Recovery
+instead of occupying the primary task surface.
+
 ### FR-4 Governed memory
 
 Separate raw inputs, audit records, candidate knowledge, and confirmed knowledge. Confirmed records carry provenance, timestamps, status, version, and correction/deletion history. Semantica is the authority; transient UI memory is not a competing truth source.
@@ -51,7 +59,37 @@ Run, observe, pause, approve, cancel, and recover multiple agents. Aggregate res
 
 ### FR-7 Local-first inference
 
-oMLX is the default service on supported Apple Silicon. Model capability, resource use, privacy route, and fallback are visible. Silent cloud fallback is prohibited.
+oMLX with the selected local Qwen model is the default route on supported Apple
+Silicon. A product-owned router evaluates declared task requirements, local health,
+resource limits, context size, required modalities/tools, and output-validation policy.
+It must not infer local incapability solely from a model's self-assessment.
+
+DeepSeek is the initially supported optional cloud provider. Cloud use is disabled
+until the user configures it, and every cloud transmission requires a preview and a
+narrow approval bound to the provider, model, exact redacted payload digest, data
+classes, maximum output, estimated cost or explicit cost-unknown state, expiry, and
+task correlation ID. The preview explains why local execution is insufficient, what
+leaves the Mac, which transformations or redactions were applied, retention/privacy
+implications known to the product, expected operational effect, and how to cancel.
+Approval of one request never enables later requests.
+
+For the initial DeepSeek provider, the preview must disclose that transmitted input is
+processed outside the Mac and, under the provider privacy policy consulted by the
+product, may be processed and stored in the People's Republic of China; retention is
+not a fixed API guarantee. The product must link the effective provider policy,
+surface any available training opt-out as a setup item rather than implying it was
+applied, and default-block data classified as credentials, authentication material,
+regulated secrets, or third-party sensitive personal data unless a future dedicated
+policy explicitly supports that class.
+
+Provider and model identifiers, capabilities, endpoint, protocol, price snapshot,
+currency, effective time, and source must come from a versioned replaceable provider
+catalog. Stale or missing price data cannot be shown as a current estimate. Actual
+provider usage and the computed actual cost are recorded after completion without
+logging prompts, credentials, or unredacted response bodies. Cloud denial,
+authentication failure, insufficient balance, rate limiting, overload, timeout,
+content filtering, malformed response, and validation failure remain distinct honest
+outcomes and never trigger another provider silently.
 
 ### FR-8 Real tools and permissions
 
@@ -75,6 +113,9 @@ Versioned contracts isolate UI, policy, orchestration, inference, memory, agents
 - Primary flows are keyboard accessible with meaningful labels and status.
 - Performance claims are measured per supported hardware tier.
 - Upstream versions, licenses, and replaceability are documented.
+- Cloud providers are off by default; credentials live in Keychain, diagnostic export
+  is secret-free, and disabling a provider revokes future routing without deleting
+  audit history.
 
 ## 6. Distribution scope
 
@@ -91,8 +132,15 @@ A release requires evidence for:
 5. parallel work, approval wait, cancellation, reconnect, and validation;
 6. a real connector read and reversible scoped write with preview, approval, verification, and audit;
 7. per-component failure injection without silent fallback;
-8. security, privacy, accessibility, and usability reviews;
-9. one user unfamiliar with implementation completing installation and core journeys from public documentation without hidden help.
+8. local Qwen success, local ineligibility, local validation failure, cloud denial,
+   approved DeepSeek success, stale-price, auth, balance, rate-limit, overload,
+   timeout, malformed-response, and cancellation paths with one correlated audit;
+9. proof that the approved payload digest is exactly the transmitted payload and that
+   no cloud credential, prompt, or response body enters ordinary logs;
+10. security, privacy, accessibility, and usability reviews;
+11. one user unfamiliar with implementation completing installation, a local task,
+    an approved cloud escalation, and the other core journeys from public
+    documentation without hidden help.
 
 ## 8. Pending decisions
 
@@ -100,5 +148,7 @@ A release requires evidence for:
 - Packaging: native app with managed services, signed package/launcher, or another tested option.
 - Redistribution and license rights for each upstream component.
 - Supported hardware/model tiers.
-- Whether cloud inference is absent or a separately enabled provider.
+- Initial task classes and measurable validation gates that make local Qwen eligible
+  or cause the product to propose DeepSeek.
+- Maximum age and signed update channel for cloud price snapshots.
 - First reversible connector for end-to-end acceptance.

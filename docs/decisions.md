@@ -12,10 +12,13 @@
 - **ADR-008 — No embedded holaOS distribution without clearance:** until written authorization resolves its modified license, public builds may integrate only with a separately installed holaOS instance and must preserve upstream branding.
 - **ADR-009 — Coordinated ports and updates:** the product manifest, not upstream defaults, owns port allocation and compatibility approval. Component self-updates cannot silently bypass the tested manifest.
 - **ADR-010 — Native app plus helper:** a SwiftUI `.app` is the primary product; a bundled headless helper shares its manifest and lifecycle contract. A `.pkg` is added only if a proven privileged-install requirement exists.
+- **ADR-012 — Explicit dual-model routing:** local Qwen through oMLX is the default;
+  DeepSeek is optional and disabled by default. Every cloud transmission requires an
+  exact, one-shot, audited approval and provider/model/price data remain replaceable
+  catalog entries.
 
 ## Pending evidence
 
 - **ADR-011 — Support matrix:** minimum/recommended Mac and model tiers from multi-environment measurements.
-- **ADR-012 — Cloud providers:** default local-only; any provider must be separately enabled and visibly audited.
 - **ADR-013 — First connector:** select a reversible connector with dedicated test accounts.
 - **ADR-014 — Unified UI contingency:** obtain holaOS written clearance or validate a differently licensed product UI before claiming a single bundled application.
