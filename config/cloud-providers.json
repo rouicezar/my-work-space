@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-08-30T00:00:00Z",
+  "providers": [
+    {
+      "id": "deepseek",
+      "enabled_by_default": false,
+      "origin": "https://api.deepseek.com",
+      "protocol": "openai-chat-completions",
+      "models": [
+        {
+          "id": "deepseek-v4-flash",
+          "capabilities": ["chat", "json", "tools"],
+          "context_window_tokens": 1000000,
+          "maximum_output_tokens": 384000,
+          "pricing_usd_per_million_tokens": {
+            "cache_hit_off_peak": 0.007,
+            "cache_hit_peak": 0.014,
+            "cache_miss_off_peak": 0.22,
+            "cache_miss_peak": 0.44,
+            "output_off_peak": 0.66,
+            "output_peak": 1.32
+          }
+        },
+        {
+          "id": "deepseek-v4-pro",
+          "capabilities": ["chat", "json", "tools"],
+          "context_window_tokens": 1000000,
+          "maximum_output_tokens": 384000,
+          "pricing_usd_per_million_tokens": {
+            "cache_hit_off_peak": 0.022,
+            "cache_hit_peak": 0.044,
+            "cache_miss_off_peak": 0.66,
+            "cache_miss_peak": 1.32,
+            "output_off_peak": 1.98,
+            "output_peak": 3.96
+          }
+        }
+      ],
+      "pricing": {
+        "source": "https://api-docs.deepseek.com/quick_start/pricing/",
+        "effective_at": "2026-08-30T00:00:00Z",
+        "maximum_age_hours": 168,
+        "peak_periods_utc": [
+          {"weekdays": [1, 2, 3, 4, 5], "start": "01:00", "end": "04:00"},
+          {"weekdays": [1, 2, 3, 4, 5], "start": "06:00", "end": "10:00"}
+        ]
+      },
+      "privacy": {
+        "policy_url": "https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html",
+        "policy_updated_at": "2026-02-10",
+        "processing_location": "People's Republic of China",
+        "retention": "variable",
+        "training_opt_out_state": "unknown"
+      }
+    }
+  ]
+}
