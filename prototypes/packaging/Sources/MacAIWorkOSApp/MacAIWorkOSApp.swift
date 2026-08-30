@@ -302,7 +302,7 @@ struct ManifestOverview: View {
                 return .ready(try client.preflight(
                     profilesURL: profiles,
                     checkPath: checkPath,
-                    ports: [8000]
+                    ports: [8000, 43110, 43111]
                 ))
             } catch {
                 return .unavailable(String(describing: error))
@@ -462,7 +462,8 @@ struct ManifestOverview: View {
                 let result = try SupervisorClient(executableURL: context.supervisor).startRuntime(
                     rootURL: context.root,
                     omlxAPIKey: secrets.omlxAPIKey,
-                    brokerToken: secrets.brokerToken
+                    brokerToken: secrets.brokerToken,
+                    memoryToken: secrets.memoryToken
                 )
                 return result.runtime.phase == "running" ? .running : .degraded("Runtime did not reach running state.")
             } catch {
@@ -502,7 +503,8 @@ struct ManifestOverview: View {
                 let sample = try SupervisorClient(executableURL: context.supervisor).sampleTask(
                     rootURL: context.root,
                     omlxAPIKey: secrets.omlxAPIKey,
-                    brokerToken: secrets.brokerToken
+                    brokerToken: secrets.brokerToken,
+                    memoryToken: secrets.memoryToken
                 )
                 guard sample.schemaVersion == 1, !sample.output.isEmpty else {
                     return .failed("Sample result was empty or unsupported.")

@@ -5,9 +5,10 @@
 The Supervisor verifies Semantica as a pinned library inside a product-managed
 Python environment. It does not start or trust the upstream REST server. The
 product-owned governed-memory service is a separate authenticated loopback
-boundary. Its contract handler now covers the governed operations with
-bounded requests and redacted request-level audit; Supervisor process
-lifecycle and the production Semantica/embedding factory remain pending.
+boundary. Its contract handler covers the governed operations with bounded
+requests and redacted request-level audit. Supervisor now starts it after the
+inference broker, stops it first, verifies `/live`, and records process identity.
+The production Semantica/embedding factory remains pending.
 
 ## Read-only status
 
@@ -39,7 +40,7 @@ be presented as an empty memory result or replaced by a hidden cloud route.
 
 The repository has real fixed-version `AgentContext` lifecycle evidence using
 an explicitly injected no-network vector boundary. It does not yet contain the
-managed-environment installer, approved production embedding model, or
-Supervisor-managed memory-service process. Consequently this status command
-and the synthetic service contract are diagnostic evidence, not a claim that
-memory is ready for end users.
+managed-environment installer or approved production embedding model. The
+Supervisor-managed process therefore starts in an honestly unavailable memory
+capability state: candidates can be journaled, while confirmation fails closed.
+This is not yet a claim that memory is ready for end users.

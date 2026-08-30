@@ -208,12 +208,14 @@ public struct RuntimeStatusPayload: Decodable, Sendable {
     public let record: RuntimeRecordPayload?
     public let omlxAlive: Bool
     public let brokerAlive: Bool
+    public let memoryAlive: Bool?
 
     enum CodingKeys: String, CodingKey {
         case schemaVersion = "schema_version"
         case phase, record
         case omlxAlive = "omlx_alive"
         case brokerAlive = "broker_alive"
+        case memoryAlive = "memory_alive"
     }
 }
 
@@ -397,6 +399,7 @@ public struct SupervisorClient: Sendable {
         rootURL: URL,
         omlxAPIKey: String,
         brokerToken: String,
+        memoryToken: String,
         requestID: UUID = UUID()
     ) throws -> RuntimeCommandPayload {
         try request(
@@ -406,6 +409,7 @@ public struct SupervisorClient: Sendable {
             environmentOverrides: [
                 "OMLX_API_KEY": omlxAPIKey,
                 "MAC_AI_WORK_OS_BROKER_TOKEN": brokerToken,
+                "MAC_AI_WORK_OS_MEMORY_TOKEN": memoryToken,
             ]
         )
     }
@@ -420,6 +424,7 @@ public struct SupervisorClient: Sendable {
         rootURL: URL,
         omlxAPIKey: String,
         brokerToken: String,
+        memoryToken: String,
         requestID: UUID = UUID()
     ) throws -> SampleTaskPayload {
         try request(
@@ -429,6 +434,7 @@ public struct SupervisorClient: Sendable {
             environmentOverrides: [
                 "OMLX_API_KEY": omlxAPIKey,
                 "MAC_AI_WORK_OS_BROKER_TOKEN": brokerToken,
+                "MAC_AI_WORK_OS_MEMORY_TOKEN": memoryToken,
             ]
         )
     }

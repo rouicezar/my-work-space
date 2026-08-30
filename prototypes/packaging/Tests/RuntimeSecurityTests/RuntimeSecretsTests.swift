@@ -13,14 +13,17 @@ private final class MemorySecretStore: SecretStore {
 @Test func createsDistinctSecretsAndReusesThem() throws {
     let store = MemorySecretStore()
     var generated = ["a".padding(toLength: 40, withPad: "a", startingAt: 0),
-                     "b".padding(toLength: 40, withPad: "b", startingAt: 0)]
+                     "b".padding(toLength: 40, withPad: "b", startingAt: 0),
+                     "c".padding(toLength: 40, withPad: "c", startingAt: 0)]
     let coordinator = RuntimeSecretCoordinator(store: store) { generated.removeFirst() }
     let first = try coordinator.ensure()
     let second = try coordinator.ensure()
     #expect(first == second)
     #expect(first.brokerToken != first.omlxAPIKey)
-    #expect(store.values.count == 2)
-    #expect(String(describing: first) == "RuntimeSecrets(brokerToken: <redacted>, omlxAPIKey: <redacted>)")
+    #expect(first.memoryToken != first.brokerToken)
+    #expect(first.memoryToken != first.omlxAPIKey)
+    #expect(store.values.count == 3)
+    #expect(String(describing: first) == "RuntimeSecrets(brokerToken: <redacted>, memoryToken: <redacted>, omlxAPIKey: <redacted>)")
     #expect(!String(describing: first).contains(first.brokerToken))
 }
 
@@ -40,6 +43,7 @@ private final class MemorySecretStore: SecretStore {
     let store = MemorySecretStore()
     let duplicate = "same-secret-value-with-at-least-32-characters"
     store.values[RuntimeSecretCoordinator.brokerAccount] = Data(duplicate.utf8)
+    store.values[RuntimeSecretCoordinator.memoryAccount] = Data("m".padding(toLength: 40, withPad: "m", startingAt: 0).utf8)
     store.values[RuntimeSecretCoordinator.omlxAccount] = Data(duplicate.utf8)
     #expect(throws: RuntimeSecretError.duplicateSecrets) {
         try RuntimeSecretCoordinator(store: store).ensure()
@@ -49,6 +53,7 @@ private final class MemorySecretStore: SecretStore {
 @Test func explicitDeleteRemovesBothRuntimeSecrets() throws {
     let store = MemorySecretStore()
     store.values[RuntimeSecretCoordinator.brokerAccount] = Data("a".utf8)
+    store.values[RuntimeSecretCoordinator.memoryAccount] = Data("m".utf8)
     store.values[RuntimeSecretCoordinator.omlxAccount] = Data("b".utf8)
     try RuntimeSecretCoordinator(store: store).deleteAll()
     #expect(store.values.isEmpty)

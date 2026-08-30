@@ -62,11 +62,13 @@ class RuntimeManagerTests(unittest.TestCase):
             correlation_id="request-1",
             omlx=service(self.root, "omlx", "upstream-secret"),
             broker=service(self.root, "broker", "caller-secret"),
+            memory=service(self.root, "memory", "memory-secret"),
             omlx_probe=lambda: True,
             broker_probe=lambda: True,
+            memory_probe=lambda: True,
         )
         self.assertEqual(record.phase, "running")
-        self.assertEqual([item[0].role for item in self.controller.spawned], ["omlx", "broker"])
+        self.assertEqual([item[0].role for item in self.controller.spawned], ["omlx", "broker", "memory"])
         raw = self.manager.state_path.read_text(encoding="utf-8")
         self.assertNotIn("upstream-secret", raw)
         self.assertNotIn("caller-secret", raw)
@@ -75,11 +77,13 @@ class RuntimeManagerTests(unittest.TestCase):
             correlation_id="request-2",
             omlx=service(self.root, "omlx", "different"),
             broker=service(self.root, "broker", "different"),
+            memory=service(self.root, "memory", "different-memory"),
             omlx_probe=lambda: True,
             broker_probe=lambda: True,
+            memory_probe=lambda: True,
         )
         self.assertEqual(again.correlation_id, "request-1")
-        self.assertEqual(len(self.controller.spawned), 2)
+        self.assertEqual(len(self.controller.spawned), 3)
 
     def test_broker_failure_stops_omlx_and_records_failure_without_secret(self):
         with self.assertRaises(RuntimeManagerError) as failed:
@@ -87,8 +91,10 @@ class RuntimeManagerTests(unittest.TestCase):
                 correlation_id="request-1",
                 omlx=service(self.root, "omlx", "upstream-secret"),
                 broker=service(self.root, "broker", "caller-secret"),
+                memory=service(self.root, "memory", "memory-secret"),
                 omlx_probe=lambda: True,
                 broker_probe=lambda: False,
+                memory_probe=lambda: True,
                 timeout=0.001,
             )
         self.assertEqual(failed.exception.code, "BROKER_START_TIMEOUT")
@@ -101,8 +107,10 @@ class RuntimeManagerTests(unittest.TestCase):
             correlation_id="request-1",
             omlx=service(self.root, "omlx", "a"),
             broker=service(self.root, "broker", "b"),
+            memory=service(self.root, "memory", "c"),
             omlx_probe=lambda: True,
             broker_probe=lambda: True,
+            memory_probe=lambda: True,
         )
         self.controller.alive[record.broker.pid] = False
         status = self.manager.status()
@@ -115,22 +123,26 @@ class RuntimeManagerTests(unittest.TestCase):
             correlation_id="request-1",
             omlx=service(self.root, "omlx", "a"),
             broker=service(self.root, "broker", "b"),
+            memory=service(self.root, "memory", "c"),
             omlx_probe=lambda: True,
             broker_probe=lambda: True,
+            memory_probe=lambda: True,
         )
         stopped = self.manager.stop()
         self.assertEqual(stopped.phase, "stopped")
-        self.assertEqual(self.controller.terminated, ["broker", "omlx"])
+        self.assertEqual(self.controller.terminated, ["memory", "broker", "omlx"])
         self.manager.stop()
-        self.assertEqual(self.controller.terminated, ["broker", "omlx"])
+        self.assertEqual(self.controller.terminated, ["memory", "broker", "omlx"])
 
     def test_start_refuses_live_process_from_incomplete_record(self):
         first = self.manager.start(
             correlation_id="request-1",
             omlx=service(self.root, "omlx", "a"),
             broker=service(self.root, "broker", "b"),
+            memory=service(self.root, "memory", "c"),
             omlx_probe=lambda: True,
             broker_probe=lambda: True,
+            memory_probe=lambda: True,
         )
         self.controller.alive[first.broker.pid] = False
         with self.assertRaises(RuntimeManagerError) as failed:
@@ -138,8 +150,10 @@ class RuntimeManagerTests(unittest.TestCase):
                 correlation_id="request-2",
                 omlx=service(self.root, "omlx", "a"),
                 broker=service(self.root, "broker", "b"),
+                memory=service(self.root, "memory", "c"),
                 omlx_probe=lambda: True,
                 broker_probe=lambda: True,
+                memory_probe=lambda: True,
             )
         self.assertEqual(failed.exception.code, "RUNTIME_RECOVERY_REQUIRED")
 
@@ -152,8 +166,10 @@ class RuntimeManagerTests(unittest.TestCase):
             correlation_id="request-1",
             omlx=service(self.root, "omlx-cli", "a"),
             broker=service(self.root, "broker", "b"),
+            memory=service(self.root, "memory", "c"),
             omlx_probe=lambda: True,
             broker_probe=lambda: True,
+            memory_probe=lambda: True,
             omlx_adopt=lambda: adopted,
         )
         self.assertEqual(record.omlx.pid, 999)
@@ -161,7 +177,22 @@ class RuntimeManagerTests(unittest.TestCase):
         self.controller.alive[self.controller.spawned[0][0].pid] = False
         self.assertEqual(self.manager.status()["phase"], "running")
         self.manager.stop()
-        self.assertEqual(self.controller.terminated[-2:], ["broker", "omlx"])
+        self.assertEqual(self.controller.terminated[-3:], ["memory", "broker", "omlx"])
+
+    def test_memory_failure_stops_all_services_and_records_explicit_code(self):
+        with self.assertRaises(RuntimeManagerError) as failed:
+            self.manager.start(
+                correlation_id="request-memory-failure",
+                omlx=service(self.root, "omlx", "a"),
+                broker=service(self.root, "broker", "b"),
+                memory=service(self.root, "memory", "c"),
+                omlx_probe=lambda: True,
+                broker_probe=lambda: True,
+                memory_probe=lambda: False,
+                timeout=0.001,
+            )
+        self.assertEqual(failed.exception.code, "MEMORY_START_TIMEOUT")
+        self.assertEqual(self.controller.terminated, ["memory", "broker", "omlx"])
 
 
 if __name__ == "__main__":

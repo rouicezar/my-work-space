@@ -22,9 +22,17 @@ correlation, route and body denial, candidate separation, explicit promotion,
 retrieval, correction history, export, deletion, rejection, health, unavailable
 Semantica failure, sanitized internal errors, and content-free request audit.
 
+The RuntimeManager contract starts the service after oMLX and the inference
+broker, stops it before both, degrades status when its recorded process identity
+is missing, and cleans up all started processes on a memory-service timeout.
+A real Supervisor child-process test verifies authenticated liveness, honest
+unavailable health, candidate persistence across restart, and redacted audit.
+
 ## Remaining boundary
 
-This evidence covers the service contract with a synthetic Semantica backend.
-It does not prove Supervisor start/stop, managed-environment installation, a
-production embedding route, restart persistence through the HTTP process, or
-the native UI workflow. Those remain required before manual memory acceptance.
+This evidence covers a real service process with an intentionally unavailable
+Semantica backend and a synthetic three-process lifecycle controller. It does
+not prove the full real oMLX + broker + memory process sequence,
+managed-environment installation, a production embedding route, confirmed
+memory across process restart, or the native UI memory workflow. Those remain
+required before manual memory acceptance.

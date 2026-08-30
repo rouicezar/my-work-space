@@ -154,9 +154,10 @@ import RuntimeSecurity
     let response = #"{"schema_version":1,"command":"start-runtime","request_id":"00000000-0000-0000-0000-000000000001","status":"ok","payload":{"schema_version":1,"runtime":{"phase":"running","correlation_id":"test","revision":4}},"error":null,"emitted_at":"2026-08-30T00:00:00+00:00"}"#
     let script = """
     #!/bin/sh
-    case " $* " in *fixture-omlx-secret*|*fixture-broker-secret*) exit 9;; esac
+    case " $* " in *fixture-omlx-secret*|*fixture-broker-secret*|*fixture-memory-secret*) exit 9;; esac
     [ "$OMLX_API_KEY" = "fixture-omlx-secret-with-at-least-32-characters" ] || exit 8
     [ "$MAC_AI_WORK_OS_BROKER_TOKEN" = "fixture-broker-secret-with-at-least-32-characters" ] || exit 7
+    [ "$MAC_AI_WORK_OS_MEMORY_TOKEN" = "fixture-memory-secret-with-at-least-32-characters" ] || exit 6
     printf '%s' '\(response)'
     """
     try script.write(to: executable, atomically: true, encoding: .utf8)
@@ -165,6 +166,7 @@ import RuntimeSecurity
         rootURL: temporary.appendingPathComponent("Product"),
         omlxAPIKey: "fixture-omlx-secret-with-at-least-32-characters",
         brokerToken: "fixture-broker-secret-with-at-least-32-characters",
+        memoryToken: "fixture-memory-secret-with-at-least-32-characters",
         requestID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
     )
     #expect(payload.runtime.phase == "running")
@@ -186,19 +188,22 @@ func realKeychainRuntimeSampleAuditAndStop() throws {
     let started = try client.startRuntime(
         rootURL: root,
         omlxAPIKey: secrets.omlxAPIKey,
-        brokerToken: secrets.brokerToken
+        brokerToken: secrets.brokerToken,
+        memoryToken: secrets.memoryToken
     )
     #expect(started.runtime.phase == "running")
     let status = try client.runtimeStatus(rootURL: root)
     #expect(status.phase == "running")
     #expect(status.omlxAlive)
     #expect(status.brokerAlive)
+    #expect(status.memoryAlive == true)
 
     let correlation = UUID()
     let sample = try client.sampleTask(
         rootURL: root,
         omlxAPIKey: secrets.omlxAPIKey,
         brokerToken: secrets.brokerToken,
+        memoryToken: secrets.memoryToken,
         requestID: correlation
     )
     #expect(sample.correlationID == correlation.uuidString.lowercased())
@@ -210,6 +215,7 @@ func realKeychainRuntimeSampleAuditAndStop() throws {
     #expect(!auditText.contains(sample.output))
     #expect(!auditText.contains(secrets.omlxAPIKey))
     #expect(!auditText.contains(secrets.brokerToken))
+    #expect(!auditText.contains(secrets.memoryToken))
 
     let stopped = try client.stopRuntime(rootURL: root)
     #expect(stopped.runtime.phase == "stopped")

@@ -79,15 +79,17 @@ public struct KeychainSecretStore: SecretStore {
 
 public struct RuntimeSecrets: CustomStringConvertible, Equatable {
     public let brokerToken: String
+    public let memoryToken: String
     public let omlxAPIKey: String
 
     public var description: String {
-        "RuntimeSecrets(brokerToken: <redacted>, omlxAPIKey: <redacted>)"
+        "RuntimeSecrets(brokerToken: <redacted>, memoryToken: <redacted>, omlxAPIKey: <redacted>)"
     }
 }
 
 public struct RuntimeSecretCoordinator {
     public static let brokerAccount = "inference-broker-client-token"
+    public static let memoryAccount = "governed-memory-client-token"
     public static let omlxAccount = "omlx-api-key"
 
     private let store: SecretStore
@@ -103,13 +105,15 @@ public struct RuntimeSecretCoordinator {
 
     public func ensure() throws -> RuntimeSecrets {
         let broker = try readOrCreate(account: Self.brokerAccount)
+        let memory = try readOrCreate(account: Self.memoryAccount)
         let omlx = try readOrCreate(account: Self.omlxAccount)
-        guard broker != omlx else { throw RuntimeSecretError.duplicateSecrets }
-        return RuntimeSecrets(brokerToken: broker, omlxAPIKey: omlx)
+        guard Set([broker, memory, omlx]).count == 3 else { throw RuntimeSecretError.duplicateSecrets }
+        return RuntimeSecrets(brokerToken: broker, memoryToken: memory, omlxAPIKey: omlx)
     }
 
     public func deleteAll() throws {
         try store.delete(account: Self.brokerAccount)
+        try store.delete(account: Self.memoryAccount)
         try store.delete(account: Self.omlxAccount)
     }
 

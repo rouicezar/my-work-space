@@ -76,8 +76,8 @@ def validate_manifest(data: dict[str, Any]) -> None:
         raise ManifestError("governed memory service must be loopback-only")
     if memory_service.get("secret_policy") != "keychain-runtime-injection":
         raise ManifestError("governed memory service secrets must be injected from Keychain")
-    if memory_service.get("contract") != "pending-product-service-implementation":
-        raise ManifestError("governed memory service cannot be promoted without implementation evidence")
+    if memory_service.get("contract") != "verified-service-process-and-synthetic-lifecycle-2026-08-30":
+        raise ManifestError("governed memory service contract must match reviewed lifecycle evidence")
     if memory_service.get("embedding_contract") != "unavailable-until-approved-local-route":
         raise ManifestError("governed memory service requires an approved local embedding route")
 

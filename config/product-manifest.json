@@ -89,7 +89,7 @@
       "id": "governed-memory-service",
       "port": 43111,
       "bind_policy": "loopback-only",
-      "contract": "pending-product-service-implementation",
+      "contract": "verified-service-process-and-synthetic-lifecycle-2026-08-30",
       "semantica_contract": "verified-agent-context-v0.6.7-no-network-boundary",
       "embedding_contract": "unavailable-until-approved-local-route",
       "secret_policy": "keychain-runtime-injection"

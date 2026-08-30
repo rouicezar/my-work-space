@@ -35,6 +35,12 @@ from mac_ai_work_os.broker import BrokerPolicy, JsonlAuditSink, OMLXBroker, OMLX
 from mac_ai_work_os.processes import omlx_process_spec
 from mac_ai_work_os.runtime import RuntimeManager, SubprocessController
 from mac_ai_work_os.semantica_runtime import SemanticaLayout, SemanticaRuntimeInspector
+from mac_ai_work_os.governed_memory import GovernedMemory
+from mac_ai_work_os.memory_service import (
+    GovernedMemoryService,
+    MemoryServicePolicy,
+    create_memory_server,
+)
 
 
 SCHEMA_VERSION = 1
@@ -101,6 +107,7 @@ def parser() -> argparse.ArgumentParser:
         if name == "start-runtime":
             command.add_argument("--omlx-port", type=int, default=8000)
             command.add_argument("--broker-port", type=int, default=43110)
+            command.add_argument("--memory-port", type=int, default=43111)
         if name == "sample-task":
             command.add_argument("--broker-port", type=int, default=43110)
     semantica_status = commands.add_parser("semantica-status")
@@ -109,6 +116,9 @@ def parser() -> argparse.ArgumentParser:
     internal.add_argument("--root", type=Path, required=True)
     internal.add_argument("--omlx-port", type=int, required=True)
     internal.add_argument("--broker-port", type=int, required=True)
+    memory_internal = commands.add_parser("internal-memory-service")
+    memory_internal.add_argument("--root", type=Path, required=True)
+    memory_internal.add_argument("--memory-port", type=int, required=True)
     return result
 
 
@@ -190,7 +200,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         )
     if args.command in {
         "runtime-status", "start-runtime", "stop-runtime", "sample-task",
-        "internal-broker", "semantica-status",
+        "internal-broker", "internal-memory-service", "semantica-status",
     }:
         _validate_product_root(args.root)
     if args.command == "semantica-status":
@@ -218,9 +228,12 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     if args.command == "internal-broker":
         _run_internal_broker(args.root, args.omlx_port, args.broker_port)
         return envelope(command=args.command, request_id=request_id, status="ok", payload={"schema_version": 1})
+    if args.command == "internal-memory-service":
+        _run_internal_memory_service(args.root, args.memory_port)
+        return envelope(command=args.command, request_id=request_id, status="ok", payload={"schema_version": 1})
     if args.command == "start-runtime":
-        _validate_runtime_ports(args.omlx_port, args.broker_port)
-        omlx_key, broker_token = _runtime_secrets()
+        _validate_runtime_ports(args.omlx_port, args.broker_port, args.memory_port)
+        omlx_key, broker_token, memory_token = _runtime_secrets()
         executable = _installed_omlx_executable(args.root)
         spec = omlx_process_spec(executable=executable, app_support=args.root, port=args.omlx_port)
         for path in (
@@ -249,6 +262,23 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "OMLX_API_KEY": omlx_key,
             "MAC_AI_WORK_OS_BROKER_TOKEN": broker_token,
         }
+        memory_arguments = [
+            *broker_prefix, "--request-id", str(uuid.uuid4()), "internal-memory-service",
+            "--root", str(args.root), "--memory-port", str(args.memory_port),
+        ]
+        memory_home = args.root / "state/homes/memory"
+        memory_tmp = args.root / "state/runtime/memory/tmp"
+        memory_home.mkdir(parents=True, exist_ok=True)
+        memory_tmp.mkdir(parents=True, exist_ok=True)
+        memory_environment = {
+            "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
+            "HOME": str(memory_home),
+            "TMPDIR": str(memory_tmp),
+            "NO_PROXY": "127.0.0.1,localhost,::1",
+            "HF_HUB_OFFLINE": "1",
+            "TRANSFORMERS_OFFLINE": "1",
+            "MAC_AI_WORK_OS_MEMORY_TOKEN": memory_token,
+        }
         record = RuntimeManager(args.root).start(
             correlation_id=request_id,
             omlx={
@@ -265,8 +295,16 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 "working_directory": args.root / "state/runtime/broker",
                 "log_path": args.root / "logs/broker/server.log",
             },
+            memory={
+                "executable": broker_executable,
+                "arguments": memory_arguments,
+                "environment": memory_environment,
+                "working_directory": args.root / "state/runtime/memory",
+                "log_path": args.root / "logs/memory/server.log",
+            },
             omlx_probe=lambda: _http_ready(args.omlx_port, omlx_key),
             broker_probe=lambda: _http_ready(args.broker_port, broker_token),
+            memory_probe=lambda: _http_ready(args.memory_port, memory_token, "/live"),
             omlx_adopt=lambda: _adopt_omlx_server(
                 args.omlx_port, args.root / "logs/omlx/server.log"
             ),
@@ -279,7 +317,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             payload={"schema_version": 1, "runtime": asdict(record)},
         )
     if args.command == "sample-task":
-        _, broker_token = _runtime_secrets()
+        _, broker_token, _ = _runtime_secrets()
         status = RuntimeManager(args.root).status()
         if status["phase"] != "running":
             raise ValueError("runtime is not running")
@@ -388,8 +426,9 @@ def _matches_active_bundle(layout: OMLXInstallLayout, release: str, digest: str)
         return False
 
 
-def _validate_runtime_ports(omlx_port: int, broker_port: int) -> None:
-    if not 1024 <= omlx_port <= 65535 or not 1024 <= broker_port <= 65535 or omlx_port == broker_port:
+def _validate_runtime_ports(omlx_port: int, broker_port: int, memory_port: int = 43111) -> None:
+    ports = (omlx_port, broker_port, memory_port)
+    if any(not 1024 <= port <= 65535 for port in ports) or len(set(ports)) != len(ports):
         raise ValueError("runtime ports must be unique unprivileged ports")
 
 
@@ -418,12 +457,28 @@ def _installed_omlx_executable(root: Path) -> Path:
     return executable
 
 
-def _runtime_secrets() -> tuple[str, str]:
+def _runtime_secrets() -> tuple[str, str, str]:
+    omlx_key, broker_token = _broker_secrets()
+    memory_token = _memory_secret()
+    secrets = (omlx_key, broker_token, memory_token)
+    if len(set(secrets)) != 3:
+        raise ValueError("distinct Keychain runtime secrets are required")
+    return secrets
+
+
+def _broker_secrets() -> tuple[str, str]:
     omlx_key = os.environ.get("OMLX_API_KEY", "")
     broker_token = os.environ.get("MAC_AI_WORK_OS_BROKER_TOKEN", "")
     if len(omlx_key) < 32 or len(broker_token) < 32 or omlx_key == broker_token:
-        raise ValueError("distinct Keychain runtime secrets are required")
+        raise ValueError("distinct inference runtime secrets are required")
     return omlx_key, broker_token
+
+
+def _memory_secret() -> str:
+    memory_token = os.environ.get("MAC_AI_WORK_OS_MEMORY_TOKEN", "")
+    if len(memory_token) < 32:
+        raise ValueError("memory runtime secret is required")
+    return memory_token
 
 
 def _supervisor_invocation() -> tuple[Path, list[str]]:
@@ -432,15 +487,18 @@ def _supervisor_invocation() -> tuple[Path, list[str]]:
     return Path(sys.executable), [str(REPOSITORY_ROOT / "scripts/supervisor.py")]
 
 
-def _http_ready(port: int, token: str) -> bool:
+def _http_ready(port: int, token: str, path: str = "/health") -> bool:
     request = urllib.request.Request(
-        f"http://127.0.0.1:{port}/health",
+        f"http://127.0.0.1:{port}{path}",
         headers={"Authorization": f"Bearer {token}"},
     )
     try:
         with urllib.request.urlopen(request, timeout=1.0) as response:
             body = json.loads(response.read(1024 * 1024))
-            return response.status == 200 and str(body.get("status", "")).lower() in {"ok", "healthy"}
+            status = body.get("status", "")
+            if path == "/live" and isinstance(body.get("result"), dict):
+                status = body["result"].get("status", "")
+            return response.status == 200 and str(status).lower() in {"ok", "healthy"}
     except (OSError, ValueError, urllib.error.URLError, json.JSONDecodeError):
         return False
 
@@ -462,13 +520,47 @@ def _adopt_omlx_server(port: int, log_path: Path):
 
 def _run_internal_broker(root: Path, omlx_port: int, broker_port: int) -> None:
     _validate_runtime_ports(omlx_port, broker_port)
-    omlx_key, broker_token = _runtime_secrets()
+    omlx_key, broker_token = _broker_secrets()
     broker = OMLXBroker(
         BrokerPolicy(client_token=broker_token, allowed_origins=frozenset()),
         OMLXUpstream(f"http://127.0.0.1:{omlx_port}", omlx_key, timeout=30.0),
         JsonlAuditSink(root / "logs/audit/inference.jsonl"),
     )
     server = create_server("127.0.0.1", broker_port, broker)
+    try:
+        server.serve_forever()
+    finally:
+        server.server_close()
+
+
+class _UnavailableSemanticaBackend:
+    def health(self) -> dict[str, str]:
+        return {"status": "unavailable", "code": "EMBEDDING_ROUTE_UNVERIFIED"}
+
+    def store(self, content: str, metadata: dict[str, Any]) -> str:
+        raise RuntimeError("unavailable backend cannot store")
+
+    def get(self, memory_id: str) -> None:
+        return None
+
+    def retrieve(self, query: str, limit: int) -> list[dict[str, Any]]:
+        return []
+
+    def forget(self, memory_id: str) -> bool:
+        return False
+
+
+def _run_internal_memory_service(root: Path, memory_port: int) -> None:
+    if not 1024 <= memory_port <= 65535:
+        raise ValueError("memory service port must be unprivileged")
+    memory_token = _memory_secret()
+    memory = GovernedMemory(root, _UnavailableSemanticaBackend())
+    service = GovernedMemoryService(
+        MemoryServicePolicy(memory_token),
+        memory,
+        JsonlAuditSink(root / "logs/audit/memory-service.jsonl"),
+    )
+    server = create_memory_server("127.0.0.1", memory_port, service)
     try:
         server.serve_forever()
     finally:
@@ -533,7 +625,7 @@ def main(argv: list[str] | None = None) -> int:
                 "preflight", "installation-plan", "installation-status", "install-omlx",
                 "model-plan", "link-model",
                 "runtime-status", "start-runtime", "stop-runtime", "sample-task", "internal-broker",
-                "semantica-status",
+                "internal-memory-service", "semantica-status",
             )
             if item in raw
         ),

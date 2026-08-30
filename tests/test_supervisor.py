@@ -355,12 +355,20 @@ class SupervisorProtocolTests(unittest.TestCase):
                 "--request-id", str(uuid.uuid4()), "start-runtime", "--root", str(root),
             ])
             with patch.dict("os.environ", {}, clear=True):
-                with self.assertRaisesRegex(ValueError, "Keychain"):
+                with self.assertRaisesRegex(ValueError, "runtime secrets"):
                     supervisor.run(args)
             duplicate = "same-secret-value-with-at-least-32-characters"
             with patch.dict("os.environ", {
                 "OMLX_API_KEY": duplicate,
                 "MAC_AI_WORK_OS_BROKER_TOKEN": duplicate,
+                "MAC_AI_WORK_OS_MEMORY_TOKEN": "m" * 40,
+            }, clear=True):
+                with self.assertRaisesRegex(ValueError, "distinct"):
+                    supervisor.run(args)
+            with patch.dict("os.environ", {
+                "OMLX_API_KEY": "o" * 40,
+                "MAC_AI_WORK_OS_BROKER_TOKEN": duplicate,
+                "MAC_AI_WORK_OS_MEMORY_TOKEN": duplicate,
             }, clear=True):
                 with self.assertRaisesRegex(ValueError, "distinct"):
                     supervisor.run(args)
@@ -372,11 +380,46 @@ class SupervisorProtocolTests(unittest.TestCase):
                 "--request-id", str(uuid.uuid4()), "runtime-status", "--root", str(root),
             ])
             with patch.object(supervisor.RuntimeManager, "status", return_value={
-                "phase": "stopped", "record": None, "omlx_alive": False, "broker_alive": False,
+                "phase": "stopped", "record": None, "omlx_alive": False,
+                "broker_alive": False, "memory_alive": False,
             }) as status:
                 response = supervisor.run(args)
             status.assert_called_once_with()
             self.assertEqual(response["payload"]["phase"], "stopped")
+
+    def test_memory_liveness_probe_reads_versioned_result_envelope(self):
+        class Response:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return None
+
+            def read(self, limit):
+                return b'{"schema_version":1,"result":{"status":"ok"}}'
+
+        with patch.object(supervisor.urllib.request, "urlopen", return_value=Response()) as open_url:
+            self.assertTrue(supervisor._http_ready(43111, "m" * 40, "/live"))
+        request = open_url.call_args.args[0]
+        self.assertEqual(request.full_url, "http://127.0.0.1:43111/live")
+
+    def test_memory_liveness_probe_rejects_unavailable_nested_status(self):
+        class Response:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return None
+
+            def read(self, limit):
+                return b'{"schema_version":1,"result":{"status":"unavailable"}}'
+
+        with patch.object(supervisor.urllib.request, "urlopen", return_value=Response()):
+            self.assertFalse(supervisor._http_ready(43111, "m" * 40, "/live"))
 
     def test_sample_task_refuses_nonrunning_runtime_before_network(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -387,6 +430,7 @@ class SupervisorProtocolTests(unittest.TestCase):
             with patch.dict("os.environ", {
                 "OMLX_API_KEY": "o" * 40,
                 "MAC_AI_WORK_OS_BROKER_TOKEN": "b" * 40,
+                "MAC_AI_WORK_OS_MEMORY_TOKEN": "m" * 40,
             }, clear=True), patch.object(supervisor.RuntimeManager, "status", return_value={"phase": "stopped"}), \
                  patch.object(supervisor, "_sample_task") as sample:
                 with self.assertRaisesRegex(ValueError, "not running"):

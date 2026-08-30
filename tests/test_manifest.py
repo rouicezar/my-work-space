@@ -59,7 +59,10 @@ class ProductManifestTests(unittest.TestCase):
         service = self.manifest["product_services"][1]
         self.assertEqual(service["id"], "governed-memory-service")
         self.assertEqual(service["bind_policy"], "loopback-only")
-        self.assertEqual(service["contract"], "pending-product-service-implementation")
+        self.assertEqual(
+            service["contract"],
+            "verified-service-process-and-synthetic-lifecycle-2026-08-30",
+        )
         self.assertEqual(service["embedding_contract"], "unavailable-until-approved-local-route")
 
     def test_semantica_upstream_server_cannot_be_substituted_for_memory_service(self):
