@@ -40,6 +40,13 @@ class CloudModel:
 
 
 @dataclass(frozen=True)
+class PeakPeriod:
+    weekdays: frozenset[int]
+    start_minute: int
+    end_minute: int
+
+
+@dataclass(frozen=True)
 class CloudProvider:
     id: str
     enabled_by_default: bool
@@ -49,6 +56,7 @@ class CloudProvider:
     pricing_source: str
     pricing_effective_at: datetime
     pricing_maximum_age_hours: int
+    peak_periods_utc: tuple[PeakPeriod, ...]
     privacy_policy_url: str
     privacy_policy_updated_at: str
     processing_location: str
@@ -66,6 +74,17 @@ class CloudProvider:
             raise ValueError("now must be timezone-aware")
         age = now.astimezone(timezone.utc) - self.pricing_effective_at
         return 0 <= age.total_seconds() <= self.pricing_maximum_age_hours * 3600
+
+    def is_peak(self, now: datetime) -> bool:
+        if now.tzinfo is None:
+            raise ValueError("now must be timezone-aware")
+        current = now.astimezone(timezone.utc)
+        minute = current.hour * 60 + current.minute
+        return any(
+            current.isoweekday() in period.weekdays
+            and period.start_minute <= minute < period.end_minute
+            for period in self.peak_periods_utc
+        )
 
 
 def load_cloud_provider(path: Path, provider_id: str) -> CloudProvider:
@@ -120,10 +139,14 @@ def load_cloud_provider(path: Path, provider_id: str) -> CloudProvider:
         raise CloudCatalogError("CLOUD_PRICING_AGE_INVALID", provider_id)
     if privacy["retention"] != "variable" or privacy["training_opt_out_state"] != "unknown":
         raise CloudCatalogError("CLOUD_PRIVACY_CLAIM_UNSAFE", provider_id)
+    periods = tuple(_peak_period(item) for item in pricing["peak_periods_utc"])
+    if not periods:
+        raise CloudCatalogError("CLOUD_PEAK_PERIOD_INVALID", provider_id)
     return CloudProvider(
         id=raw["id"], enabled_by_default=False, origin=origin, protocol=raw["protocol"],
         models=models, pricing_source=source, pricing_effective_at=effective,
-        pricing_maximum_age_hours=maximum_age, privacy_policy_url=policy,
+        pricing_maximum_age_hours=maximum_age, peak_periods_utc=periods,
+        privacy_policy_url=policy,
         privacy_policy_updated_at=str(privacy["policy_updated_at"]),
         processing_location=str(privacy["processing_location"]),
         retention="variable", training_opt_out_state="unknown",
@@ -163,3 +186,25 @@ def _https_url(value: object, code: str) -> str:
     if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
         raise CloudCatalogError(code, str(value))
     return str(value)
+
+
+def _peak_period(raw: object) -> PeakPeriod:
+    if not isinstance(raw, dict) or set(raw) != {"weekdays", "start", "end"}:
+        raise CloudCatalogError("CLOUD_PEAK_PERIOD_INVALID", str(raw))
+    weekdays = raw["weekdays"]
+    if (
+        not isinstance(weekdays, list) or not weekdays
+        or any(isinstance(day, bool) or not isinstance(day, int) or day < 1 or day > 7 for day in weekdays)
+        or len(weekdays) != len(set(weekdays))
+    ):
+        raise CloudCatalogError("CLOUD_PEAK_PERIOD_INVALID", str(raw))
+    try:
+        start_hour, start_minute = (int(value) for value in str(raw["start"]).split(":"))
+        end_hour, end_minute = (int(value) for value in str(raw["end"]).split(":"))
+    except (TypeError, ValueError) as exc:
+        raise CloudCatalogError("CLOUD_PEAK_PERIOD_INVALID", str(raw)) from exc
+    start = start_hour * 60 + start_minute
+    end = end_hour * 60 + end_minute
+    if not (0 <= start < end <= 1440) or start_minute > 59 or end_minute > 59:
+        raise CloudCatalogError("CLOUD_PEAK_PERIOD_INVALID", str(raw))
+    return PeakPeriod(frozenset(weekdays), start, end)
