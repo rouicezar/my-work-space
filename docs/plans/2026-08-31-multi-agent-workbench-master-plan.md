@@ -1,0 +1,229 @@
+# Multi-Agent Workbench Master Implementation Plan
+
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+
+**Goal:** Build a local-first Mac AI workbench where a small local model can coordinate parallel agents, reuse Semantica, holaOS, Herdr, and oMLX through adapters, and combine local and approved cloud models for real work.
+
+**Architecture:** The product-owned native workbench is the default distributable UI. holaOS is a capability and workflow reference plus optional separately installed adapter until redistribution is cleared. Herdr is the core multi-agent execution runtime, Semantica is the governed memory authority, and oMLX is the local inference runtime.
+
+**Tech Stack:** SwiftUI macOS app, Python supervisor/adapters, Herdr socket/CLI integration, oMLX OpenAI-compatible API, Semantica REST/MCP, Keychain-held cloud credentials, repository-local tests and fixtures.
+
+---
+
+## Control Rules
+
+This is the authoritative execution and progress tracker for the Mac AI Work OS project.
+
+- Every agent must read this full file, `docs/TASK_HANDOFF.md`, and `AGENTS.md` before changing product code.
+- Every task must have exactly one status: `pending`, `in_progress`, `blocked`, `verified`, or `dropped`.
+- Only one task may be `in_progress` at a time unless the user explicitly starts parallel agent work.
+- A task is not complete until this tracker and `docs/TASK_HANDOFF.md` are both updated.
+- Progress is evidence-based. Do not mark `verified` from visual inspection, intent, or a passing health endpoint alone.
+- Any change to product goal, upstream reuse policy, memory authority, or cloud credential behavior requires explicit user approval.
+- If another agent takes over, it must claim a task ID here and write a handoff entry before and after its work.
+
+## Current State
+
+Updated: 2026-08-31 Asia/Shanghai
+Current phase: P0 Governance correction
+Current task: P0-T05
+Current status: in_progress
+Next action: commit and push only the documentation-control changes.
+
+Known uncommitted implementation work that must not be overwritten by this documentation task:
+
+- `mac_ai_work_os/deepseek_adapter.py`
+- `tests/test_deepseek_adapter.py`
+- `prototypes/packaging/Sources/LifecycleContract/ProductManifest.swift`
+- `prototypes/packaging/Sources/MacAIWorkOSApp/MacAIWorkOSApp.swift`
+- `prototypes/packaging/Tests/LifecycleContractTests/ProductManifestTests.swift`
+- `build/`
+- `evidence/ui/cloud-settings-review-2026-08-31.png`
+
+Known evidence from the interrupted task:
+
+- DeepSeek adapter tests had been adjusted around urllib timeout handling and unexpected error classification.
+- DeepSeek real provider reached once but returned `DEEPSEEK_RESPONSE_INVALID`; the observed hypothesis was that thinking mode consumed the small output budget. This is not yet a verified closed loop.
+- Swift package tests for packaging previously reported 30 passed and 2 skipped.
+- Python targeted DeepSeek/Supervisor tests previously reported 43 passed.
+- The UI screenshot evidence is not sufficient because the captured image did not prove the foreground app state.
+
+## Product Non-Negotiables
+
+1. The product is a local-first multi-agent AI workbench, not a setup wizard.
+2. The first screen must support actual task creation, conversation, history, recovery, model selection, and supervised agent execution.
+3. The workbench must coordinate multiple agents in parallel with readable state, ownership, cancellation, and recovery.
+4. Local small models must be usable for routing, summarization, memory lookup, and low-risk control decisions.
+5. Cloud models, including DeepSeek, are allowed only through explicit credential setup, policy preview, user approval, and audit logs.
+6. Semantica is the governed long-term memory authority.
+7. Herdr is the core multi-agent execution engine, not an optional afterthought.
+8. oMLX is the local inference layer and must prove real inference, not only health.
+9. holaOS capability parity is required, but public distribution must avoid copying or rebadging holaOS frontend/source/assets until license clearance.
+10. Future public open-source distribution must preserve license notices, secrets boundaries, and a clean adapter-based reuse story.
+
+## Upstream Reuse Ledger
+
+| Upstream | Role | Reuse mode | Must not do | Verification gate |
+|---|---|---|---|---|
+| Semantica | Governed memory, decisions, provenance | Reuse via REST/MCP/package where licensed | Create a competing long-term memory authority | Memory write/read contract test plus audit event |
+| holaOS | Workflow/capability reference, optional external adapter | Separately installed adapter unless license clearance changes | Copy, rebadge, or bundle restricted frontend in public release | Capability parity ledger and adapter smoke test |
+| Herdr | Core multi-agent execution runtime | Pin and integrate CLI/socket/API | Treat multi-agent as cosmetic UI only | Parallel task execution, cancel, resume, reconnect tests |
+| oMLX | Local inference runtime | Verified runtime or official artifact acquisition | Treat `/health` as inference proof | Chat completion or embedding inference proof with model ID |
+
+## Capability Parity Ledger
+
+Status values: `not_started`, `mapped`, `implemented`, `verified`.
+
+| ID | Capability | Reference source | Product target | Status | Evidence |
+|---|---|---|---|---|---|
+| CAP-01 | New task conversation | Codex/holaOS-style workbench | First screen starts a real task with local/cloud routing | not_started | None |
+| CAP-02 | Multi-agent parallel work | Herdr/holaOS/Codex | Multiple visible workers with owner, state, logs, and artifacts | not_started | None |
+| CAP-03 | Agent command and review loop | Codex-style task execution | User can assign, inspect, interrupt, resume, and review | not_started | None |
+| CAP-04 | Local model control | oMLX | Local model can route/summarize/answer simple requests | partial | oMLX setup exists; runtime stopped in screenshot |
+| CAP-05 | Cloud model setup | DeepSeek/OpenAI-compatible providers | Settings has provider list, credential state, low-cost test, and removal | partial | Uncommitted DeepSeek/settings work exists |
+| CAP-06 | Governed memory | Semantica | Retrieval, candidate memory, approval, audit | not_started | None |
+| CAP-07 | History and recovery | Product workbench | Task history, failed run recovery, cancel/resume | partial | Sidebar exists; user reports unclear product function |
+| CAP-08 | Tool/process console | Herdr | Task execution logs and external tool lifecycle | not_started | None |
+| CAP-09 | Permission and audit | Product policy layer | External writes and cloud calls require preview/approval/audit | partial | Policy intent exists; full UI not verified |
+| CAP-10 | Distribution readiness | Packaging/lifecycle | Clean install, upgrade, rollback, uninstall, recovery gates | partial | Packaging tests exist; product experience incomplete |
+
+## Milestone Tracker
+
+| Phase | Goal | Status | Exit Gate |
+|---|---|---|---|
+| P0 | Correct governance and stop product drift | in_progress | Tracker, handoff, and `AGENTS.md` committed and pushed |
+| P1 | Inventory upstream capabilities and licenses | pending | Reuse decisions for all four upstreams have evidence |
+| P2 | Define adapter protocol and contracts | pending | Protocol tests cover Semantica, holaOS, Herdr, oMLX, cloud providers |
+| P3 | Make Herdr-backed multi-agent loop real | pending | Two parallel tasks run, stream status, cancel, resume, and recover |
+| P4 | Make independent workbench usable | pending | First-run user can start a task without visiting recovery settings |
+| P5 | Make local/cloud model cooperation real | pending | oMLX local proof plus approved low-cost DeepSeek loop |
+| P6 | Make Semantica governed memory real | pending | Retrieval, candidate memory, approval, and audit verified |
+| P7 | Finish history, cancellation, and recovery | pending | Interrupted task can resume from persisted state |
+| P8 | Distribution and public-source hardening | pending | License/SBOM/secrets/clean-install gates pass |
+
+## Granular Task List
+
+### P0: Governance Correction
+
+| ID | Status | Action | Files | Command | Expected Evidence |
+|---|---|---|---|---|---|
+| P0-T01 | verified | Create this master plan and tracker | `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md` | `test -f docs/plans/2026-08-31-multi-agent-workbench-master-plan.md` | File exists |
+| P0-T02 | verified | Create the takeover handoff document | `docs/TASK_HANDOFF.md` | `test -f docs/TASK_HANDOFF.md` | File exists |
+| P0-T03 | verified | Update startup and completion rules | `AGENTS.md` | `rg -n "Execution control documents|Task Handoff" AGENTS.md` | Required rules found |
+| P0-T04 | verified | Verify documentation-only diff | This file, `docs/TASK_HANDOFF.md`, `AGENTS.md` | `git diff --check -- AGENTS.md docs/plans/2026-08-31-multi-agent-workbench-master-plan.md docs/TASK_HANDOFF.md` | No whitespace errors |
+| P0-T05 | in_progress | Commit governance docs only | Same files | `git add AGENTS.md docs/plans/2026-08-31-multi-agent-workbench-master-plan.md docs/TASK_HANDOFF.md` then `git commit -m "docs: add workbench execution control"` | Commit created without staging implementation work |
+| P0-T06 | pending | Push governance docs | Same files | `git push` | Remote accepts commit |
+
+### P1: Upstream Capability and License Inventory
+
+| ID | Status | Action | Files | Command | Expected Evidence |
+|---|---|---|---|---|---|
+| P1-T01 | pending | List available local upstream checkouts and pins | `docs/research/upstream-matrix.md` | `rg --files . | rg "(hola|herdr|semantica|omlx)"` | Local sources and gaps documented |
+| P1-T02 | pending | Refresh Semantica API/capability evidence | `docs/research/upstream-matrix.md` | `rg -n "semantica|mcp|server|memory" .` | Version, API, and reuse boundary updated |
+| P1-T03 | pending | Refresh holaOS capability map without copying code | `docs/research/holaos-capability-ledger.md` | `test -f docs/research/holaos-capability-ledger.md` | Capability map exists |
+| P1-T04 | pending | Refresh Herdr socket/CLI capability map | `docs/research/herdr-capability-ledger.md` | `test -f docs/research/herdr-capability-ledger.md` | Multi-agent capabilities mapped |
+| P1-T05 | pending | Refresh oMLX API and model capability evidence | `docs/research/upstream-matrix.md` | `rg -n "omlx|OpenAI-compatible|/v1" docs/research/upstream-matrix.md` | Runtime assumptions updated |
+| P1-T06 | pending | Reconcile license matrix with public open-source intent | `docs/research/license-matrix.md` | `rg -n "public|redistribution|holaOS" docs/research/license-matrix.md` | Public distribution constraints explicit |
+| P1-T07 | pending | Add a reuse decision record for each upstream | `docs/decisions.md` | `rg -n "Reuse decision" docs/decisions.md` | Four decisions recorded |
+| P1-T08 | pending | Commit upstream inventory docs | Research docs, `docs/decisions.md` | `git diff --check` then `git commit` | Commit includes only inventory docs |
+
+### P2: Adapter Protocol Contract
+
+| ID | Status | Action | Files | Command | Expected Evidence |
+|---|---|---|---|---|---|
+| P2-T01 | pending | Write failing test for adapter identity and health envelope | `tests/test_adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Fails because contract is absent |
+| P2-T02 | pending | Add minimal protocol dataclasses | `mac_ai_work_os/adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Identity/health tests pass |
+| P2-T03 | pending | Write failing test for capability declaration | `tests/test_adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Fails on missing capabilities |
+| P2-T04 | pending | Implement capability declaration model | `mac_ai_work_os/adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Capabilities pass |
+| P2-T05 | pending | Write failing test for policy preview/audit fields | `tests/test_adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Fails on missing policy fields |
+| P2-T06 | pending | Implement policy preview/audit envelope | `mac_ai_work_os/adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Contract tests pass |
+| P2-T07 | pending | Commit adapter contract | `mac_ai_work_os/adapter_contract.py`, `tests/test_adapter_contract.py` | `git diff --check` then `git commit` | Commit created |
+
+### P3: Herdr Core Multi-Agent Runtime
+
+| ID | Status | Action | Files | Command | Expected Evidence |
+|---|---|---|---|---|---|
+| P3-T01 | pending | Write failing Herdr adapter availability test | `tests/test_herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Fails before adapter exists |
+| P3-T02 | pending | Add Herdr adapter skeleton using adapter contract | `mac_ai_work_os/herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Availability test passes |
+| P3-T03 | pending | Write failing test for spawning two mock tasks | `tests/test_herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Fails on missing spawn |
+| P3-T04 | pending | Implement mockable task spawn/status methods | `mac_ai_work_os/herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Two tasks have stable IDs and states |
+| P3-T05 | pending | Write failing test for cancel and resume envelope | `tests/test_herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Fails on missing lifecycle |
+| P3-T06 | pending | Implement cancel/resume mapping | `mac_ai_work_os/herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Lifecycle tests pass |
+| P3-T07 | pending | Wire supervisor to Herdr adapter behind feature flag | `mac_ai_work_os/supervisor.py` | `python -m unittest discover tests -v` | Existing tests pass |
+| P3-T08 | pending | Add UI task state fixture for parallel agents | `prototypes/packaging/Sources/MacAIWorkOSApp/MacAIWorkOSApp.swift` | `swift test --package-path prototypes/packaging` | Swift tests pass |
+| P3-T09 | pending | Commit Herdr core slice | Adapter, supervisor, tests, Swift fixture | `git diff --check` then `git commit` | Commit created |
+
+### P4: Independent Workbench Product Experience
+
+| ID | Status | Action | Files | Command | Expected Evidence |
+|---|---|---|---|---|---|
+| P4-T01 | pending | Write UI contract test for first-screen task composer | `prototypes/packaging/Tests/LifecycleContractTests/ProductManifestTests.swift` | `swift test --package-path prototypes/packaging` | Fails before composer contract |
+| P4-T02 | pending | Move daily work surface above setup/recovery | `prototypes/packaging/Sources/MacAIWorkOSApp/MacAIWorkOSApp.swift` | `swift test --package-path prototypes/packaging` | Contract passes |
+| P4-T03 | pending | Add model/provider selection contract | Lifecycle contract tests | `swift test --package-path prototypes/packaging` | Provider selector required |
+| P4-T04 | pending | Implement cloud/local model selector state | Swift app and manifest files | `swift test --package-path prototypes/packaging` | Selector state passes tests |
+| P4-T05 | pending | Add task history visible state contract | Swift tests | `swift test --package-path prototypes/packaging` | History state test passes |
+| P4-T06 | pending | Add recovery action visible state contract | Swift tests | `swift test --package-path prototypes/packaging` | Recovery state test passes |
+| P4-T07 | pending | Capture foreground UI evidence | `evidence/ui/workbench-first-screen-YYYY-MM-DD.png` | Manual launch plus screenshot review | Screenshot proves first screen is workbench |
+| P4-T08 | pending | Commit workbench product experience slice | Swift files, tests, evidence if allowed | `git diff --check` then `git commit` | Commit created |
+
+### P5: Local and Cloud Model Cooperation
+
+| ID | Status | Action | Files | Command | Expected Evidence |
+|---|---|---|---|---|---|
+| P5-T01 | pending | Reproduce current DeepSeek failure with test credential only | `evidence/cloud/deepseek-YYYY-MM-DD.md` | Approved low-cost test command | Error or success captured without secret |
+| P5-T02 | pending | Add failing test for DeepSeek output budget handling | `tests/test_deepseek_adapter.py` | `python -m unittest tests.test_deepseek_adapter -v` | Fails on invalid small response path |
+| P5-T03 | pending | Fix DeepSeek low-cost chat completion path | `mac_ai_work_os/deepseek_adapter.py` | `python -m unittest tests.test_deepseek_adapter -v` | Tests pass |
+| P5-T04 | pending | Run one approved real DeepSeek closed loop | `evidence/cloud/deepseek-YYYY-MM-DD.md` | Approved test command | Provider returns valid minimal answer |
+| P5-T05 | pending | Add oMLX local inference proof test/runbook | `docs/runbooks/omlx.md` | Local runtime command | Real local response captured |
+| P5-T06 | pending | Add model routing decision tests | `tests/test_model_routing.py` | `python -m unittest tests.test_model_routing -v` | Local-first and approval escalation pass |
+| P5-T07 | pending | Commit model cooperation slice | Adapter, tests, runbook, evidence | `git diff --check` then `git commit` | Commit created |
+
+### P6: Semantica Governed Memory
+
+| ID | Status | Action | Files | Command | Expected Evidence |
+|---|---|---|---|---|---|
+| P6-T01 | pending | Write failing Semantica adapter health test | `tests/test_semantica_adapter.py` | `python -m unittest tests.test_semantica_adapter -v` | Fails before adapter |
+| P6-T02 | pending | Add Semantica adapter skeleton | `mac_ai_work_os/semantica_adapter.py` | `python -m unittest tests.test_semantica_adapter -v` | Health test passes |
+| P6-T03 | pending | Add candidate memory test | `tests/test_semantica_adapter.py` | `python -m unittest tests.test_semantica_adapter -v` | Fails before candidate flow |
+| P6-T04 | pending | Implement candidate memory envelope | `mac_ai_work_os/semantica_adapter.py` | `python -m unittest tests.test_semantica_adapter -v` | Candidate flow passes |
+| P6-T05 | pending | Add approval-to-commit memory test | `tests/test_semantica_adapter.py` | `python -m unittest tests.test_semantica_adapter -v` | Approval flow passes |
+| P6-T06 | pending | Wire task audit event to Semantica adapter | `mac_ai_work_os/supervisor.py` | `python -m unittest discover tests -v` | Audit event test passes |
+| P6-T07 | pending | Commit governed memory slice | Adapter, supervisor, tests | `git diff --check` then `git commit` | Commit created |
+
+### P7: History, Cancel, Resume, Recovery
+
+| ID | Status | Action | Files | Command | Expected Evidence |
+|---|---|---|---|---|---|
+| P7-T01 | pending | Write failing persisted task-state test | `tests/test_task_state_store.py` | `python -m unittest tests.test_task_state_store -v` | Fails before store |
+| P7-T02 | pending | Implement repository-local task-state store | `mac_ai_work_os/task_state_store.py` | `python -m unittest tests.test_task_state_store -v` | Store test passes |
+| P7-T03 | pending | Add cancellation persistence test | `tests/test_task_state_store.py` | `python -m unittest tests.test_task_state_store -v` | Cancel state survives reload |
+| P7-T04 | pending | Add resume-from-history supervisor test | `tests/test_supervisor_resume.py` | `python -m unittest tests.test_supervisor_resume -v` | Resume route passes |
+| P7-T05 | pending | Add UI history/recovery contract | Swift tests | `swift test --package-path prototypes/packaging` | History recovery visible |
+| P7-T06 | pending | Run interrupted-task manual recovery proof | `evidence/recovery/recovery-YYYY-MM-DD.md` | Manual scenario | Recovery proof recorded |
+| P7-T07 | pending | Commit history/cancel/resume slice | Store, supervisor, Swift, tests, evidence | `git diff --check` then `git commit` | Commit created |
+
+### P8: Distribution and Public-Source Hardening
+
+| ID | Status | Action | Files | Command | Expected Evidence |
+|---|---|---|---|---|---|
+| P8-T01 | pending | Add public distribution checklist | `docs/distribution/public-release-checklist.md` | `test -f docs/distribution/public-release-checklist.md` | Checklist exists |
+| P8-T02 | pending | Add license notice collection task | `docs/distribution/notices.md` | `test -f docs/distribution/notices.md` | Notices started |
+| P8-T03 | pending | Add secrets scan command to release checklist | Release docs | Release command documented | Secrets gate explicit |
+| P8-T04 | pending | Add clean-install acceptance runbook | `docs/runbooks/clean-install.md` | `test -f docs/runbooks/clean-install.md` | Runbook exists |
+| P8-T05 | pending | Add novice-user acceptance script | `docs/runbooks/novice-acceptance.md` | `test -f docs/runbooks/novice-acceptance.md` | Script exists |
+| P8-T06 | pending | Run final test suite | Repo | Python and Swift test commands | Tests pass |
+| P8-T07 | pending | Commit distribution hardening | Distribution docs and tests | `git diff --check` then `git commit` | Commit created |
+
+## Mandatory Completion Update Format
+
+After each task, update the row status and append a short note here:
+
+```text
+YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit-or-none - next TASK-ID
+```
+
+## Completion Notes
+
+- 2026-08-31 -- P0-T01/P0-T02/P0-T03 verified by Codex root agent. Created master tracker, handoff document, and updated `AGENTS.md`.
+- 2026-08-31 -- P0-T04 verified by Codex root agent. `git diff --check` passed for documentation-control files.
+- 2026-08-31 -- P0-T05 started by Codex root agent. Commit is limited to `AGENTS.md`, this tracker, and `docs/TASK_HANDOFF.md`.
