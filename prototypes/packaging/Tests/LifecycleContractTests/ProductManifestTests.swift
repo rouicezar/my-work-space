@@ -22,7 +22,11 @@ private func repositoryRoot() -> URL {
     let manifestURL = repositoryRoot().appending(path: "config/product-manifest.json")
     let summary = LauncherSummary(manifest: try ProductManifest.load(from: manifestURL))
     #expect(summary.status == "contract-valid")
-    #expect(summary.ports == ["omlx": 8000, "semantica": 8765])
+    #expect(summary.ports == [
+        "omlx": 8000,
+        "inference-broker": 43110,
+        "governed-memory-service": 43111,
+    ])
 }
 
 @Test func duplicatePortIsRejected() throws {
@@ -36,6 +40,21 @@ private func repositoryRoot() -> URL {
     let invalid = try JSONSerialization.data(withJSONObject: object)
 
     #expect(throws: ManifestValidationError.duplicatePort(8000)) {
+        try ProductManifest(data: invalid)
+    }
+}
+
+@Test func productServicePortCollisionIsRejected() throws {
+    let manifestURL = repositoryRoot().appending(path: "config/product-manifest.json")
+    var object = try #require(
+        JSONSerialization.jsonObject(with: Data(contentsOf: manifestURL)) as? [String: Any]
+    )
+    var services = try #require(object["product_services"] as? [[String: Any]])
+    services[1]["port"] = 43110
+    object["product_services"] = services
+    let invalid = try JSONSerialization.data(withJSONObject: object)
+
+    #expect(throws: ManifestValidationError.duplicatePort(43110)) {
         try ProductManifest(data: invalid)
     }
 }

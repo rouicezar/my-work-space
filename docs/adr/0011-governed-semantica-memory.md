@@ -58,6 +58,13 @@ to `AgentContext` content and metadata. Tests run the same contract against an
 in-memory synthetic backend before the separately managed upstream runtime is
 installed and exercised.
 
+The product does not expose Semantica's upstream REST server as the memory
+boundary. In v0.6.7 that server fixes port `8000`, collides with oMLX, and its
+health route does not exercise `AgentContext` or an embedding backend. The
+Supervisor will instead own an authenticated loopback governed-memory service
+that imports Semantica from its isolated managed environment and reports
+library, governance, storage, and embedding health separately.
+
 ## Consequences
 
 This preserves Semantica as the confirmed-memory authority without pretending

@@ -67,3 +67,13 @@ behavior but does not count as embedding compatibility. Production retrieval
 must use a separately verified oMLX embedding route or another explicitly
 approved local adapter; upstream automatic model initialization is not an
 allowed fallback.
+
+## Upstream server boundary
+
+Inspection of the installed v0.6.7 `semantica.server` module shows that its
+entry point reads `SEMANTICA_HOST` but invokes uvicorn on fixed port `8000`.
+Its `/health` route returns a constant healthy response and does not exercise
+`AgentContext`, governed storage, or embeddings. It therefore cannot satisfy
+the product memory service or health contract. The manifest now records
+Semantica as an isolated library and reserves a separate product-owned
+governed-memory service boundary.

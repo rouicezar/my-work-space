@@ -35,10 +35,11 @@
       "id": "semantica",
       "version": "v0.6.7",
       "install_mode": "managed_python_environment",
-      "runtime": "isolated_python",
+      "runtime": "isolated_python_library",
       "start_order": 20,
-      "port": 8765,
+      "port": null,
       "health_contract": "pending-adapter-verification",
+      "upstream_server_contract": "rejected-fixed-port-and-shallow-health-v0.6.7",
       "update_owner": "product_compatibility_gate",
       "allow_self_update": false,
       "data_path": "${APP_SUPPORT}/data/semantica"
@@ -82,6 +83,15 @@
       "max_concurrent_inference": 2,
       "inference_requests_per_minute": 30,
       "upstream_timeout_seconds": 30,
+      "secret_policy": "keychain-runtime-injection"
+    },
+    {
+      "id": "governed-memory-service",
+      "port": 43111,
+      "bind_policy": "loopback-only",
+      "contract": "pending-product-service-implementation",
+      "semantica_contract": "verified-agent-context-v0.6.7-no-network-boundary",
+      "embedding_contract": "unavailable-until-approved-local-route",
       "secret_policy": "keychain-runtime-injection"
     }
   ],

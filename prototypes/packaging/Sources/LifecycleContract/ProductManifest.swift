@@ -34,6 +34,7 @@ public struct ProductManifest: Codable, Sendable {
     public let manifestVersion: String
     public let paths: [String: String]
     public let components: [Component]
+    public let productServices: [ProductService]
     public let lifecycle: LifecycleSteps
 
     enum CodingKeys: String, CodingKey {
@@ -41,6 +42,7 @@ public struct ProductManifest: Codable, Sendable {
         case productID = "product_id"
         case manifestVersion = "manifest_version"
         case paths, components, lifecycle
+        case productServices = "product_services"
     }
 
     public init(data: Data) throws {
@@ -85,6 +87,17 @@ public struct ProductManifest: Codable, Sendable {
                 throw ManifestValidationError.unverifiedHealthPromoted(component.id)
             }
         }
+        guard productServices.map(\.id) == ["inference-broker", "governed-memory-service"] else {
+            throw ManifestValidationError.wrongComponentSet(productServices.map(\.id))
+        }
+        for service in productServices {
+            guard (1024...65535).contains(service.port) else {
+                throw ManifestValidationError.invalidPort(service.id, service.port)
+            }
+            guard ports.insert(service.port).inserted else {
+                throw ManifestValidationError.duplicatePort(service.port)
+            }
+        }
         guard let secrets = paths["secrets"], secrets.hasPrefix("keychain://") else {
             throw ManifestValidationError.invalidSecretsLocation(paths["secrets"] ?? "missing")
         }
@@ -103,6 +116,11 @@ public struct ProductManifest: Codable, Sendable {
     public var stopPlan: [Component] {
         startPlan.reversed()
     }
+}
+
+public struct ProductService: Codable, Sendable, Identifiable {
+    public let id: String
+    public let port: Int
 }
 
 public struct Component: Codable, Sendable, Identifiable {
@@ -152,10 +170,10 @@ public struct LauncherSummary: Codable, Sendable {
         status = "contract-valid"
         startPlan = manifest.startPlan.map(\.id)
         stopPlan = manifest.stopPlan.map(\.id)
-        ports = Dictionary(
-            uniqueKeysWithValues: manifest.components.compactMap { component in
-                component.port.map { (component.id, $0) }
-            }
-        )
+        let componentPorts = manifest.components.compactMap { component in
+            component.port.map { (component.id, $0) }
+        }
+        let servicePorts = manifest.productServices.map { ($0.id, $0.port) }
+        ports = Dictionary(uniqueKeysWithValues: componentPorts + servicePorts)
     }
 }

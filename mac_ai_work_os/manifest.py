@@ -42,18 +42,19 @@ def validate_manifest(data: dict[str, Any]) -> None:
         raise ManifestError("component ports must be unprivileged TCP ports")
 
     services = data.get("product_services")
-    if not isinstance(services, list) or [item.get("id") for item in services] != ["inference-broker"]:
-        raise ManifestError("inference-broker product service is required")
-    broker = services[0]
+    expected_services = ["inference-broker", "governed-memory-service"]
+    if not isinstance(services, list) or [item.get("id") for item in services] != expected_services:
+        raise ManifestError(f"product services must be {expected_services}")
+    service_ports = [item.get("port") for item in services]
+    if any(not isinstance(port, int) or not 1024 <= port <= 65535 for port in service_ports):
+        raise ManifestError("product service ports must be unprivileged TCP ports")
+    if len(service_ports) != len(set(service_ports)) or any(port in ports for port in service_ports):
+        raise ManifestError("product service ports must not collide")
+    broker, memory_service = services
     if broker.get("bind_policy") != "loopback-only":
         raise ManifestError("inference broker must be loopback-only")
     if broker.get("secret_policy") != "keychain-runtime-injection":
         raise ManifestError("inference broker secrets must be injected from Keychain")
-    broker_port = broker.get("port")
-    if not isinstance(broker_port, int) or not 1024 <= broker_port <= 65535:
-        raise ManifestError("inference broker port must be an unprivileged TCP port")
-    if broker_port in ports:
-        raise ManifestError("inference broker port must not collide with component ports")
     if (
         broker.get("real_upstream_contract")
         != "verified-pinned-omlx-qwen3-generation-2026-08-29"
@@ -71,6 +72,14 @@ def validate_manifest(data: dict[str, Any]) -> None:
         raise ManifestError("inference broker resource limits must be positive integers")
     if broker["max_concurrent_inference"] > broker["max_concurrent_requests"]:
         raise ManifestError("inference concurrency cannot exceed total broker concurrency")
+    if memory_service.get("bind_policy") != "loopback-only":
+        raise ManifestError("governed memory service must be loopback-only")
+    if memory_service.get("secret_policy") != "keychain-runtime-injection":
+        raise ManifestError("governed memory service secrets must be injected from Keychain")
+    if memory_service.get("contract") != "pending-product-service-implementation":
+        raise ManifestError("governed memory service cannot be promoted without implementation evidence")
+    if memory_service.get("embedding_contract") != "unavailable-until-approved-local-route":
+        raise ManifestError("governed memory service requires an approved local embedding route")
 
     for item in components:
         if item.get("update_owner") != "product_compatibility_gate":
@@ -83,10 +92,15 @@ def validate_manifest(data: dict[str, Any]) -> None:
             )
 
     omlx = next(item for item in components if item["id"] == "omlx")
+    semantica = next(item for item in components if item["id"] == "semantica")
     if omlx.get("deep_health_contract") != "verified-qwen3-0.6b-4bit-generation-2026-08-29":
         raise ManifestError("oMLX deep health contract must match reviewed generation evidence")
     if omlx.get("model_storage_contract") != "verified-pinned-external-reference-2026-08-29":
         raise ManifestError("oMLX model storage contract must match reviewed reference evidence")
+    if semantica.get("port") is not None or semantica.get("runtime") != "isolated_python_library":
+        raise ManifestError("Semantica must be consumed as an isolated library, not its upstream REST server")
+    if semantica.get("upstream_server_contract") != "rejected-fixed-port-and-shallow-health-v0.6.7":
+        raise ManifestError("Semantica upstream server boundary must match reviewed v0.6.7 evidence")
 
     paths = data.get("paths", {})
     required_paths = {"config", "state", "data", "runtimes", "logs", "backups", "cache", "secrets"}

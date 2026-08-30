@@ -52,6 +52,30 @@ class ProductManifestTests(unittest.TestCase):
         with self.assertRaisesRegex(ManifestError, "cannot exceed"):
             validate_manifest(invalid)
 
+    def test_governed_memory_service_is_product_owned_and_not_falsely_promoted(self):
+        semantica = next(item for item in self.manifest["components"] if item["id"] == "semantica")
+        self.assertIsNone(semantica["port"])
+        self.assertEqual(semantica["runtime"], "isolated_python_library")
+        service = self.manifest["product_services"][1]
+        self.assertEqual(service["id"], "governed-memory-service")
+        self.assertEqual(service["bind_policy"], "loopback-only")
+        self.assertEqual(service["contract"], "pending-product-service-implementation")
+        self.assertEqual(service["embedding_contract"], "unavailable-until-approved-local-route")
+
+    def test_semantica_upstream_server_cannot_be_substituted_for_memory_service(self):
+        invalid = copy.deepcopy(self.manifest)
+        semantica = next(item for item in invalid["components"] if item["id"] == "semantica")
+        semantica["runtime"] = "upstream_rest_server"
+        semantica["port"] = 8765
+        with self.assertRaisesRegex(ManifestError, "isolated library"):
+            validate_manifest(invalid)
+
+    def test_product_service_port_collisions_are_rejected(self):
+        invalid = copy.deepcopy(self.manifest)
+        invalid["product_services"][1]["port"] = invalid["product_services"][0]["port"]
+        with self.assertRaisesRegex(ManifestError, "must not collide"):
+            validate_manifest(invalid)
+
     def test_self_update_bypass_is_rejected(self):
         invalid = copy.deepcopy(self.manifest)
         invalid["components"][0]["allow_self_update"] = True
