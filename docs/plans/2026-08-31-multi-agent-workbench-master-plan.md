@@ -28,10 +28,10 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 ## Current State
 
 Updated: 2026-08-31 Asia/Shanghai
-Current phase: P1 Upstream capability and license inventory
-Current task: P1-T08
+Current phase: P2 Adapter protocol and contracts
+Current task: P2-T01
 Current status: pending
-Next action: commit and push P1-T07, then claim P1-T08 and audit the complete P1 documentation chain before closing the phase.
+Next action: claim P2-T01 and write the failing adapter identity and health-envelope contract test before implementing protocol code.
 
 Known uncommitted implementation work that must not be overwritten by this documentation task:
 
@@ -100,7 +100,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | Phase | Goal | Status | Exit Gate |
 |---|---|---|---|
 | P0 | Correct governance and stop product drift | verified | Tracker, handoff, role documents, and upstream-first reuse rules agree |
-| P1 | Inventory upstream capabilities and licenses | pending | Reuse decisions for all four upstreams have evidence |
+| P1 | Inventory upstream capabilities and licenses | verified | Reuse decisions for all four upstreams have evidence |
 | P2 | Define adapter protocol and contracts | pending | Protocol tests cover Semantica, holaOS, Herdr, oMLX, cloud providers |
 | P3 | Make Herdr-backed multi-agent loop real | pending | Two parallel tasks run, stream status, cancel, resume, and recover |
 | P4 | Make independent workbench usable | pending | First-run user can start a task without visiting recovery settings |
@@ -135,7 +135,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | P1-T05 | verified | Refresh oMLX API and model capability evidence | `docs/research/upstream-matrix.md` | `rg -n "omlx|OpenAI-compatible|/v1" docs/research/upstream-matrix.md` | Runtime assumptions updated |
 | P1-T06 | verified | Reconcile license matrix with public open-source intent | `docs/research/license-matrix.md` | `rg -n "public|redistribution|holaOS" docs/research/license-matrix.md` | Public distribution constraints explicit |
 | P1-T07 | verified | Add a reuse decision record for each upstream | `docs/decisions.md` | `rg -n "Reuse decision" docs/decisions.md` | Four decisions recorded |
-| P1-T08 | pending | Commit upstream inventory docs | Research docs, `docs/decisions.md` | `git diff --check` then `git commit` | Commit includes only inventory docs |
+| P1-T08 | verified | Commit upstream inventory docs | Research docs, `docs/decisions.md` | `git diff --check` then `git commit` | Commit includes only inventory docs |
 
 ### P2: Adapter Protocol Contract
 
@@ -250,3 +250,4 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 - 2026-08-31 - P1-T05 - Codex root agent - refreshed oMLX v0.6.3 tag, release, artifact, API, dependency, model-capability, and layered inference evidence; corrected stale runbook claim - official pinned source plus repository evidence - 24 targeted tests passed - commit pending closeout - next P1-T06
 - 2026-08-31 - P1-T06 - Codex root agent - separated private development, public source, copied-source, binary, adapter, and commercial release modes; bound all four reviewed revisions and explicit notice/trademark/provenance gates - matrix scan and whitespace check passed - commit pending closeout - next P1-T07
 - 2026-08-31 - P1-T07 - Codex root agent - recorded four evidence-linked upstream reuse decisions with integration mode, product boundary, duplication stop, validation gate, and distribution consequence - four-record and whitespace checks passed - commit pending closeout - next P1-T08
+- 2026-08-31 - P1-T08 - Codex root agent - audited the complete seven-commit upstream inventory chain, verified all P1 evidence files and four reuse decisions, confirmed documentation-only scope and origin/main synchronization - phase P1 verified - next P2-T01
