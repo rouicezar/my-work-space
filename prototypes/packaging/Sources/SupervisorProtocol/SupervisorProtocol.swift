@@ -2,6 +2,7 @@ import Foundation
 
 public enum SupervisorProtocolError: Error, Equatable, CustomStringConvertible {
     case executableMustBeAbsolute
+    case requestTooLarge
     case outputTooLarge
     case invalidResponse(String)
     case commandMismatch
@@ -11,6 +12,7 @@ public enum SupervisorProtocolError: Error, Equatable, CustomStringConvertible {
     public var description: String {
         switch self {
         case .executableMustBeAbsolute: "Supervisor executable must be an absolute file URL"
+        case .requestTooLarge: "Supervisor request exceeded the configured limit"
         case .outputTooLarge: "Supervisor response exceeded the configured limit"
         case .invalidResponse(let detail): "Invalid Supervisor response: \(detail)"
         case .commandMismatch: "Supervisor response command did not match the request"
@@ -308,16 +310,186 @@ public struct SampleTaskPayload: Decodable, Sendable {
     }
 }
 
+public struct CloudCostEstimatePayload: Decodable, Sendable {
+    public let currency: String
+    public let minimum: Double
+    public let maximum: Double
+    public let pricingSource: String
+    public let pricingEffectiveAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case currency, minimum, maximum
+        case pricingSource = "pricing_source"
+        case pricingEffectiveAt = "pricing_effective_at"
+    }
+}
+
+public struct CloudProposalPayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let proposalID: String
+    public let correlationID: String
+    public let providerID: String
+    public let modelID: String
+    public let reasonCodes: [String]
+    public let payloadSHA256: String
+    public let payloadSizeBytes: Int
+    public let dataClasses: [String]
+    public let redactions: [String]
+    public let maximumOutputTokens: Int
+    public let estimatedCost: CloudCostEstimatePayload
+    public let processingLocation: String
+    public let retention: String
+    public let trainingOptOutState: String
+    public let privacyPolicyURL: String
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case proposalID = "proposal_id"
+        case correlationID = "correlation_id"
+        case providerID = "provider_id"
+        case modelID = "model_id"
+        case reasonCodes = "reason_codes"
+        case payloadSHA256 = "payload_sha256"
+        case payloadSizeBytes = "payload_size_bytes"
+        case dataClasses = "data_classes"
+        case redactions
+        case maximumOutputTokens = "maximum_output_tokens"
+        case estimatedCost = "estimated_cost"
+        case processingLocation = "processing_location"
+        case retention
+        case trainingOptOutState = "training_opt_out_state"
+        case privacyPolicyURL = "privacy_policy_url"
+    }
+}
+
+public struct CloudPreviewPayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let proposal: CloudProposalPayload
+    public let approvalRequired: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case proposal
+        case approvalRequired = "approval_required"
+    }
+}
+
+public struct CloudApprovalRecordPayload: Decodable, Sendable {
+    public let proposalID: String
+    public let maximumCostUSD: Double
+    public let approvedAt: String
+    public let expiresAt: String
+    public let consumedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case proposalID = "proposal_id"
+        case maximumCostUSD = "maximum_cost_usd"
+        case approvedAt = "approved_at"
+        case expiresAt = "expires_at"
+        case consumedAt = "consumed_at"
+    }
+}
+
+public struct CloudApprovalPayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let approval: CloudApprovalRecordPayload
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case approval
+    }
+}
+
+public struct CloudDecisionPayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let proposalID: String
+    public let outcome: String
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case proposalID = "proposal_id"
+        case outcome
+    }
+}
+
+public struct CloudUsagePayload: Decodable, Sendable {
+    public let promptTokens: Int
+    public let promptCacheHitTokens: Int
+    public let promptCacheMissTokens: Int
+    public let completionTokens: Int
+    public let totalTokens: Int
+    public let costUSD: Double
+
+    enum CodingKeys: String, CodingKey {
+        case promptTokens = "prompt_tokens"
+        case promptCacheHitTokens = "prompt_cache_hit_tokens"
+        case promptCacheMissTokens = "prompt_cache_miss_tokens"
+        case completionTokens = "completion_tokens"
+        case totalTokens = "total_tokens"
+        case costUSD = "cost_usd"
+    }
+}
+
+public indirect enum JSONValue: Decodable, Sendable {
+    case string(String)
+    case number(Double)
+    case boolean(Bool)
+    case object([String: JSONValue])
+    case array([JSONValue])
+    case null
+
+    public init(from decoder: Decoder) throws {
+        let value = try decoder.singleValueContainer()
+        if value.decodeNil() { self = .null }
+        else if let item = try? value.decode(Bool.self) { self = .boolean(item) }
+        else if let item = try? value.decode(Double.self) { self = .number(item) }
+        else if let item = try? value.decode(String.self) { self = .string(item) }
+        else if let item = try? value.decode([String: JSONValue].self) { self = .object(item) }
+        else if let item = try? value.decode([JSONValue].self) { self = .array(item) }
+        else { throw DecodingError.dataCorruptedError(in: value, debugDescription: "unsupported JSON value") }
+    }
+}
+
+public struct CloudResultPayload: Decodable, Sendable {
+    public let model: String
+    public let content: String
+    public let finishReason: String
+    public let toolProposals: [JSONValue]
+    public let usage: CloudUsagePayload
+
+    enum CodingKeys: String, CodingKey {
+        case model, content, usage
+        case finishReason = "finish_reason"
+        case toolProposals = "tool_proposals"
+    }
+}
+
+public struct CloudExecutionPayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let result: CloudResultPayload
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case result
+    }
+}
+
 public struct SupervisorClient: Sendable {
     public let executableURL: URL
     public let maximumResponseBytes: Int
+    public let maximumRequestBytes: Int
 
-    public init(executableURL: URL, maximumResponseBytes: Int = 1_048_576) throws {
+    public init(
+        executableURL: URL,
+        maximumResponseBytes: Int = 1_048_576,
+        maximumRequestBytes: Int = 8_388_608
+    ) throws {
         guard executableURL.isFileURL, executableURL.path.hasPrefix("/") else {
             throw SupervisorProtocolError.executableMustBeAbsolute
         }
         self.executableURL = executableURL
         self.maximumResponseBytes = maximumResponseBytes
+        self.maximumRequestBytes = maximumRequestBytes
     }
 
     public func preflight(
@@ -536,16 +708,91 @@ public struct SupervisorClient: Sendable {
         )
     }
 
+    public func cloudPreview(
+        rootURL: URL,
+        catalogURL: URL,
+        modelID: String,
+        estimatedInputTokens: Int,
+        maximumOutputTokens: Int,
+        minimumAvailableMemoryMB: Int,
+        requiredCapabilities: [String],
+        dataClasses: [String],
+        reasonCodes: [String],
+        redactions: [String],
+        outboundBody: Data,
+        requestID: UUID = UUID()
+    ) throws -> CloudPreviewPayload {
+        var arguments = [
+            "--root", rootURL.path, "--catalog", catalogURL.path,
+            "--model-id", modelID,
+            "--estimated-input-tokens", String(estimatedInputTokens),
+            "--maximum-output-tokens", String(maximumOutputTokens),
+            "--minimum-available-memory-mb", String(minimumAvailableMemoryMB),
+        ]
+        for value in requiredCapabilities { arguments += ["--required-capability", value] }
+        for value in dataClasses { arguments += ["--data-class", value] }
+        for value in reasonCodes { arguments += ["--reason-code", value] }
+        for value in redactions { arguments += ["--redaction", value] }
+        return try request(
+            command: "cloud-preview", arguments: arguments, requestID: requestID,
+            inputData: outboundBody
+        )
+    }
+
+    public func approveCloud(
+        rootURL: URL,
+        proposalID: String,
+        maximumCostUSD: Double,
+        requestID: UUID = UUID()
+    ) throws -> CloudApprovalPayload {
+        try request(
+            command: "cloud-approve",
+            arguments: ["--root", rootURL.path, "--proposal-id", proposalID,
+                        "--maximum-cost-usd", String(maximumCostUSD)],
+            requestID: requestID
+        )
+    }
+
+    public func rejectCloud(
+        rootURL: URL,
+        proposalID: String,
+        requestID: UUID = UUID()
+    ) throws -> CloudDecisionPayload {
+        try request(
+            command: "cloud-reject",
+            arguments: ["--root", rootURL.path, "--proposal-id", proposalID],
+            requestID: requestID
+        )
+    }
+
+    public func executeCloud(
+        rootURL: URL,
+        catalogURL: URL,
+        proposalID: String,
+        deepSeekAPIKey: String,
+        requestID: UUID = UUID()
+    ) throws -> CloudExecutionPayload {
+        try request(
+            command: "cloud-execute",
+            arguments: ["--root", rootURL.path, "--catalog", catalogURL.path,
+                        "--proposal-id", proposalID],
+            requestID: requestID,
+            environmentOverrides: ["MAC_AI_WORK_OS_DEEPSEEK_API_KEY": deepSeekAPIKey]
+        )
+    }
+
     private func request<Payload: Decodable & Sendable>(
         command: String,
         arguments: [String],
         requestID: UUID,
-        environmentOverrides: [String: String] = [:]
+        environmentOverrides: [String: String] = [:],
+        inputData: Data? = nil
     ) throws -> Payload {
         let request = requestID.uuidString.lowercased()
         let invocation = try invoke(
             arguments: ["--request-id", request, command] + arguments,
-            environmentOverrides: environmentOverrides
+            environmentOverrides: environmentOverrides,
+            inputData: inputData
         )
         let envelope: SupervisorEnvelope<Payload>
         do {
@@ -572,10 +819,15 @@ public struct SupervisorClient: Sendable {
 
     private func invoke(
         arguments: [String],
-        environmentOverrides: [String: String] = [:]
+        environmentOverrides: [String: String] = [:],
+        inputData: Data? = nil
     ) throws -> (data: Data, exitStatus: Int32) {
+        if let inputData, inputData.count > maximumRequestBytes {
+            throw SupervisorProtocolError.requestTooLarge
+        }
         let process = Process()
         let output = Pipe()
+        let input = inputData == nil ? nil : Pipe()
         process.executableURL = executableURL
         process.arguments = arguments
         if !environmentOverrides.isEmpty {
@@ -585,10 +837,15 @@ public struct SupervisorClient: Sendable {
         }
         process.standardOutput = output
         process.standardError = FileHandle.nullDevice
+        if let input { process.standardInput = input }
         do {
             try process.run()
         } catch {
             throw SupervisorProtocolError.invalidResponse("could not launch Supervisor")
+        }
+        if let inputData, let input {
+            input.fileHandleForWriting.write(inputData)
+            try input.fileHandleForWriting.close()
         }
         var response = Data()
         while let chunk = try output.fileHandleForReading.read(upToCount: 65_536), !chunk.isEmpty {

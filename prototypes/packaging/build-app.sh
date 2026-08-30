@@ -26,6 +26,7 @@ install -m 0644 "$REPOSITORY_ROOT/config/product-manifest.json" "$APP/Contents/R
 install -m 0644 "$REPOSITORY_ROOT/config/hardware-profiles.yaml" "$APP/Contents/Resources/hardware-profiles.json"
 install -m 0644 "$REPOSITORY_ROOT/config/upstreams.json" "$APP/Contents/Resources/upstreams.json"
 install -m 0644 "$REPOSITORY_ROOT/config/models.json" "$APP/Contents/Resources/models.json"
+install -m 0644 "$REPOSITORY_ROOT/config/cloud-providers.json" "$APP/Contents/Resources/cloud-providers.json"
 "$SCRIPT_DIR/build-supervisor.sh" "$APP/Contents/Helpers/Supervisor"
 
 MEMORY_RUNTIME="$APP/Contents/Helpers/MemoryRuntime"

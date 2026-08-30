@@ -12,6 +12,10 @@ class PackagingScriptTests(unittest.TestCase):
         script = (ROOT / "prototypes/packaging/build-app.sh").read_text(encoding="utf-8")
         self.assertIn('config/upstreams.json" "$APP/Contents/Resources/upstreams.json', script)
         self.assertIn('config/models.json" "$APP/Contents/Resources/models.json', script)
+        self.assertIn(
+            'config/cloud-providers.json" "$APP/Contents/Resources/cloud-providers.json',
+            script,
+        )
         self.assertIn('Contents/Helpers/MemoryRuntime', script)
         self.assertIn('semantica_memory_runtime.py', script)
         self.assertIn('semantica_backend.py', script)

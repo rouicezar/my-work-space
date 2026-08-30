@@ -115,9 +115,10 @@ class CloudApprovalStore:
         return self.directory / f"{proposal_id}.json"
 
     def _lock(self):
-        self.directory.mkdir(parents=True, exist_ok=True)
+        self.directory.mkdir(parents=True, mode=0o700, exist_ok=True)
         if self.directory.is_symlink() or not self.directory.is_dir():
             raise CloudApprovalError("APPROVAL_DIRECTORY_UNSAFE", str(self.directory))
+        os.chmod(self.directory, 0o700)
         path = self.directory / ".lock"
         descriptor = os.open(path, os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0), 0o600)
         os.fchmod(descriptor, 0o600)

@@ -43,6 +43,11 @@ from mac_ai_work_os.memory_service import (
     MemoryServicePolicy,
     create_memory_server,
 )
+from mac_ai_work_os.cloud_approval import CloudApprovalStore
+from mac_ai_work_os.cloud_catalog import load_cloud_provider
+from mac_ai_work_os.cloud_proposals import CloudProposalStore
+from mac_ai_work_os.deepseek_adapter import DeepSeekAdapter
+from mac_ai_work_os.inference_routing import TaskRequirements, create_cloud_proposal
 
 
 SCHEMA_VERSION = 1
@@ -50,6 +55,8 @@ DEFAULT_UPSTREAMS = REPOSITORY_ROOT / "config/upstreams.json"
 DEFAULT_MODELS = REPOSITORY_ROOT / "config/models.json"
 DEFAULT_MODEL_ID = "qwen3-0.6b-4bit-alpha"
 DEFAULT_EMBEDDING_MODEL_ID = "multilingual-e5-small-mlx-alpha"
+DEFAULT_CLOUD_PROVIDERS = REPOSITORY_ROOT / "config/cloud-providers.json"
+MAXIMUM_CLOUD_PAYLOAD_BYTES = 8 * 1024 * 1024
 
 
 class ProtocolArgumentParser(argparse.ArgumentParser):
@@ -128,6 +135,26 @@ def parser() -> argparse.ArgumentParser:
     memory_internal = commands.add_parser("internal-memory-service")
     memory_internal.add_argument("--root", type=Path, required=True)
     memory_internal.add_argument("--memory-port", type=int, required=True)
+    cloud_preview = commands.add_parser("cloud-preview")
+    cloud_preview.add_argument("--root", type=Path, required=True)
+    cloud_preview.add_argument("--catalog", type=Path, default=DEFAULT_CLOUD_PROVIDERS)
+    cloud_preview.add_argument("--provider-id", default="deepseek")
+    cloud_preview.add_argument("--model-id", required=True)
+    cloud_preview.add_argument("--estimated-input-tokens", type=int, required=True)
+    cloud_preview.add_argument("--maximum-output-tokens", type=int, required=True)
+    cloud_preview.add_argument("--minimum-available-memory-mb", type=int, required=True)
+    cloud_preview.add_argument("--required-capability", action="append", required=True)
+    cloud_preview.add_argument("--data-class", action="append", required=True)
+    cloud_preview.add_argument("--reason-code", action="append", required=True)
+    cloud_preview.add_argument("--redaction", action="append", default=[])
+    for name in ("cloud-approve", "cloud-reject", "cloud-execute"):
+        command = commands.add_parser(name)
+        command.add_argument("--root", type=Path, required=True)
+        command.add_argument("--proposal-id", required=True)
+        if name == "cloud-approve":
+            command.add_argument("--maximum-cost-usd", type=float, required=True)
+        if name == "cloud-execute":
+            command.add_argument("--catalog", type=Path, default=DEFAULT_CLOUD_PROVIDERS)
     return result
 
 
@@ -138,7 +165,7 @@ def validate_request_id(value: str) -> str:
     return str(parsed)
 
 
-def run(args: argparse.Namespace) -> dict[str, Any]:
+def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, Any]:
     request_id = validate_request_id(args.request_id)
     if args.command == "preflight":
         if not args.profiles.is_absolute() or not args.check_path.is_absolute():
@@ -163,6 +190,88 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "activate-embedding",
     }:
         _validate_product_root(args.root)
+    if args.command in {"cloud-preview", "cloud-approve", "cloud-reject", "cloud-execute"}:
+        _validate_product_root(args.root)
+    if args.command == "cloud-preview":
+        if input_data is None or not input_data or len(input_data) > MAXIMUM_CLOUD_PAYLOAD_BYTES:
+            raise ValueError("cloud payload is missing or too large")
+        if not args.catalog.is_absolute() or not args.catalog.is_file():
+            raise ValueError("cloud catalog must be an existing absolute file")
+        try:
+            outbound_body = json.loads(input_data)
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ValueError("cloud payload must be UTF-8 JSON") from exc
+        if not isinstance(outbound_body, dict):
+            raise ValueError("cloud payload must be a JSON object")
+        provider = load_cloud_provider(args.catalog, args.provider_id)
+        requirements = TaskRequirements(
+            estimated_input_tokens=args.estimated_input_tokens,
+            maximum_output_tokens=args.maximum_output_tokens,
+            required_capabilities=frozenset(args.required_capability),
+            minimum_available_memory_mb=args.minimum_available_memory_mb,
+            data_classes=frozenset(args.data_class),
+        )
+        proposal, payload = create_cloud_proposal(
+            correlation_id=request_id, provider=provider, model_id=args.model_id,
+            requirements=requirements, reason_codes=tuple(args.reason_code),
+            outbound_body=outbound_body, redactions=tuple(args.redaction),
+            now=datetime.now(timezone.utc),
+        )
+        CloudProposalStore(args.root).save(proposal, payload)
+        return envelope(
+            command=args.command, request_id=request_id, status="ok",
+            payload={"schema_version": 1, "proposal": proposal.to_dict(), "approval_required": True},
+        )
+    if args.command in {"cloud-approve", "cloud-reject", "cloud-execute"}:
+        proposals = CloudProposalStore(args.root)
+        proposal, payload = proposals.load(args.proposal_id)
+        audit = JsonlAuditSink(args.root / "logs/audit/cloud.jsonl")
+        if args.command == "cloud-approve":
+            approval = CloudApprovalStore(args.root).approve(
+                proposal, maximum_cost_usd=args.maximum_cost_usd,
+                now=datetime.now(timezone.utc),
+            )
+            audit.record({
+                "schema_version": 1, "event": "cloud_escalation_decision",
+                "correlation_id": proposal.correlation_id, "proposal_id": proposal.proposal_id,
+                "provider": proposal.provider_id, "model": proposal.model_id,
+                "payload_sha256": proposal.payload_sha256, "outcome": "approved",
+                "maximum_cost_usd": approval.maximum_cost_usd,
+            })
+            return envelope(
+                command=args.command, request_id=request_id, status="ok",
+                payload={"schema_version": 1, "approval": asdict(approval)},
+            )
+        if args.command == "cloud-reject":
+            proposals.reject(args.proposal_id)
+            audit.record({
+                "schema_version": 1, "event": "cloud_escalation_decision",
+                "correlation_id": proposal.correlation_id, "proposal_id": proposal.proposal_id,
+                "provider": proposal.provider_id, "model": proposal.model_id,
+                "payload_sha256": proposal.payload_sha256, "outcome": "denied",
+            })
+            return envelope(
+                command=args.command, request_id=request_id, status="ok",
+                payload={"schema_version": 1, "proposal_id": proposal.proposal_id, "outcome": "denied"},
+            )
+        if not args.catalog.is_absolute() or not args.catalog.is_file():
+            raise ValueError("cloud catalog must be an existing absolute file")
+        api_key = os.environ.get("MAC_AI_WORK_OS_DEEPSEEK_API_KEY", "")
+        provider = load_cloud_provider(args.catalog, proposal.provider_id)
+        try:
+            result = DeepSeekAdapter(
+                provider, CloudApprovalStore(args.root), audit,
+            ).execute(proposal, payload, api_key=api_key, now=datetime.now(timezone.utc))
+        finally:
+            proposals.discard(args.proposal_id)
+        return envelope(
+            command=args.command, request_id=request_id, status="ok",
+            payload={"schema_version": 1, "result": asdict(result)},
+        )
+    if args.command in {
+        "model-plan", "link-model", "embedding-plan", "download-embedding",
+        "activate-embedding",
+    }:
         if not args.cache_root.is_absolute() or not args.cache_root.is_dir():
             raise ValueError("model cache root must be an existing absolute directory")
         if not args.catalog.is_absolute() or not args.catalog.is_file():
@@ -695,6 +804,7 @@ def main(argv: list[str] | None = None) -> int:
                 "activate-embedding",
                 "runtime-status", "start-runtime", "stop-runtime", "sample-task", "internal-broker",
                 "internal-memory-service", "semantica-status",
+                "cloud-preview", "cloud-approve", "cloud-reject", "cloud-execute",
             )
             if item in raw
         ),
@@ -707,7 +817,10 @@ def main(argv: list[str] | None = None) -> int:
             request_id = raw[index]
     try:
         args = parser().parse_args(raw)
-        response = run(args)
+        input_data = None
+        if args.command == "cloud-preview":
+            input_data = sys.stdin.buffer.read(MAXIMUM_CLOUD_PAYLOAD_BYTES + 1)
+        response = run(args, input_data=input_data)
         exit_code = 0
     except Exception as exc:
         response = envelope(

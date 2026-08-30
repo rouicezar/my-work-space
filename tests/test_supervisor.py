@@ -1,4 +1,6 @@
+import argparse
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -6,10 +8,11 @@ import unittest
 import uuid
 import hashlib
 import io
+from datetime import datetime, timezone
 from pathlib import Path
 from contextlib import redirect_stdout
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from scripts import preflight, supervisor
 from mac_ai_work_os.installer import ActiveBundle
@@ -17,12 +20,101 @@ from mac_ai_work_os.models import ModelDefinition, ModelFile, ModelReference
 from mac_ai_work_os.semantica_runtime import SemanticaRuntimeInspector
 from mac_ai_work_os.embedding_config import ApprovedEmbeddingRoute
 from mac_ai_work_os.runtime import RuntimeRecord
+from mac_ai_work_os.deepseek_adapter import DeepSeekResult, DeepSeekUsage
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class SupervisorProtocolTests(unittest.TestCase):
+    def write_current_cloud_catalog(self, directory: Path) -> Path:
+        catalog = json.loads((ROOT / "config/cloud-providers.json").read_text(encoding="utf-8"))
+        catalog["updated_at"] = datetime.now(timezone.utc).isoformat()
+        catalog["providers"][0]["pricing"]["effective_at"] = datetime.now(timezone.utc).isoformat()
+        path = directory / "cloud-providers.json"
+        path.write_text(json.dumps(catalog), encoding="utf-8")
+        return path
+
+    def cloud_preview_args(self, root: Path, catalog: Path, request_id: str) -> argparse.Namespace:
+        return supervisor.parser().parse_args([
+            "--request-id", request_id, "cloud-preview", "--root", str(root),
+            "--catalog", str(catalog), "--model-id", "deepseek-v4-flash",
+            "--estimated-input-tokens", "100", "--maximum-output-tokens", "1000",
+            "--minimum-available-memory-mb", "1024", "--required-capability", "chat",
+            "--data-class", "user_text", "--reason-code", "local_validation_failed",
+        ])
+
+    def test_cloud_preview_approval_and_rejection_are_explicit_and_audited(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "Product"
+            catalog = self.write_current_cloud_catalog(base)
+            request_id = str(uuid.uuid4())
+            prompt = "private fixture text"
+            body = json.dumps({
+                "model": "deepseek-v4-flash",
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 1000, "stream": False,
+            }).encode()
+            preview = supervisor.run(self.cloud_preview_args(root, catalog, request_id), input_data=body)
+            proposal = preview["payload"]["proposal"]
+            self.assertTrue(preview["payload"]["approval_required"])
+            self.assertNotIn(prompt, json.dumps(preview))
+            approve = supervisor.parser().parse_args([
+                "--request-id", str(uuid.uuid4()), "cloud-approve", "--root", str(root),
+                "--proposal-id", proposal["proposal_id"], "--maximum-cost-usd",
+                str(proposal["estimated_cost"]["maximum"]),
+            ])
+            approved = supervisor.run(approve)
+            self.assertEqual(approved["payload"]["approval"]["proposal_id"], proposal["proposal_id"])
+            reject = supervisor.parser().parse_args([
+                "--request-id", str(uuid.uuid4()), "cloud-reject", "--root", str(root),
+                "--proposal-id", proposal["proposal_id"],
+            ])
+            self.assertEqual(supervisor.run(reject)["payload"]["outcome"], "denied")
+            self.assertFalse((root / "state/cloud-proposals" / f"{proposal['proposal_id']}.payload").exists())
+            audit = (root / "logs/audit/cloud.jsonl").read_text(encoding="utf-8")
+            self.assertIn('"outcome":"approved"', audit)
+            self.assertIn('"outcome":"denied"', audit)
+            self.assertNotIn(prompt, audit)
+
+    def test_cloud_execute_uses_environment_credential_and_removes_pending_payload(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "Product"
+            catalog = self.write_current_cloud_catalog(base)
+            body = json.dumps({
+                "model": "deepseek-v4-flash",
+                "messages": [{"role": "user", "content": "fixture"}],
+                "max_tokens": 1000, "stream": False,
+            }).encode()
+            preview = supervisor.run(
+                self.cloud_preview_args(root, catalog, str(uuid.uuid4())), input_data=body,
+            )["payload"]["proposal"]
+            approve = supervisor.parser().parse_args([
+                "--request-id", str(uuid.uuid4()), "cloud-approve", "--root", str(root),
+                "--proposal-id", preview["proposal_id"], "--maximum-cost-usd",
+                str(preview["estimated_cost"]["maximum"]),
+            ])
+            supervisor.run(approve)
+            execute = supervisor.parser().parse_args([
+                "--request-id", str(uuid.uuid4()), "cloud-execute", "--root", str(root),
+                "--proposal-id", preview["proposal_id"], "--catalog", str(catalog),
+            ])
+            expected = DeepSeekResult(
+                "deepseek-v4-flash", "cloud result", "stop", (),
+                DeepSeekUsage(10, 0, 10, 2, 12, 0.00001),
+            )
+            adapter = Mock()
+            adapter.execute.return_value = expected
+            with patch.object(supervisor, "DeepSeekAdapter", return_value=adapter), \
+                 patch.dict(os.environ, {"MAC_AI_WORK_OS_DEEPSEEK_API_KEY": "secret-key"}):
+                response = supervisor.run(execute)
+            self.assertEqual(response["payload"]["result"]["content"], "cloud result")
+            self.assertEqual(adapter.execute.call_args.kwargs["api_key"], "secret-key")
+            state = root / "state/cloud-proposals"
+            self.assertEqual(list(state.glob(f"{preview['proposal_id']}.*")), [])
+
     def test_embedding_plan_failure_preserves_command_identity(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

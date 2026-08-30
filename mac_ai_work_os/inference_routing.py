@@ -130,6 +130,14 @@ def create_cloud_proposal(
         raise RoutingError("CLOUD_OUTPUT_LIMIT_EXCEEDED", model_id)
     if not provider.pricing_is_current(now):
         raise RoutingError("CLOUD_PRICING_STALE", provider.pricing_source)
+    if (
+        outbound_body.get("model") != model.id
+        or outbound_body.get("max_tokens") != requirements.maximum_output_tokens
+        or outbound_body.get("stream") is not False
+        or not isinstance(outbound_body.get("messages"), list)
+        or not outbound_body["messages"]
+    ):
+        raise RoutingError("CLOUD_PAYLOAD_CONTRACT_INVALID", model.id)
     body = _canonical_json(outbound_body)
     prices = model.prices
     input_millions = requirements.estimated_input_tokens / 1_000_000

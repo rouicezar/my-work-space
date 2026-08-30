@@ -220,6 +220,73 @@ import RuntimeSecurity
     #expect(payload.runtime.phase == "running")
 }
 
+@Test func cloudPreviewBodyUsesStandardInputAndExecutionKeyUsesEnvironment() throws {
+    let temporary = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(at: temporary, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: temporary) }
+    let executable = temporary.appendingPathComponent("fixture-supervisor")
+    let preview = #"{"schema_version":1,"command":"cloud-preview","request_id":"00000000-0000-0000-0000-000000000001","status":"ok","payload":{"schema_version":1,"proposal":{"schema_version":1,"proposal_id":"00000000-0000-0000-0000-000000000010","correlation_id":"00000000-0000-0000-0000-000000000001","provider_id":"deepseek","model_id":"deepseek-v4-flash","reason_codes":["local_validation_failed"],"payload_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","payload_size_bytes":120,"data_classes":["user_text"],"redactions":[],"maximum_output_tokens":1000,"estimated_cost":{"currency":"USD","minimum":0.001,"maximum":0.002,"pricing_source":"https://example.test/pricing","pricing_effective_at":"2026-08-30T00:00:00Z"},"processing_location":"PRC","retention":"variable","training_opt_out_state":"unknown","privacy_policy_url":"https://example.test/privacy"},"approval_required":true},"error":null,"emitted_at":"2026-08-30T00:00:00+00:00"}"#
+    let execution = #"{"schema_version":1,"command":"cloud-execute","request_id":"00000000-0000-0000-0000-000000000002","status":"ok","payload":{"schema_version":1,"result":{"model":"deepseek-v4-flash","content":"cloud result","finish_reason":"stop","tool_proposals":[{"id":"call-1","function":{"name":"draft_only"}}],"usage":{"prompt_tokens":10,"prompt_cache_hit_tokens":0,"prompt_cache_miss_tokens":10,"completion_tokens":2,"total_tokens":12,"cost_usd":0.00001}}},"error":null,"emitted_at":"2026-08-30T00:00:00+00:00"}"#
+    let script = """
+    #!/bin/sh
+    case " $* " in
+      *" cloud-preview "*)
+        case " $* " in *private-fixture-text*) exit 9;; esac
+        body=$(cat)
+        case "$body" in *private-fixture-text*) ;; *) exit 8;; esac
+        printf '%s' '\(preview)'
+        ;;
+      *" cloud-execute "*)
+        case " $* " in *deepseek-secret*) exit 7;; esac
+        [ "$MAC_AI_WORK_OS_DEEPSEEK_API_KEY" = "deepseek-secret" ] || exit 6
+        printf '%s' '\(execution)'
+        ;;
+      *) exit 5 ;;
+    esac
+    """
+    try script.write(to: executable, atomically: true, encoding: .utf8)
+    try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
+    let client = try SupervisorClient(executableURL: executable)
+    let root = temporary.appendingPathComponent("Product")
+    let catalog = temporary.appendingPathComponent("cloud-providers.json")
+    let requestOne = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+    let body = Data(#"{"model":"deepseek-v4-flash","messages":[{"role":"user","content":"private-fixture-text"}],"max_tokens":1000,"stream":false}"#.utf8)
+    let proposal = try client.cloudPreview(
+        rootURL: root, catalogURL: catalog, modelID: "deepseek-v4-flash",
+        estimatedInputTokens: 100, maximumOutputTokens: 1000,
+        minimumAvailableMemoryMB: 1024, requiredCapabilities: ["chat"],
+        dataClasses: ["user_text"], reasonCodes: ["local_validation_failed"],
+        redactions: [], outboundBody: body, requestID: requestOne
+    )
+    #expect(proposal.approvalRequired)
+    #expect(proposal.proposal.estimatedCost.maximum == 0.002)
+    let result = try client.executeCloud(
+        rootURL: root, catalogURL: catalog, proposalID: proposal.proposal.proposalID,
+        deepSeekAPIKey: "deepseek-secret",
+        requestID: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
+    )
+    #expect(result.result.content == "cloud result")
+    #expect(result.result.toolProposals.count == 1)
+}
+
+@Test func cloudPreviewRejectsOversizeBodyBeforeLaunchingSupervisor() throws {
+    let client = try SupervisorClient(
+        executableURL: URL(fileURLWithPath: "/does/not/need/to/exist"), maximumRequestBytes: 3
+    )
+    #expect(throws: SupervisorProtocolError.requestTooLarge) {
+        try client.cloudPreview(
+            rootURL: URL(fileURLWithPath: "/tmp/Product"),
+            catalogURL: URL(fileURLWithPath: "/tmp/cloud.json"),
+            modelID: "deepseek-v4-flash", estimatedInputTokens: 1,
+            maximumOutputTokens: 1, minimumAvailableMemoryMB: 1,
+            requiredCapabilities: ["chat"], dataClasses: ["user_text"],
+            reasonCodes: ["local_validation_failed"], redactions: [],
+            outboundBody: Data("four".utf8)
+        )
+    }
+}
+
 @Test(.enabled(if: ProcessInfo.processInfo.environment["MAC_AI_WORK_OS_RUNTIME_INTEGRATION"] == "1"))
 func realKeychainRuntimeSampleAuditAndStop() throws {
     guard let supervisorPath = ProcessInfo.processInfo.environment["MAC_AI_WORK_OS_RUNTIME_SUPERVISOR"],

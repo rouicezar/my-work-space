@@ -86,13 +86,33 @@ class CloudRoutingTests(unittest.TestCase):
             )
         self.assertEqual(raised.exception.code, "CLOUD_DATA_CLASS_BLOCKED")
 
+    def test_payload_contract_binds_model_output_limit_and_non_streaming_shape(self):
+        for body in (
+            {"model": "wrong", "messages": [{"role": "user", "content": "x"}], "max_tokens": 2000, "stream": False},
+            {"model": "deepseek-v4-flash", "messages": [], "max_tokens": 2000, "stream": False},
+            {"model": "deepseek-v4-flash", "messages": [{"role": "user", "content": "x"}], "max_tokens": 1, "stream": False},
+            {"model": "deepseek-v4-flash", "messages": [{"role": "user", "content": "x"}], "max_tokens": 2000, "stream": True},
+        ):
+            with self.subTest(body=body), self.assertRaises(RoutingError) as raised:
+                create_cloud_proposal(
+                    correlation_id=str(uuid.uuid4()), provider=self.provider,
+                    model_id="deepseek-v4-flash", requirements=requirements(),
+                    reason_codes=("local_unhealthy",), outbound_body=body,
+                    redactions=(), now=self.now,
+                )
+            self.assertEqual(raised.exception.code, "CLOUD_PAYLOAD_CONTRACT_INVALID")
+
     def test_stale_price_blocks_cloud_proposal(self):
         stale = self.provider.pricing_effective_at + timedelta(hours=169)
         with self.assertRaises(RoutingError) as raised:
             create_cloud_proposal(
                 correlation_id=str(uuid.uuid4()), provider=self.provider,
                 model_id="deepseek-v4-flash", requirements=requirements(),
-                reason_codes=("local_unhealthy",), outbound_body={"messages": []},
+                reason_codes=("local_unhealthy",), outbound_body={
+                    "model": "deepseek-v4-flash",
+                    "messages": [{"role": "user", "content": "x"}],
+                    "max_tokens": 2000, "stream": False,
+                },
                 redactions=(), now=stale,
             )
         self.assertEqual(raised.exception.code, "CLOUD_PRICING_STALE")
