@@ -11,6 +11,7 @@ from unittest.mock import patch
 from scripts import preflight, supervisor
 from mac_ai_work_os.installer import ActiveBundle
 from mac_ai_work_os.models import ModelDefinition, ModelFile, ModelReference
+from mac_ai_work_os.semantica_runtime import SemanticaRuntimeInspector
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -214,7 +215,31 @@ class SupervisorProtocolTests(unittest.TestCase):
             ])
             response = supervisor.run(args)
             self.assertIsNone(response["payload"]["operation"])
+        self.assertFalse(root.exists())
+
+    def test_semantica_status_is_correlated_read_only_and_honest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "Product"
+            args = supervisor.parser().parse_args([
+                "--request-id", str(uuid.uuid4()), "semantica-status", "--root", str(root),
+            ])
+            response = supervisor.run(args)
+            self.assertEqual(response["command"], "semantica-status")
+            self.assertEqual(response["payload"]["installation"], "not_installed")
+            self.assertEqual(response["payload"]["code"], "SEMANTICA_NOT_INSTALLED")
             self.assertFalse(root.exists())
+
+    def test_semantica_status_delegates_to_runtime_inspector(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "Product"
+            expected = {"schema_version": 1, "status": "unavailable", "code": "fixture"}
+            args = supervisor.parser().parse_args([
+                "--request-id", str(uuid.uuid4()), "semantica-status", "--root", str(root),
+            ])
+            with patch.object(SemanticaRuntimeInspector, "status", return_value=expected) as status:
+                response = supervisor.run(args)
+            status.assert_called_once_with()
+            self.assertEqual(response["payload"], expected)
 
     def test_install_requires_exact_artifact_approval_and_delegates(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -34,6 +34,7 @@ from mac_ai_work_os.models import (
 from mac_ai_work_os.broker import BrokerPolicy, JsonlAuditSink, OMLXBroker, OMLXUpstream, create_server
 from mac_ai_work_os.processes import omlx_process_spec
 from mac_ai_work_os.runtime import RuntimeManager, SubprocessController
+from mac_ai_work_os.semantica_runtime import SemanticaLayout, SemanticaRuntimeInspector
 
 
 SCHEMA_VERSION = 1
@@ -102,6 +103,8 @@ def parser() -> argparse.ArgumentParser:
             command.add_argument("--broker-port", type=int, default=43110)
         if name == "sample-task":
             command.add_argument("--broker-port", type=int, default=43110)
+    semantica_status = commands.add_parser("semantica-status")
+    semantica_status.add_argument("--root", type=Path, required=True)
     internal = commands.add_parser("internal-broker")
     internal.add_argument("--root", type=Path, required=True)
     internal.add_argument("--omlx-port", type=int, required=True)
@@ -185,8 +188,18 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             status="ok",
             payload={"schema_version": 1, "reference": asdict(reference)},
         )
-    if args.command in {"runtime-status", "start-runtime", "stop-runtime", "sample-task", "internal-broker"}:
+    if args.command in {
+        "runtime-status", "start-runtime", "stop-runtime", "sample-task",
+        "internal-broker", "semantica-status",
+    }:
         _validate_product_root(args.root)
+    if args.command == "semantica-status":
+        return envelope(
+            command=args.command,
+            request_id=request_id,
+            status="ok",
+            payload=SemanticaRuntimeInspector(SemanticaLayout(args.root)).status(),
+        )
     if args.command == "runtime-status":
         return envelope(
             command=args.command,
@@ -520,6 +533,7 @@ def main(argv: list[str] | None = None) -> int:
                 "preflight", "installation-plan", "installation-status", "install-omlx",
                 "model-plan", "link-model",
                 "runtime-status", "start-runtime", "stop-runtime", "sample-task", "internal-broker",
+                "semantica-status",
             )
             if item in raw
         ),
