@@ -29,9 +29,9 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-08-31 Asia/Shanghai
 Current phase: P2 Adapter protocol and contracts
-Current task: P2-T01
+Current task: P2-T02
 Current status: pending
-Next action: claim P2-T01 and write the failing adapter identity and health-envelope contract test before implementing protocol code.
+Next action: commit and push P2-T01, then claim P2-T02 and implement the minimal protocol dataclasses required by the failing identity/health test.
 
 Known uncommitted implementation work that must not be overwritten by this documentation task:
 
@@ -141,7 +141,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 
 | ID | Status | Action | Files | Command | Expected Evidence |
 |---|---|---|---|---|---|
-| P2-T01 | pending | Write failing test for adapter identity and health envelope | `tests/test_adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Fails because contract is absent |
+| P2-T01 | verified | Write failing test for adapter identity and health envelope | `tests/test_adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Fails because contract is absent |
 | P2-T02 | pending | Add minimal protocol dataclasses | `forma_ai/adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Identity/health tests pass |
 | P2-T03 | pending | Write failing test for capability declaration | `tests/test_adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Fails on missing capabilities |
 | P2-T04 | pending | Implement capability declaration model | `forma_ai/adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Capabilities pass |
@@ -251,3 +251,4 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 - 2026-08-31 - P1-T06 - Codex root agent - separated private development, public source, copied-source, binary, adapter, and commercial release modes; bound all four reviewed revisions and explicit notice/trademark/provenance gates - matrix scan and whitespace check passed - commit pending closeout - next P1-T07
 - 2026-08-31 - P1-T07 - Codex root agent - recorded four evidence-linked upstream reuse decisions with integration mode, product boundary, duplication stop, validation gate, and distribution consequence - four-record and whitespace checks passed - commit pending closeout - next P1-T08
 - 2026-08-31 - P1-T08 - Codex root agent - audited the complete seven-commit upstream inventory chain, verified all P1 evidence files and four reuse decisions, confirmed documentation-only scope and origin/main synchronization - phase P1 verified - next P2-T01
+- 2026-08-31 - P2-T01 - Codex root agent - added vendor-neutral adapter identity and layered health-envelope contract tests - expected `ModuleNotFoundError: forma_ai.adapter_contract` observed before implementation - commit pending closeout - next P2-T02

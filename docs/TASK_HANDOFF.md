@@ -20,9 +20,9 @@ Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-ma
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P2-T01
-State: P1-T08 aggregate audit verified; P1 phase-close commit and push pending
-Next required action: commit/push the P1 closeout, then claim P2-T01 and write the failing adapter identity/health-envelope test.
+Master plan task: P2-T02
+State: P2-T01 expected failing contract test verified; test commit and push pending
+Next required action: commit/push P2-T01, then claim P2-T02 and implement the minimal adapter identity and health dataclasses.
 
 ## Product Goal Snapshot
 
@@ -111,6 +111,46 @@ Quota state and closeout action:
 ```
 
 ## Handoff Log
+
+## 2026-08-31 - P2-T01 - exit
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `f3cd94e`
+Scope: add the first intentionally failing contract test for adapter identity and health envelope
+Files intended: `tests/test_adapter_contract.py`, master tracker, and handoff
+Actions: defined exact stable identity fields and a health envelope that separates reachability, readiness, proof level, timestamp, and reason code; did not add implementation
+Verification: `python3 -m unittest tests.test_adapter_contract -v` failed at the intended boundary with `ModuleNotFoundError: No module named 'forma_ai.adapter_contract'`
+Evidence: unittest output and the new two-test contract file
+Files changed: `tests/test_adapter_contract.py`, master tracker, and this handoff
+Commit: pending red-test commit
+Push: pending
+Decisions: identity is vendor-neutral and versioned; health cannot collapse reachable, ready, and real proof into one boolean
+Assumptions: P2-T02 will implement only the surface demanded by these tests
+Blocked items: none; failure is intentional and required by the plan
+Next exact action: commit/push P2-T01, then claim P2-T02
+Approval needed: none
+Secret/external-write status: no secrets; repository-local test only
+Quota state and closeout action: normal; red-test unit is ready to commit and push
+
+## 2026-08-31 - P2-T01 - takeover
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `f3cd94e`
+Scope: add the first intentionally failing contract test for adapter identity and health envelope
+Files intended: `tests/test_adapter_contract.py`, master tracker, and handoff
+Actions: claimed P2-T01 in plan order
+Verification: pending expected failing unittest result
+Evidence: pending
+Files changed: tracker and handoff at takeover
+Commit: none yet
+Push: none yet
+Decisions: test only stable vendor-neutral identity and health fields; implementation belongs to P2-T02 and must not be added in this task
+Assumptions: an import failure is too coarse; the test should import a named contract surface and then fail because that module is absent
+Blocked items: none
+Next exact action: inspect local test conventions, create the minimal contract test, and capture the expected failure
+Approval needed: none
+Secret/external-write status: no secrets; repository-local test only
+Quota state and closeout action: normal; close and push this test unit on warning
 
 ## 2026-08-31 - P1-T08 - exit
 
