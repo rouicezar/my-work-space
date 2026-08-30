@@ -20,9 +20,9 @@ Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-ma
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P1-T07
-State: P1-T06 license reconciliation verified; documentation commit and push pending
-Next required action: commit/push P1-T06, then claim P1-T07 and record one explicit reuse decision for each upstream.
+Master plan task: P1-T08
+State: P1-T07 upstream reuse decisions verified; documentation commit and push pending
+Next required action: commit/push P1-T07, then claim P1-T08 and audit the complete upstream-inventory documentation chain before phase close.
 
 ## Product Goal Snapshot
 
@@ -111,6 +111,46 @@ Quota state and closeout action:
 ```
 
 ## Handoff Log
+
+## 2026-08-31 - P1-T07 - exit
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `a7062e5`
+Scope: record durable, evidence-linked reuse decisions for Semantica, holaOS, Herdr, and oMLX
+Files intended: decision log, master tracker, and handoff
+Actions: added one explicit record per upstream naming its pinned revision, integration mode, Forma-owned boundary, forbidden duplication, acceptance evidence, and distribution obligations
+Verification: exactly four `Reuse decision` records exist; all four upstreams and required boundary/acceptance/public terms are present; `git diff --check` passed
+Evidence: P1 capability ledgers, upstream matrix, runbook, and license matrix
+Files changed: `docs/decisions.md`, master tracker, and this handoff
+Commit: pending documentation commit
+Push: pending
+Decisions: these four records operationalize ADR-017 and cannot be overridden by older superseded summaries
+Assumptions: exact upstream revisions will be re-reviewed before any later upgrade
+Blocked items: none for decision recording; implementation acceptance remains in later phases
+Next exact action: commit/push P1-T07, then claim P1-T08
+Approval needed: none
+Secret/external-write status: no secrets; repository-local documentation only
+Quota state and closeout action: normal; this verified unit is ready to commit and push
+
+## 2026-08-31 - P1-T07 - takeover
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `a7062e5`
+Scope: record durable, evidence-linked reuse decisions for Semantica, holaOS, Herdr, and oMLX
+Files intended: `docs/decisions.md`, master tracker, and handoff
+Actions: claimed P1-T07 in plan order
+Verification: pending four-decision scan and conflict check
+Evidence: pending
+Files changed: tracker and handoff at takeover
+Commit: none yet
+Push: none yet
+Decisions: each record must name the selected integration mode, product-owned boundary, forbidden duplication, validation gate, and distribution consequence
+Assumptions: existing superseded ADR summaries remain historical but cannot override the new records
+Blocked items: none
+Next exact action: inspect the decision log and add four explicit reuse decisions linked to the P1 ledgers
+Approval needed: none
+Secret/external-write status: no secrets; repository-local documentation only
+Quota state and closeout action: normal; close and push this documentation unit on warning
 
 ## 2026-08-31 - P1-T06 - exit
 

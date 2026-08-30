@@ -29,9 +29,9 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-08-31 Asia/Shanghai
 Current phase: P1 Upstream capability and license inventory
-Current task: P1-T07
+Current task: P1-T08
 Current status: pending
-Next action: commit and push P1-T06, then claim P1-T07 and record one explicit reuse decision for each of the four upstreams.
+Next action: commit and push P1-T07, then claim P1-T08 and audit the complete P1 documentation chain before closing the phase.
 
 Known uncommitted implementation work that must not be overwritten by this documentation task:
 
@@ -134,7 +134,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | P1-T04 | verified | Refresh Herdr socket/CLI capability map | `docs/research/herdr-capability-ledger.md` | `test -f docs/research/herdr-capability-ledger.md` | Multi-agent capabilities mapped |
 | P1-T05 | verified | Refresh oMLX API and model capability evidence | `docs/research/upstream-matrix.md` | `rg -n "omlx|OpenAI-compatible|/v1" docs/research/upstream-matrix.md` | Runtime assumptions updated |
 | P1-T06 | verified | Reconcile license matrix with public open-source intent | `docs/research/license-matrix.md` | `rg -n "public|redistribution|holaOS" docs/research/license-matrix.md` | Public distribution constraints explicit |
-| P1-T07 | pending | Add a reuse decision record for each upstream | `docs/decisions.md` | `rg -n "Reuse decision" docs/decisions.md` | Four decisions recorded |
+| P1-T07 | verified | Add a reuse decision record for each upstream | `docs/decisions.md` | `rg -n "Reuse decision" docs/decisions.md` | Four decisions recorded |
 | P1-T08 | pending | Commit upstream inventory docs | Research docs, `docs/decisions.md` | `git diff --check` then `git commit` | Commit includes only inventory docs |
 
 ### P2: Adapter Protocol Contract
@@ -249,3 +249,4 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 - 2026-08-31 - P1-T04 - Codex root agent - mapped Herdr v0.8.2 CLI/socket, event, lifecycle, resume, recovery, and handoff surfaces - official immutable release, pinned source, schema, and documentation evidence - commit pending closeout - next P1-T05
 - 2026-08-31 - P1-T05 - Codex root agent - refreshed oMLX v0.6.3 tag, release, artifact, API, dependency, model-capability, and layered inference evidence; corrected stale runbook claim - official pinned source plus repository evidence - 24 targeted tests passed - commit pending closeout - next P1-T06
 - 2026-08-31 - P1-T06 - Codex root agent - separated private development, public source, copied-source, binary, adapter, and commercial release modes; bound all four reviewed revisions and explicit notice/trademark/provenance gates - matrix scan and whitespace check passed - commit pending closeout - next P1-T07
+- 2026-08-31 - P1-T07 - Codex root agent - recorded four evidence-linked upstream reuse decisions with integration mode, product boundary, duplication stop, validation gate, and distribution consequence - four-record and whitespace checks passed - commit pending closeout - next P1-T08
