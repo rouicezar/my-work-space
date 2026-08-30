@@ -20,9 +20,9 @@ Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-ma
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P2-T02
-State: P2-T01 expected failing contract test verified; test commit and push pending
-Next required action: commit/push P2-T01, then claim P2-T02 and implement the minimal adapter identity and health dataclasses.
+Master plan task: P2-T03
+State: P2-T02 minimal dataclass implementation verified; implementation commit and push pending
+Next required action: commit/push P2-T02, then claim P2-T03 and write the failing capability-declaration test.
 
 ## Product Goal Snapshot
 
@@ -111,6 +111,46 @@ Quota state and closeout action:
 ```
 
 ## Handoff Log
+
+## 2026-08-31 - P2-T02 - exit
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `0df9d25`
+Scope: implement only the adapter identity and health-envelope dataclasses required by P2-T01
+Files intended: `forma_ai/adapter_contract.py`, master tracker, and handoff
+Actions: added immutable `AdapterIdentity` and `HealthEnvelope` dataclasses with deterministic `to_dict` serialization; added no capability or policy surface
+Verification: `python3 -m unittest tests.test_adapter_contract -v` passed 2 tests; `git diff --check` passed
+Evidence: targeted unittest output
+Files changed: `forma_ai/adapter_contract.py`, master tracker, and this handoff
+Commit: pending implementation commit
+Push: pending
+Decisions: minimal implementation preserves the red-test boundary and defers validation/capability/policy behavior to their planned tests
+Assumptions: opaque strings are sufficient for the current contract slice
+Blocked items: none
+Next exact action: commit/push P2-T02, then claim P2-T03
+Approval needed: none
+Secret/external-write status: no secrets; repository-local code and tests only
+Quota state and closeout action: normal; verified unit is ready to commit and push
+
+## 2026-08-31 - P2-T02 - takeover
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `0df9d25`
+Scope: implement only the adapter identity and health-envelope dataclasses required by P2-T01
+Files intended: `forma_ai/adapter_contract.py`, master tracker, and handoff
+Actions: claimed P2-T02 in plan order
+Verification: pending targeted unittest
+Evidence: P2-T01 red test
+Files changed: tracker and handoff at takeover
+Commit: none yet
+Push: none yet
+Decisions: immutable dataclasses with deterministic dictionary serialization; no capability or policy fields before their own red tests
+Assumptions: current string fields remain opaque contract values until later validation tasks require constraints
+Blocked items: none
+Next exact action: add the minimal module and run `tests.test_adapter_contract`
+Approval needed: none
+Secret/external-write status: no secrets; repository-local code and tests only
+Quota state and closeout action: normal; close and push this implementation unit on warning
 
 ## 2026-08-31 - P2-T01 - exit
 
