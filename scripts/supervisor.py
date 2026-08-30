@@ -31,6 +31,7 @@ from mac_ai_work_os.models import (
     load_model,
     verify_snapshot,
 )
+from mac_ai_work_os.model_downloads import download_model_snapshot
 from mac_ai_work_os.broker import BrokerPolicy, JsonlAuditSink, OMLXBroker, OMLXUpstream, create_server
 from mac_ai_work_os.processes import omlx_process_spec
 from mac_ai_work_os.runtime import RuntimeManager, SubprocessController
@@ -95,7 +96,10 @@ def parser() -> argparse.ArgumentParser:
             command.add_argument("--upstreams", type=Path, default=DEFAULT_UPSTREAMS)
         if name == "install-omlx":
             command.add_argument("--approve-artifact-sha256", required=True)
-    for name in ("model-plan", "link-model", "embedding-plan", "activate-embedding"):
+    for name in (
+        "model-plan", "link-model", "embedding-plan", "download-embedding",
+        "activate-embedding",
+    ):
         command = commands.add_parser(name)
         command.add_argument("--root", type=Path, required=True)
         command.add_argument("--cache-root", type=Path, required=True)
@@ -104,7 +108,7 @@ def parser() -> argparse.ArgumentParser:
             "--model-id",
             default=DEFAULT_EMBEDDING_MODEL_ID if "embedding" in name else DEFAULT_MODEL_ID,
         )
-        if name in {"link-model", "activate-embedding"}:
+        if name in {"link-model", "download-embedding", "activate-embedding"}:
             command.add_argument("--approve-revision", required=True)
     for name in ("runtime-status", "start-runtime", "stop-runtime", "sample-task"):
         command = commands.add_parser(name)
@@ -154,14 +158,19 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         )
     if args.command in {"installation-plan", "installation-status", "install-omlx"}:
         _validate_product_root(args.root)
-    if args.command in {"model-plan", "link-model", "embedding-plan", "activate-embedding"}:
+    if args.command in {
+        "model-plan", "link-model", "embedding-plan", "download-embedding",
+        "activate-embedding",
+    }:
         _validate_product_root(args.root)
         if not args.cache_root.is_absolute() or not args.cache_root.is_dir():
             raise ValueError("model cache root must be an existing absolute directory")
         if not args.catalog.is_absolute() or not args.catalog.is_file():
             raise ValueError("model catalog must be an existing absolute file")
         model = load_model(args.catalog, args.model_id)
-        if args.command in {"embedding-plan", "activate-embedding"} and "embedding" not in model.capabilities:
+        if args.command in {
+            "embedding-plan", "download-embedding", "activate-embedding",
+        } and "embedding" not in model.capabilities:
             raise ValueError("selected model is not embedding capable")
         snapshot = huggingface_snapshot(args.cache_root, model)
         if args.command in {"model-plan", "embedding-plan"}:
@@ -197,6 +206,18 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             )
         if args.approve_revision != model.revision:
             raise ValueError("model approval does not match selected revision")
+        if args.command == "download-embedding":
+            downloaded = download_model_snapshot(
+                cache_root=args.cache_root,
+                model=model,
+                approved_revision=args.approve_revision,
+            )
+            return envelope(
+                command=args.command,
+                request_id=request_id,
+                status="ok",
+                payload=downloaded.to_dict(),
+            )
         if args.command == "activate-embedding" and RuntimeManager(args.root).status()["phase"] != "stopped":
             raise ValueError("embedding activation requires a stopped runtime")
         reference = link_external_model(
@@ -670,7 +691,8 @@ def main(argv: list[str] | None = None) -> int:
             item
             for item in (
                 "preflight", "installation-plan", "installation-status", "install-omlx",
-                "model-plan", "link-model", "embedding-plan", "activate-embedding",
+                "model-plan", "link-model", "embedding-plan", "download-embedding",
+                "activate-embedding",
                 "runtime-status", "start-runtime", "stop-runtime", "sample-task", "internal-broker",
                 "internal-memory-service", "semantica-status",
             )

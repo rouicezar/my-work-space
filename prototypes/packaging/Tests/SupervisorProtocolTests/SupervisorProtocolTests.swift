@@ -152,11 +152,13 @@ import RuntimeSecurity
     defer { try? FileManager.default.removeItem(at: temporary) }
     let executable = temporary.appendingPathComponent("fixture-supervisor")
     let plan = #"{"schema_version":1,"command":"embedding-plan","request_id":"00000000-0000-0000-0000-000000000001","status":"ok","payload":{"schema_version":1,"model_id":"e5","repository":"test/e5","revision":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","license":"MIT","capabilities":["embedding"],"quantization_bits":null,"embedding_dimension":384,"query_prefix":"query: ","document_prefix":"passage: ","size_bytes":252418075,"source_path":"/tmp/cache/e5","available_verified":false,"unavailable_reason":"MODEL_SNAPSHOT_MISSING","approval_required":true},"error":null,"emitted_at":"2026-08-30T00:00:00+00:00"}"#
+    let download = #"{"schema_version":1,"command":"download-embedding","request_id":"00000000-0000-0000-0000-000000000003","status":"ok","payload":{"schema_version":1,"model_id":"e5","revision":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","snapshot_path":"/tmp/cache/e5","total_size_bytes":252418075,"transferred_bytes":252418075,"reused_files":0,"downloaded_files":5},"error":null,"emitted_at":"2026-08-30T00:00:00+00:00"}"#
     let activation = #"{"schema_version":1,"command":"activate-embedding","request_id":"00000000-0000-0000-0000-000000000002","status":"ok","payload":{"schema_version":1,"route":{"model_id":"e5","api_model":"e5","revision":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","expected_dimension":384,"query_prefix":"query: ","document_prefix":"passage: "},"reference":{"model_id":"e5","revision":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","link_path":"/tmp/product/models/e5","storage_mode":"external-reference","source_ownership":"external-cache-not-product-owned"}},"error":null,"emitted_at":"2026-08-30T00:00:00+00:00"}"#
     let script = """
     #!/bin/sh
     case " $* " in
       *" embedding-plan "*) printf '%s' '\(plan)' ;;
+      *" download-embedding "*) printf '%s' '\(download)' ;;
       *" activate-embedding "*) printf '%s' '\(activation)' ;;
       *) exit 9 ;;
     esac
@@ -175,6 +177,13 @@ import RuntimeSecurity
     #expect(planned.embeddingDimension == 384)
     #expect(planned.queryPrefix == "query: ")
     #expect(!planned.availableVerified)
+    let downloaded = try client.downloadEmbedding(
+        rootURL: root, cacheRootURL: cache, catalogURL: catalog,
+        approvedRevision: planned.revision,
+        requestID: UUID(uuidString: "00000000-0000-0000-0000-000000000003")!
+    )
+    #expect(downloaded.totalSizeBytes == 252418075)
+    #expect(downloaded.downloadedFiles == 5)
     let activated = try client.activateEmbedding(
         rootURL: root, cacheRootURL: cache, catalogURL: catalog,
         approvedRevision: planned.revision,

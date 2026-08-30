@@ -209,9 +209,15 @@ struct ManifestOverview: View {
                         }
                         .buttonStyle(.borderedProminent)
                     } else {
-                        Text("No download has started. A later download action must show this exact size and ask for approval first.")
+                        Text("No download has started. Approval downloads only this pinned revision, resumes interruptions, and verifies every file before use.")
                             .font(.callout).foregroundStyle(.secondary)
+                        Button("Approve and download \(byteCount(plan.sizeBytes))") {
+                            Task { await downloadEmbedding(plan) }
+                        }
+                        .buttonStyle(.borderedProminent)
                     }
+                case .downloading(let size):
+                    ProgressView("Downloading and verifying \(byteCount(size))…")
                 case .activating:
                     ProgressView("Verifying files and activating semantic memory safely…")
                 case .active(let model, let dimension):
@@ -529,6 +535,42 @@ struct ManifestOverview: View {
     }
 
     @MainActor
+    private func downloadEmbedding(_ plan: ModelPlanPayload) async {
+        guard let context = modelContext() else {
+            embeddingState = .failed("The embedding model context is no longer available.")
+            return
+        }
+        embeddingState = .downloading(plan.sizeBytes)
+        embeddingState = await Task.detached { () -> EmbeddingViewState in
+            do {
+                let downloaded = try SupervisorClient(executableURL: context.supervisor).downloadEmbedding(
+                    rootURL: context.root,
+                    cacheRootURL: context.cacheRoot,
+                    catalogURL: context.catalog,
+                    approvedRevision: plan.revision
+                )
+                guard downloaded.schemaVersion == 1,
+                      downloaded.modelID == plan.modelID,
+                      downloaded.revision == plan.revision,
+                      downloaded.totalSizeBytes == plan.sizeBytes else {
+                    return .failed("Supervisor returned an invalid embedding download result.")
+                }
+                let refreshed = try SupervisorClient(executableURL: context.supervisor).embeddingPlan(
+                    rootURL: context.root,
+                    cacheRootURL: context.cacheRoot,
+                    catalogURL: context.catalog
+                )
+                guard refreshed.availableVerified else {
+                    return .failed("Downloaded files did not pass the final model verification.")
+                }
+                return .planned(refreshed)
+            } catch {
+                return .failed(String(describing: error))
+            }
+        }.value
+    }
+
+    @MainActor
     private func loadRuntimeStatus() async {
         guard let context = installationContext() else {
             runtimeState = .failed("Supervisor context is unavailable.")
@@ -753,6 +795,7 @@ private enum ModelViewState: Sendable {
 private enum EmbeddingViewState: Sendable {
     case loading
     case planned(ModelPlanPayload)
+    case downloading(Int64)
     case activating
     case active(String, Int)
     case failed(String)

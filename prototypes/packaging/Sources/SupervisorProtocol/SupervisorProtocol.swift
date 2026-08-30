@@ -203,6 +203,28 @@ public struct EmbeddingActivationPayload: Decodable, Sendable {
     }
 }
 
+public struct ModelDownloadPayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let modelID: String
+    public let revision: String
+    public let snapshotPath: String
+    public let totalSizeBytes: Int64
+    public let transferredBytes: Int64
+    public let reusedFiles: Int
+    public let downloadedFiles: Int
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case modelID = "model_id"
+        case revision
+        case snapshotPath = "snapshot_path"
+        case totalSizeBytes = "total_size_bytes"
+        case transferredBytes = "transferred_bytes"
+        case reusedFiles = "reused_files"
+        case downloadedFiles = "downloaded_files"
+    }
+}
+
 public struct EmbeddingRoutePayload: Decodable, Sendable {
     public let modelID: String
     public let apiModel: String
@@ -443,6 +465,21 @@ public struct SupervisorClient: Sendable {
     ) throws -> EmbeddingActivationPayload {
         try request(
             command: "activate-embedding",
+            arguments: ["--root", rootURL.path, "--cache-root", cacheRootURL.path,
+                        "--catalog", catalogURL.path, "--approve-revision", approvedRevision],
+            requestID: requestID
+        )
+    }
+
+    public func downloadEmbedding(
+        rootURL: URL,
+        cacheRootURL: URL,
+        catalogURL: URL,
+        approvedRevision: String,
+        requestID: UUID = UUID()
+    ) throws -> ModelDownloadPayload {
+        try request(
+            command: "download-embedding",
             arguments: ["--root", rootURL.path, "--cache-root", cacheRootURL.path,
                         "--catalog", catalogURL.path, "--approve-revision", approvedRevision],
             requestID: requestID
