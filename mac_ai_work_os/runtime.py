@@ -102,11 +102,10 @@ class SubprocessController:
         finally:
             os.close(descriptor)
         started = self._process_started_at(process.pid)
-        if not started:
+        observed_command = self._process_command(process.pid)
+        if not started or not observed_command:
             raise RuntimeManagerError("PROCESS_IDENTITY_UNAVAILABLE", role)
-        digest = hashlib.sha256(
-            json.dumps(command, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-        ).hexdigest()
+        digest = hashlib.sha256(observed_command.encode("utf-8")).hexdigest()
         return ProcessRecord(role, process.pid, str(executable), digest, started, str(log_path))
 
     def matches(self, record: ProcessRecord) -> bool:
@@ -116,7 +115,7 @@ class SubprocessController:
             bool(started)
             and started == record.process_started_at
             and bool(command)
-            and command.startswith(record.executable)
+            and hashlib.sha256(command.encode("utf-8")).hexdigest() == record.command_sha256
         )
 
     def adopt(self, *, role: str, pid: int, command_prefix: str, log_path: Path) -> ProcessRecord:

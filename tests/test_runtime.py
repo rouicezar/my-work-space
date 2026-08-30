@@ -1,8 +1,12 @@
+import hashlib
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-from mac_ai_work_os.runtime import ProcessRecord, RuntimeManager, RuntimeManagerError
+from mac_ai_work_os.runtime import (
+    ProcessRecord, RuntimeManager, RuntimeManagerError, SubprocessController,
+)
 
 
 class FakeController:
@@ -117,6 +121,20 @@ class RuntimeManagerTests(unittest.TestCase):
         self.assertEqual(status["phase"], "degraded")
         self.assertTrue(status["omlx_alive"])
         self.assertFalse(status["broker_alive"])
+
+    def test_real_controller_identity_uses_observed_command_digest_not_launcher_path(self):
+        observed = "/resolved/python /Product/supervisor.py internal-broker"
+        record = ProcessRecord(
+            "broker", 123, "/different/launcher/python3",
+            hashlib.sha256(observed.encode()).hexdigest(), "start", "/tmp/broker.log",
+        )
+        controller = SubprocessController()
+        with patch.object(controller, "_process_started_at", return_value="start"), \
+             patch.object(controller, "_process_command", return_value=observed):
+            self.assertTrue(controller.matches(record))
+        with patch.object(controller, "_process_started_at", return_value="start"), \
+             patch.object(controller, "_process_command", return_value=observed + " --changed"):
+            self.assertFalse(controller.matches(record))
 
     def test_stop_orders_broker_before_omlx_and_is_idempotent(self):
         self.manager.start(

@@ -51,6 +51,7 @@ Mac AI Work OS 是一套面向普通 Mac 用户、通用且可分发的 AI 工�
 - [Semantica v0.6.7 治理记忆契约证据](evidence/upstream/semantica-v0.6.7-governed-memory-contract-2026-08-30.md)
 - [受治理记忆服务契约证据](evidence/runtime/governed-memory-service-contract-2026-08-30.md)
 - [双模型 Supervisor 协议证据](evidence/runtime/dual-model-supervisor-protocol-2026-08-30.md)
+- [私密本地 Qwen 日常任务证据](evidence/runtime/private-local-task-2026-08-30.md)
 - [oMLX v0.6.3 Embedding 能力边界证据](evidence/upstream/omlx-v0.6.3-embedding-capability-2026-08-30.md)
 - [原生 Supervisor 预检界面证据](evidence/ui/native-supervisor-preflight-2026-08-29.md)
 - [自包含 Supervisor Helper 证据](evidence/ui/self-contained-supervisor-2026-08-29.md)

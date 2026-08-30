@@ -374,6 +374,22 @@ func realKeychainRuntimeSampleAuditAndStop() throws {
     #expect(!auditText.contains(secrets.brokerToken))
     #expect(!auditText.contains(secrets.memoryToken))
 
+    let privatePrompt = "请用一句中文说明你正在本地运行。"
+    let local = try client.localTask(
+        rootURL: root,
+        prompt: privatePrompt,
+        maximumOutputTokens: 64,
+        omlxAPIKey: secrets.omlxAPIKey,
+        brokerToken: secrets.brokerToken,
+        memoryToken: secrets.memoryToken
+    )
+    #expect(local.route == "local")
+    #expect(!local.output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+    let updatedAuditText = try String(contentsOf: audit, encoding: .utf8)
+    #expect(updatedAuditText.contains(local.correlationID))
+    #expect(!updatedAuditText.contains(privatePrompt))
+    #expect(!updatedAuditText.contains(local.output))
+
     let stopped = try client.stopRuntime(rootURL: root)
     #expect(stopped.runtime.phase == "stopped")
 }
