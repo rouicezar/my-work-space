@@ -120,8 +120,8 @@ Actions: corrected active role conflicts; marked the old plan superseded; made H
 Verification: repository-wide role scan found no unmarked active conflict; `git diff --check` passed for all documentation files
 Evidence: upstream-first implementation rule in `AGENTS.md`; ADR-003 superseded by ADR-017; ADR-0017 and product requirements require Herdr and upstream reuse; master plan contains CAP-11, CAP-12, P2-T07, and P4-T07
 Files changed: `AGENTS.md`, `docs/decisions.md`, `docs/product-requirements.md`, `docs/adr/0017-product-owned-native-workbench.md`, both 2026-08-28 plans, license matrix, master tracker, and this handoff
-Commit: pending documentation-only closeout commit
-Push: pending
+Commit: `a618993 docs: enforce upstream-first product direction`; this closeout record follows in a documentation-only commit
+Push: pending final closeout push
 Decisions: independent visual workbench plus adapter protocol; reuse all license-permitted non-visual upstream capability; do not duplicate upstream functionality without recorded justification
 Assumptions: personal non-commercial use does not waive license obligations; future public distribution requires a fresh exact-artifact review
 Blocked items: none
