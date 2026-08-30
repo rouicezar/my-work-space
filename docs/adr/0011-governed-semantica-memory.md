@@ -71,6 +71,21 @@ Supervisor will instead own an authenticated loopback governed-memory service
 that imports Semantica from its isolated managed environment and reports
 library, governance, storage, and embedding health separately.
 
+The frozen Supervisor does not extend its import path with Semantica's external
+site-packages. When an approved embedding activation exists, it launches a
+small product-owned memory entrypoint using the exact managed Semantica Python
+interpreter. The signed app bundle carries the explicitly enumerated product
+modules needed by that entrypoint. Without an activation record, Supervisor
+starts the unavailable backend so candidate capture remains usable and the
+missing capability stays visible.
+
+Authoritative `AgentContext` state is written to a temporary owner-only
+directory and its JSON state file is atomically replaced after every mutation.
+Store failure removes the newly created upstream item; delete persistence
+failure restores it. The SQLite vector index persists independently, is bound
+to model and dimension, and tolerates content-free orphan entries because every
+retrieval is revalidated through the governance database and Semantica.
+
 Semantica v0.6.7's `search_vectors` branch constructs vector results but does
 not map them back to memory items; that mapping is nested only under its
 alternative `search` branch. Its `store_vectors` call also provides governed

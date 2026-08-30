@@ -28,6 +28,15 @@ install -m 0644 "$REPOSITORY_ROOT/config/upstreams.json" "$APP/Contents/Resource
 install -m 0644 "$REPOSITORY_ROOT/config/models.json" "$APP/Contents/Resources/models.json"
 "$SCRIPT_DIR/build-supervisor.sh" "$APP/Contents/Helpers/Supervisor"
 
+MEMORY_RUNTIME="$APP/Contents/Helpers/MemoryRuntime"
+mkdir -p "$MEMORY_RUNTIME/mac_ai_work_os/adapters"
+install -m 0644 "$REPOSITORY_ROOT/scripts/semantica_memory_runtime.py" "$MEMORY_RUNTIME/semantica_memory_runtime.py"
+for SOURCE in __init__.py broker.py governed_memory.py memory_service.py omlx_embeddings.py semantica_backend.py semantica_runtime.py models.py; do
+  install -m 0644 "$REPOSITORY_ROOT/mac_ai_work_os/$SOURCE" "$MEMORY_RUNTIME/mac_ai_work_os/$SOURCE"
+done
+install -m 0644 "$REPOSITORY_ROOT/mac_ai_work_os/adapters/__init__.py" "$MEMORY_RUNTIME/mac_ai_work_os/adapters/__init__.py"
+install -m 0644 "$REPOSITORY_ROOT/mac_ai_work_os/adapters/semantica.py" "$MEMORY_RUNTIME/mac_ai_work_os/adapters/semantica.py"
+
 codesign --force --deep --sign - "$APP"
 codesign --verify --deep --strict --verbose=2 "$APP"
 echo "$APP"

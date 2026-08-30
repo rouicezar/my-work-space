@@ -1,4 +1,6 @@
 import unittest
+import tempfile
+from pathlib import Path
 
 from mac_ai_work_os.adapters.semantica import SemanticaContextBackend
 
@@ -7,11 +9,15 @@ class FixtureContext:
     def __init__(self):
         self.calls = []
         self.memories = {}
+        self.fail_save = False
+        self.next_id = 0
 
     def store(self, content, **kwargs):
         self.calls.append(("store", content, kwargs))
-        self.memories["upstream-1"] = {"id": "upstream-1", "content": content, "metadata": kwargs["metadata"]}
-        return "upstream-1"
+        self.next_id += 1
+        identity = kwargs.get("memory_id") or f"upstream-{self.next_id}"
+        self.memories[identity] = {"id": identity, "content": content, "metadata": kwargs["metadata"]}
+        return identity
 
     def get_memory(self, memory_id):
         self.calls.append(("get", memory_id))
@@ -27,6 +33,15 @@ class FixtureContext:
 
     def health(self):
         return {"status": "healthy", "total_memories": len(self.memories)}
+
+    def save(self, path):
+        if self.fail_save:
+            raise OSError("fixture save failure")
+        Path(path).mkdir(parents=True, exist_ok=True)
+        (Path(path) / "agent_memory.json").write_text("{}", encoding="utf-8")
+
+    def load(self, path):
+        self.calls.append(("load", path))
 
 
 class FixtureSemanticStore:
@@ -95,6 +110,40 @@ class SemanticaAdapterContractTests(unittest.TestCase):
         self.assertEqual(health["code"], "SEMANTIC_INDEX_UNVERIFIED")
         with self.assertRaisesRegex(RuntimeError, "SEMANTIC_INDEX_UNVERIFIED"):
             adapter.retrieve("fact", 5)
+
+    def test_store_persists_atomically_and_restart_loads_state(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory) / "state"
+            context = FixtureContext()
+            adapter = SemanticaContextBackend(
+                context, embedding_route="fixture-local", semantic_store=FixtureSemanticStore(),
+                state_path=state,
+            )
+            adapter.store("confirmed", {"record_id": "record-1"})
+            self.assertEqual((state / "agent_memory.json").read_text(), "{}")
+            self.assertEqual((state / "agent_memory.json").stat().st_mode & 0o777, 0o600)
+            restored = FixtureContext()
+            SemanticaContextBackend(
+                restored, embedding_route="fixture-local", semantic_store=FixtureSemanticStore(),
+                state_path=state,
+            )
+            self.assertEqual(restored.calls, [("load", str(state.resolve()))])
+
+    def test_persistence_failure_rolls_back_store_and_restores_delete(self):
+        with tempfile.TemporaryDirectory() as directory:
+            context = FixtureContext()
+            adapter = SemanticaContextBackend(
+                context, embedding_route="fixture-local", semantic_store=FixtureSemanticStore(),
+                state_path=Path(directory).resolve() / "state",
+            )
+            memory_id = adapter.store("confirmed", {"record_id": "record-1"})
+            context.fail_save = True
+            with self.assertRaises(OSError):
+                adapter.store("must roll back", {"record_id": "record-2"})
+            self.assertEqual(list(context.memories), [memory_id])
+            with self.assertRaises(OSError):
+                adapter.forget(memory_id)
+            self.assertEqual(context.memories[memory_id]["content"], "confirmed")
 
 
 if __name__ == "__main__":

@@ -175,10 +175,10 @@ class PersistentOMLXVectorStore:
             db.executemany("DELETE FROM vectors WHERE id = ?", ((identity,) for identity in identities))
             return db.total_changes - before
 
-    def save(self) -> None:
+    def save(self, _path: str | Path | None = None) -> None:
         return None
 
-    def load(self) -> None:
+    def load(self, _path: str | Path | None = None) -> None:
         self._initialize()
 
     def health(self, *, probe: bool = False) -> dict[str, Any]:

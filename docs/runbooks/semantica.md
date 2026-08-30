@@ -8,7 +8,11 @@ product-owned governed-memory service is a separate authenticated loopback
 boundary. Its contract handler covers the governed operations with bounded
 requests and redacted request-level audit. Supervisor now starts it after the
 inference broker, stops it first, verifies `/live`, and records process identity.
-The production Semantica/embedding factory remains pending.
+The product includes a managed Semantica/embedding factory and a separate
+memory-runtime entrypoint executed by the pinned Semantica Python interpreter.
+Public app builds copy only the explicitly required product modules into
+`Contents/Helpers/MemoryRuntime`; they do not inject external site-packages
+into the frozen Supervisor.
 
 ## Read-only status
 
@@ -38,9 +42,22 @@ be presented as an empty memory result or replaced by a hidden cloud route.
 
 ## Current boundary
 
-The repository has real fixed-version `AgentContext` lifecycle evidence using
-an explicitly injected no-network vector boundary. It does not yet contain the
-managed-environment installer or approved production embedding model. The
-Supervisor-managed process therefore starts in an honestly unavailable memory
-capability state: candidates can be journaled, while confirmation fails closed.
-This is not yet a claim that memory is ready for end users.
+The repository has real fixed-version `AgentContext` lifecycle evidence,
+including atomic authoritative-state persistence, vector-index persistence,
+restart retrieval, deletion, and persistence-failure rollback. It does not yet
+contain the managed-environment installer or an approved production embedding
+model.
+
+If `state/models/embedding-active.json` is absent, Supervisor starts an
+honestly unavailable memory capability: candidates can be journaled while
+confirmation fails closed. If it is present, it must be an owner-only regular
+file bound to an owner-only zero-copy model reference, exact revision, oMLX API
+model name, and positive expected dimension. Supervisor then requires the exact
+managed Semantica v0.6.7 runtime and starts the memory service with that
+interpreter. oMLX and memory secrets travel only in the child environment.
+
+There is intentionally no manual activation recipe. The future model-selection
+command and native approval UI must validate an embedding-capable catalog
+entry, verified weights, license, disk impact, model revision, and dimension
+before atomically creating the activation record. Until that workflow and a
+real model probe pass, memory is not ready for end users.

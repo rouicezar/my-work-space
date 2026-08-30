@@ -53,6 +53,20 @@ class ExplicitLocalVectorBoundary:
                 "vector_count": len(self.items)}
 
 
+class ExplicitLocalEmbeddingClient:
+    model = "fixture-local"
+
+    def embed(self, text):
+        encoded = text.encode("utf-8")
+        buckets = [0.0] * 8
+        for index, value in enumerate(encoded):
+            buckets[index % 8] += value / 255.0
+        return buckets
+
+    def probe(self):
+        return {"status": "healthy", "model": self.model, "dimension": 8}
+
+
 @unittest.skipUnless(
     os.environ.get("MAC_AI_WORK_OS_SEMANTICA_INTEGRATION") == "1",
     "real pinned Semantica runtime integration is opt-in",
@@ -62,10 +76,13 @@ class RealSemanticaIntegrationTests(unittest.TestCase):
         from semantica.context import AgentContext
 
         from mac_ai_work_os.adapters.semantica import SemanticaContextBackend
+        from mac_ai_work_os.omlx_embeddings import PersistentOMLXVectorStore
 
         with tempfile.TemporaryDirectory() as directory:
             state = Path(directory) / "state"
-            vector = ExplicitLocalVectorBoundary()
+            vector = PersistentOMLXVectorStore(
+                Path(directory) / "vectors.sqlite3", ExplicitLocalEmbeddingClient()
+            )
             context = AgentContext(
                 vector_store=vector,
                 knowledge_graph=None,
@@ -74,7 +91,8 @@ class RealSemanticaIntegrationTests(unittest.TestCase):
                 decision_tracking=False,
             )
             backend = SemanticaContextBackend(
-                context, embedding_route="test-explicit-local", semantic_store=vector
+                context, embedding_route="test-explicit-local", semantic_store=vector,
+                state_path=state,
             )
             metadata = {
                 "schema_version": 1,
@@ -90,21 +108,26 @@ class RealSemanticaIntegrationTests(unittest.TestCase):
             self.assertEqual(backend.get(memory_id)["metadata"]["record_id"], "real-record-1")
             retrieved = backend.retrieve("fixture capital", 5)
             self.assertTrue(any(item["metadata"].get("record_id") == "real-record-1" for item in retrieved))
-            context.save(str(state))
 
+            restored_vector = PersistentOMLXVectorStore(
+                Path(directory) / "vectors.sqlite3", ExplicitLocalEmbeddingClient()
+            )
             restored_context = AgentContext(
-                vector_store=ExplicitLocalVectorBoundary(),
+                vector_store=restored_vector,
                 knowledge_graph=None,
                 retention_days=None,
                 graph_expansion=False,
                 decision_tracking=False,
             )
-            restored_context.load(str(state))
             restored = SemanticaContextBackend(
                 restored_context, embedding_route="test-explicit-local",
-                semantic_store=restored_context.vector_store,
+                semantic_store=restored_vector, state_path=state,
             )
             self.assertEqual(restored.get(memory_id)["content"], "Alpha Harbor is the fixture capital")
+            self.assertTrue(any(
+                item["metadata"].get("record_id") == "real-record-1"
+                for item in restored.retrieve("fixture capital", 5)
+            ))
             self.assertTrue(restored.forget(memory_id))
             self.assertIsNone(restored.get(memory_id))
 

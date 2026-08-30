@@ -6,12 +6,15 @@ import unittest
 import uuid
 import hashlib
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from scripts import preflight, supervisor
 from mac_ai_work_os.installer import ActiveBundle
 from mac_ai_work_os.models import ModelDefinition, ModelFile, ModelReference
 from mac_ai_work_os.semantica_runtime import SemanticaRuntimeInspector
+from mac_ai_work_os.embedding_config import ApprovedEmbeddingRoute
+from mac_ai_work_os.runtime import RuntimeRecord
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -386,6 +389,43 @@ class SupervisorProtocolTests(unittest.TestCase):
                 response = supervisor.run(args)
             status.assert_called_once_with()
             self.assertEqual(response["payload"]["phase"], "stopped")
+
+    def test_approved_embedding_route_uses_managed_python_without_secret_arguments(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve() / "Product"
+            args = supervisor.parser().parse_args([
+                "--request-id", str(uuid.uuid4()), "start-runtime", "--root", str(root),
+            ])
+            spec = SimpleNamespace(
+                executable="/fixture/omlx", arguments=(),
+                environment={"HOME": str(root / "state/homes/omlx"),
+                             "TMPDIR": str(root / "state/runtime/omlx/tmp")},
+                working_directory=str(root / "state/runtime/omlx"),
+            )
+            now = "2026-08-30T00:00:00+00:00"
+            runtime = RuntimeRecord(1, "running", args.request_id, None, None, None, None, 1, now, now)
+            environment = {
+                "OMLX_API_KEY": "o" * 40,
+                "MAC_AI_WORK_OS_BROKER_TOKEN": "b" * 40,
+                "MAC_AI_WORK_OS_MEMORY_TOKEN": "m" * 40,
+            }
+            route = ApprovedEmbeddingRoute("fixture-embedding", "fixture/embedding", "a" * 40, 384)
+            with patch.dict("os.environ", environment, clear=True), \
+                 patch.object(supervisor, "_installed_omlx_executable", return_value=Path("/fixture/omlx")), \
+                 patch.object(supervisor, "omlx_process_spec", return_value=spec), \
+                 patch.object(supervisor, "load_approved_embedding_route", return_value=route), \
+                 patch.object(SemanticaRuntimeInspector, "status", return_value={"installation": "verified"}), \
+                 patch.object(supervisor.SemanticaLayout, "python", return_value=Path("/managed/python")), \
+                 patch.object(supervisor, "_memory_runtime_entrypoint", return_value=Path("/bundle/runtime.py")), \
+                 patch.object(supervisor.RuntimeManager, "start", return_value=runtime) as start:
+                supervisor.run(args)
+            memory = start.call_args.kwargs["memory"]
+            self.assertEqual(memory["executable"], Path("/managed/python"))
+            self.assertIn("fixture/embedding", memory["arguments"])
+            self.assertNotIn("o" * 40, memory["arguments"])
+            self.assertNotIn("m" * 40, memory["arguments"])
+            self.assertEqual(memory["environment"]["OMLX_API_KEY"], "o" * 40)
+            self.assertEqual(memory["environment"]["MAC_AI_WORK_OS_MEMORY_TOKEN"], "m" * 40)
 
     def test_memory_liveness_probe_reads_versioned_result_envelope(self):
         class Response:

@@ -36,6 +36,7 @@ from mac_ai_work_os.processes import omlx_process_spec
 from mac_ai_work_os.runtime import RuntimeManager, SubprocessController
 from mac_ai_work_os.semantica_runtime import SemanticaLayout, SemanticaRuntimeInspector
 from mac_ai_work_os.governed_memory import GovernedMemory
+from mac_ai_work_os.embedding_config import load_approved_embedding_route
 from mac_ai_work_os.memory_service import (
     GovernedMemoryService,
     MemoryServicePolicy,
@@ -262,10 +263,24 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "OMLX_API_KEY": omlx_key,
             "MAC_AI_WORK_OS_BROKER_TOKEN": broker_token,
         }
-        memory_arguments = [
-            *broker_prefix, "--request-id", str(uuid.uuid4()), "internal-memory-service",
-            "--root", str(args.root), "--memory-port", str(args.memory_port),
-        ]
+        embedding_route = load_approved_embedding_route(args.root)
+        if embedding_route is None:
+            memory_executable = broker_executable
+            memory_arguments = [
+                *broker_prefix, "--request-id", str(uuid.uuid4()), "internal-memory-service",
+                "--root", str(args.root), "--memory-port", str(args.memory_port),
+            ]
+        else:
+            semantica_status = SemanticaRuntimeInspector(SemanticaLayout(args.root)).status()
+            if semantica_status.get("installation") != "verified":
+                raise ValueError("approved embedding route requires verified managed Semantica")
+            memory_executable = SemanticaLayout(args.root).python()
+            memory_arguments = [
+                str(_memory_runtime_entrypoint()), "--root", str(args.root),
+                "--memory-port", str(args.memory_port), "--omlx-port", str(args.omlx_port),
+                "--embedding-model", embedding_route.api_model,
+                "--expected-dimension", str(embedding_route.expected_dimension),
+            ]
         memory_home = args.root / "state/homes/memory"
         memory_tmp = args.root / "state/runtime/memory/tmp"
         memory_home.mkdir(parents=True, exist_ok=True)
@@ -278,6 +293,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "HF_HUB_OFFLINE": "1",
             "TRANSFORMERS_OFFLINE": "1",
             "MAC_AI_WORK_OS_MEMORY_TOKEN": memory_token,
+            "OMLX_API_KEY": omlx_key,
         }
         record = RuntimeManager(args.root).start(
             correlation_id=request_id,
@@ -296,7 +312,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 "log_path": args.root / "logs/broker/server.log",
             },
             memory={
-                "executable": broker_executable,
+                "executable": memory_executable,
                 "arguments": memory_arguments,
                 "environment": memory_environment,
                 "working_directory": args.root / "state/runtime/memory",
@@ -485,6 +501,16 @@ def _supervisor_invocation() -> tuple[Path, list[str]]:
     if getattr(sys, "frozen", False):
         return Path(sys.executable), []
     return Path(sys.executable), [str(REPOSITORY_ROOT / "scripts/supervisor.py")]
+
+
+def _memory_runtime_entrypoint() -> Path:
+    if getattr(sys, "frozen", False):
+        candidate = Path(sys.executable).resolve().parent.parent / "MemoryRuntime/semantica_memory_runtime.py"
+    else:
+        candidate = REPOSITORY_ROOT / "scripts/semantica_memory_runtime.py"
+    if not candidate.is_absolute() or not candidate.is_file() or candidate.is_symlink():
+        raise ValueError("managed memory runtime entrypoint is missing or unsafe")
+    return candidate
 
 
 def _http_ready(port: int, token: str, path: str = "/health") -> bool:
