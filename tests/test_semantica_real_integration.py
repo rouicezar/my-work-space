@@ -30,7 +30,12 @@ class ExplicitLocalVectorBoundary:
         return identities
 
     def search_vectors(self, query_vector, k):
-        return []
+        query = np.asarray(query_vector)
+        ranked = []
+        for identity, item in self.items.items():
+            score = float(np.dot(query, item["vector"]))
+            ranked.append({"id": identity, "score": score, "metadata": item["metadata"]})
+        return sorted(ranked, key=lambda item: item["score"], reverse=True)[:k]
 
     def delete_vectors(self, identities):
         for identity in identities:
@@ -42,6 +47,10 @@ class ExplicitLocalVectorBoundary:
 
     def load(self, path):
         return None
+
+    def health(self, probe=False):
+        return {"status": "healthy", "model": "fixture-local", "dimension": 8,
+                "vector_count": len(self.items)}
 
 
 @unittest.skipUnless(
@@ -64,7 +73,9 @@ class RealSemanticaIntegrationTests(unittest.TestCase):
                 graph_expansion=False,
                 decision_tracking=False,
             )
-            backend = SemanticaContextBackend(context, embedding_route="test-explicit-local")
+            backend = SemanticaContextBackend(
+                context, embedding_route="test-explicit-local", semantic_store=vector
+            )
             metadata = {
                 "schema_version": 1,
                 "record_id": "real-record-1",
@@ -89,7 +100,10 @@ class RealSemanticaIntegrationTests(unittest.TestCase):
                 decision_tracking=False,
             )
             restored_context.load(str(state))
-            restored = SemanticaContextBackend(restored_context, embedding_route="test-explicit-local")
+            restored = SemanticaContextBackend(
+                restored_context, embedding_route="test-explicit-local",
+                semantic_store=restored_context.vector_store,
+            )
             self.assertEqual(restored.get(memory_id)["content"], "Alpha Harbor is the fixture capital")
             self.assertTrue(restored.forget(memory_id))
             self.assertIsNone(restored.get(memory_id))

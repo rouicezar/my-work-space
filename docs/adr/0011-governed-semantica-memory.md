@@ -40,6 +40,12 @@ objects directly.
 - Semantica health is unavailable until an explicit, verified embedding route
   is injected. The presence of a chat model does not satisfy this requirement,
   and upstream automatic embedding-model downloads are prohibited.
+- The product owns a persistent local semantic index bound to the exact oMLX
+  embedding model and vector dimension. It stores governed metadata including
+  `record_id`, but never becomes an authority for confirmed content.
+- Semantic retrieval first resolves `record_id` from that index, then reads and
+  validates the current confirmed envelope through Semantica. Missing,
+  superseded, deleted, or mismatched records fail closed or are omitted.
 - Product data lives below the product-owned application support root. Tests
   use synthetic data and temporary databases only.
 
@@ -64,6 +70,15 @@ health route does not exercise `AgentContext` or an embedding backend. The
 Supervisor will instead own an authenticated loopback governed-memory service
 that imports Semantica from its isolated managed environment and reports
 library, governance, storage, and embedding health separately.
+
+Semantica v0.6.7's `search_vectors` branch constructs vector results but does
+not map them back to memory items; that mapping is nested only under its
+alternative `search` branch. Its `store_vectors` call also provides governed
+metadata rather than the Semantica memory ID. The product adapter therefore
+does not call upstream vector retrieval. It queries the product index for
+governed `record_id` metadata and then resolves content through Semantica's
+`get_memory` boundary. This is an explicit compatibility adapter, not a second
+knowledge store.
 
 ## Consequences
 
