@@ -1,5 +1,31 @@
 # Forma AI Task Handoff
 
+## 2026-08-31 - P3-T08/P3-T09 - exit
+
+Executor: Codex root agent
+Scope: truthful parallel-Agent UI fixture plus P3 core-slice closeout
+Actions: added injectable Agent task view state with stable task/run/pane identities; rendered running and blocked cards only when state is supplied; added an explicit preview fixture and `Preview fixture · not runtime evidence` label; kept the production initializer default empty
+Verification: `swift test --package-path prototypes/packaging` passed 32 tests with 2 real-Keychain tests skipped; source inspection confirmed `agentTaskFixture` defaults to `[]`, only the DEBUG preview injects `parallelPreview`, and visible fixture data is labeled non-runtime evidence; `git diff --check` passed
+Evidence: Swift compilation covers the app target and the existing selector/lifecycle contracts; this proves fixture rendering compatibility, not a real Herdr process or live state subscription
+Files changed: `FormaAIApp.swift` plus synchronized English/Chinese control documents
+Commit and push: included in the following verified P3 closeout commit
+Decisions: fixture state never becomes production evidence; live Herdr state binding remains a later integration requirement
+Blocked items: none
+Next exact action: P4-T05 may now claim the released Swift surface and add the task-history visible-state red test
+Approval needed: none
+Secret/external-write status: no secrets, cloud calls, or real Herdr processes; mandatory control-document synchronization only
+
+## 2026-08-31 - P3-T08 - takeover
+
+Executor: Codex root agent
+Starting git state: clean and synchronized at `dc98107` after P4-T04 turned the selector contract green and released the overlapping Swift file
+Scope: add a UI task-state fixture that demonstrates multiple parallel Herdr-backed agent states without presenting fixture data as runtime evidence
+Design: production initializes with no agent rows; an explicitly named preview fixture supplies running and blocked examples; visible cards label the source as preview data and preserve stable task/run/pane identity fields
+Files intended: `prototypes/packaging/Sources/FormaAIApp/FormaAIApp.swift` plus synchronized English/Chinese control documents
+Planned verification: full Swift package tests, source inspection for preview-only fixture and empty production default, and `git diff --check`
+Approval needed: none; no real Herdr process, cloud call, credential, or destructive action
+Next exact action: implement the minimal preview fixture and task-state cards, then verify
+
 ## 2026-08-31 - P4-T04 - parallel exit
 
 Executor: Codex delegated workbench agent
@@ -422,9 +448,9 @@ Secret/external-write status: no secrets; mocks only
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P3-T08
-State: P3-T07 verified; P3-T08 pending; dedicated workbench task completed P4-T03 and retains P4-T04 ownership
-Next required action: claim P3-T08 and add the truthful parallel-agent UI task-state fixture without modifying P4 ownership.
+Master plan task: P4-T05
+State: P3-T08 and P3-T09 verified; P3 core slice complete; dedicated workbench task completed P4-T04 and may claim P4-T05
+Next required action: push the P3 closeout, then notify the dedicated workbench task to claim P4-T05.
 
 ## Product Goal Snapshot
 

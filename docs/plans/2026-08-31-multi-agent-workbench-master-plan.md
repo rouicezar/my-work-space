@@ -29,15 +29,14 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 ## Current State
 
 Updated: 2026-08-31 Asia/Shanghai
-Current phase: P3 Herdr core multi-agent runtime
-Current task: P3-T08
+Current phase: P4 independent workbench product experience
+Current task: P4-T05
 Current status: pending
-Next action: add the product-owned UI task-state fixture for parallel Herdr agents without fabricating runtime evidence.
+Next action: the dedicated workbench task may claim P4-T05 and add the task-history visible-state contract test now that P3 released the overlapping Swift file.
 
-User-approved parallel task: P4-T04
+Completed parallel task: P4-T04
 Parallel status: verified
-Parallel next action: claim P4-T05 in both language sets and add the task-history visible-state contract test; do not change P3 ownership or status.
-Parallel next action: claim P4-T04 in both language sets and implement truthful selector state plus composer-toolbar UI, without changing P3 ownership or status.
+Parallel next action: claim P4-T05 and add the task-history visible-state contract test.
 
 Current Git fact at P2-T08 takeover:
 
@@ -183,8 +182,8 @@ P2 completion never waives these gates and must not be cited as evidence that an
 | P3-T05 | verified | Write failing test for cancel and resume envelope | `tests/test_herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Fails on missing lifecycle |
 | P3-T06 | verified | Implement cancel/resume mapping | `forma_ai/herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Lifecycle tests pass |
 | P3-T07 | verified | Wire supervisor to Herdr adapter behind feature flag | `forma_ai/supervisor.py` | `python -m unittest discover tests -v` | Existing tests pass |
-| P3-T08 | pending | Add UI task state fixture for parallel agents | `prototypes/packaging/Sources/FormaAIApp/FormaAIApp.swift` | `swift test --package-path prototypes/packaging` | Swift tests pass |
-| P3-T09 | pending | Commit Herdr core slice | Adapter, supervisor, tests, Swift fixture | `git diff --check` then `git commit` | Commit created |
+| P3-T08 | verified | Add UI task state fixture for parallel agents | `prototypes/packaging/Sources/FormaAIApp/FormaAIApp.swift` | `swift test --package-path prototypes/packaging` | Swift tests pass |
+| P3-T09 | verified | Commit Herdr core slice | Adapter, supervisor, tests, Swift fixture | `git diff --check` then `git commit` | Commit created |
 
 ### P4: Independent Workbench Product Experience
 
@@ -290,3 +289,4 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 - 2026-08-31 - P3-T05 - Codex root agent - added protocol-grounded red tests for exact-pane graceful cancel and native-session resume with session/revision reconciliation before schema-valid restart - 3 existing Herdr tests passed and 2 new tests failed as expected on missing lifecycle methods - committed/pushed as `db9c0ee` plus closeout record - next P3-T06
 - 2026-08-31 - P3-T06 - Codex root agent - recovered the exact P3-T05 breakpoint and implemented exact-pane graceful cancel plus fail-closed native-session resume with revision/session reconciliation before schema-valid restart - 14 Herdr/generic protocol tests, integrated P4 Swift package 31 passed with 2 real-Keychain skips, and `git diff --check` passed - rebased after P4-T03 as implementation `9616aa1`, closeout `2fdd62b`, plus final sync record - next P3-T07
 - 2026-08-31 - P3-T07 - Codex root agent - added an explicit default-off Supervisor feature boundary that delegates enabled execution exactly once to `HerdrAdapter.spawn_task` without copying runtime state - focused 2 tests and restored full Python suite 242 tests passed with 1 opt-in Semantica integration skip; initial sandbox-only temp-directory errors were cleared by the authorized rerun - commit and push recorded in the paired handoff - next P3-T08
+- 2026-08-31 - P3-T08/P3-T09 - Codex root agent - added preview-injected parallel Agent cards with stable task/run/pane identities, running and blocked states, and an explicit non-runtime-evidence label while production defaults to an empty Agent list - Swift package 32 tests passed with 2 real-Keychain skips, source boundary inspection and `git diff --check` passed - committed/pushed in the paired handoff - P3 complete; next P4-T05

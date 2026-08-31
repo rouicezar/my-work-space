@@ -25,6 +25,7 @@ struct ManifestOverview: View {
     @State private var prompt = ""
     @State private var currentTaskPrompt = ""
     @State private var taskState: WorkbenchTaskState = .idle
+    @State private var agentTasks: [AgentTaskViewState]
     @State private var cloudSetupState: CloudSetupViewState = .loading
     @State private var deepSeekAPIKey = ""
     @State private var result: Result<ProductManifest, Error>?
@@ -34,9 +35,13 @@ struct ManifestOverview: View {
     @State private var embeddingState: EmbeddingViewState = .loading
     @State private var runtimeState: RuntimeViewState = .loading
 
-    init(surfaceContract: WorkbenchSurfaceContract = .productDefault) {
+    init(
+        surfaceContract: WorkbenchSurfaceContract = .productDefault,
+        agentTaskFixture: [AgentTaskViewState] = []
+    ) {
         self.surfaceContract = surfaceContract
         _section = State(initialValue: WorkspaceSection(surfaceContract.initialDestination))
+        _agentTasks = State(initialValue: agentTaskFixture)
         _selectedModelChoice = State(initialValue: surfaceContract.modelSelection.defaultChoice)
     }
 
@@ -99,6 +104,9 @@ struct ManifestOverview: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    if !agentTasks.isEmpty {
+                        agentActivity
+                    }
                     switch taskState {
                     case .idle:
                         VStack(spacing: 14) {
@@ -182,6 +190,47 @@ struct ManifestOverview: View {
             composer
         }
         .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    private var agentActivity: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Label("Parallel agents", systemImage: "rectangle.3.group")
+                    .font(.headline)
+                Spacer()
+                Text("Preview fixture · not runtime evidence")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(agentTasks) { agent in
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: agent.state.symbol)
+                        .foregroundStyle(agent.state.color)
+                        .frame(width: 18)
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text(agent.title).font(.subheadline.weight(.semibold))
+                            Text(agent.agentKind).font(.caption).foregroundStyle(.secondary)
+                            Spacer()
+                            Text(agent.state.title)
+                                .font(.caption.weight(.medium))
+                                .foregroundStyle(agent.state.color)
+                        }
+                        Text(agent.summary)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                        Text("Task \(agent.taskID) · Run \(agent.runID) · Pane \(agent.paneID)")
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.tertiary)
+                            .textSelection(.enabled)
+                    }
+                }
+                .padding(12)
+                .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
+            }
+        }
+        .padding(16)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
 
     private var composer: some View {
@@ -1404,6 +1453,65 @@ private enum WorkbenchTaskState: Sendable {
     }
 }
 
+struct AgentTaskViewState: Identifiable, Sendable {
+    let taskID: String
+    let runID: String
+    let paneID: String
+    let title: String
+    let agentKind: String
+    let state: AgentExecutionState
+    let summary: String
+
+    var id: String { runID }
+
+    static let parallelPreview: [AgentTaskViewState] = [
+        AgentTaskViewState(
+            taskID: "fixture-task-research",
+            runID: "fixture-run-codex",
+            paneID: "fixture-pane-001",
+            title: "Review upstream capability map",
+            agentKind: "Codex",
+            state: .running,
+            summary: "Inspecting verified adapter entry points."
+        ),
+        AgentTaskViewState(
+            taskID: "fixture-task-design",
+            runID: "fixture-run-claude",
+            paneID: "fixture-pane-002",
+            title: "Draft workbench interaction states",
+            agentKind: "Claude",
+            state: .blocked,
+            summary: "Waiting for an explicit user approval."
+        ),
+    ]
+}
+
+enum AgentExecutionState: Sendable {
+    case running
+    case blocked
+
+    var title: String {
+        switch self {
+        case .running: "Running"
+        case .blocked: "Needs attention"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .running: "bolt.horizontal.circle.fill"
+        case .blocked: "exclamationmark.circle.fill"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .running: .blue
+        case .blocked: .orange
+        }
+    }
+}
+
 private enum CloudSetupViewState: Sendable {
     case loading
     case disabled
@@ -1421,3 +1529,11 @@ private struct TaskContext: Sendable {
     let cloud: URL
     let evidenceRoot: URL
 }
+
+#if DEBUG
+struct ParallelAgentWorkbenchPreview: PreviewProvider {
+    static var previews: some View {
+        ManifestOverview(agentTaskFixture: AgentTaskViewState.parallelPreview)
+    }
+}
+#endif
