@@ -8,8 +8,8 @@ Actions: added a lifecycle contract test requiring New task as the initial desti
 Verification: full Swift baseline passed 30 tests with 2 real-Keychain tests skipped; the filtered new test then failed at compile time because `WorkbenchSurfaceContract` is not in scope, with the four required enum values consequently unresolved
 Evidence: the failure is contract absence, not a runtime, dependency, or unrelated regression; no product implementation was added in this red-test unit
 Files changed: `prototypes/packaging/Tests/LifecycleContractTests/ProductManifestTests.swift` plus synchronized English/Chinese control documents
-Commit: pending red-test commit
-Push: pending red-test push
+Commit: `f04f221 test: define first-screen workbench contract`
+Push: `f04f221` pushed to `origin/main`; this closeout metadata follows in a documentation-only commit
 Decisions: the contract must describe truthful runtime binding and first-screen placement; a screenshot or existing SwiftUI text is insufficient acceptance evidence
 Blocked items: none
 Next exact action: commit and push P4-T01, then claim P4-T02 and implement the smallest contract/UI binding that turns this test green
