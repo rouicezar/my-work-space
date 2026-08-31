@@ -23,6 +23,7 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 - Progress is evidence-based. Do not mark `verified` from visual inspection, intent, or a passing health endpoint alone.
 - Any change to product goal, upstream reuse policy, memory authority, or cloud credential behavior requires explicit user approval.
 - If another agent takes over, it must claim a task ID here and write a handoff entry before and after its work.
+- The mandatory Chinese mirrors are stored in the user-approved MyNote `00_资源库/11_项目开发/Forma AI` folder. This English tracker remains authoritative, but every task takeover and closeout must synchronize task ID, status, evidence, commit/push state, blocker, and next action to the Chinese progress and handoff mirrors. Any mismatch blocks new product work until repaired.
 - On Codex quota warning, stop opening new work, close and verify the smallest safe unit, update both control documents, commit and push verified work, and leave a clean repository. Preserve and explicitly inventory any pre-existing dirty work that cannot safely be removed.
 
 ## Current State
@@ -31,7 +32,7 @@ Updated: 2026-08-31 Asia/Shanghai
 Current phase: P3 Herdr core multi-agent runtime
 Current task: P3-T03
 Current status: pending
-Next action: claim P3-T03 and write the failing test for spawning two mock Herdr tasks with stable identifiers and observable states.
+Next action: parity-check the English and Chinese control documents, claim P3-T03 in both language sets, and write the failing test for spawning two mock Herdr tasks with stable identifiers and observable states.
 
 Current Git fact at P2-T08 takeover:
 
@@ -127,6 +128,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | P0-T06 | verified | Push governance docs | Same files | `git push` | Governance documentation commits are ready to push with this completion update |
 | P0-T07 | verified | Reconcile product-role conflicts and enforce upstream-first reuse | `AGENTS.md`, requirements, decisions, ADRs, active/legacy plans, handoff | `rg` conflict scan plus `git diff --check` | Conflicting role statements are superseded or corrected; upstream-first rule, universal agent adapter, and full Settings scope are explicit |
 | P0-T08 | verified | Rename product globally to Forma AI and add an original macOS icon | tracked source, tests, docs, packaging, app assets, filenames | legacy-name absence scan, Python tests, Swift tests, app bundle inspection | Tracked product surface has no legacy name; 225 Python tests passed with 1 skipped; 30 Swift tests passed with 2 skipped; signed Forma AI app contains valid ICNS |
+| P0-T09 | verified | Create and govern synchronized Chinese mirrors of the execution tracker and handoff | `AGENTS.md`, both English control docs, user-approved MyNote Forma AI folder | existence, required-anchor, state-parity, and `git diff --check` checks | Two Chinese documents exist and every future task exit must synchronize both language sets |
 
 ### P1: Upstream Capability and License Inventory
 
@@ -277,3 +279,4 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 - 2026-08-31 - P2-T08 - Codex root agent - replaced stale current-dirty claims with verified Git fact, narrowed P2 to the generic protocol boundary, and assigned concrete Herdr, holaOS, oMLX/DeepSeek, and Semantica conformance gates downstream - 9 combined contract tests, ownership scan, and `git diff --check` passed - committed/pushed as `a6b701d` plus closeout record - next P3-T01
 - 2026-08-31 - P3-T01 - Codex root agent - added Herdr binary-availability contract tests that distinguish missing from discovered-only state without claiming reachability or readiness - expected `ModuleNotFoundError: forma_ai.herdr_adapter` observed before implementation - committed/pushed as `6fc033b` - next P3-T02
 - 2026-08-31 - P3-T02 - Codex root agent - implemented a thin injected Herdr binary-discovery adapter using generic identity and layered health envelopes, with discovered-only state remaining not reachable and not ready - 11 targeted Herdr and protocol tests plus `git diff --check` passed - committed/pushed as `5b4584d` plus closeout record - next P3-T03
+- 2026-08-31 - P0-T09 - Codex root agent - created Chinese operational mirrors of the progress tracker and handoff in the user-approved MyNote folder and made bilingual parity a mandatory takeover/exit gate - file, anchor, state-parity, and `git diff --check` checks passed - commit pending closeout - next P3-T03

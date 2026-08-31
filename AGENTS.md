@@ -21,22 +21,31 @@ The project has two required control documents:
 - Master execution plan and progress tracker: `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md`
 - Task takeover and recovery handoff: `docs/TASK_HANDOFF.md`
 
+The user-approved Chinese mirrors are stored outside the distributable product repository:
+
+- Chinese execution plan and progress mirror: `/Users/rouice/Library/Mobile Documents/iCloud~md~obsidian/Documents/MyNote/00_资源库/11_项目开发/Forma AI/Forma AI-颗粒级执行计划与进度-中文.md`
+- Chinese task handoff mirror: `/Users/rouice/Library/Mobile Documents/iCloud~md~obsidian/Documents/MyNote/00_资源库/11_项目开发/Forma AI/Forma AI-任务交接-中文.md`
+
+The repository English files remain authoritative for machine execution and Git history. The Chinese files are mandatory operational mirrors, not competing trackers. Every takeover, status change, exit, verification result, blocker, commit, push, and next action must be reflected in both language sets during the same task closeout. Before claiming a task, compare the current task ID, status, next action, and latest exit evidence across both sets. A mismatch is a drift stop condition: repair the mirrors before product work continues. If the external MyNote path is unavailable, record the failed sync and exact catch-up action in `docs/TASK_HANDOFF.md`; never silently declare synchronization complete.
+
 Before changing product code or product documentation, every agent must:
 
 1. Read this file.
 2. Read the master execution plan and progress tracker.
 3. Read the task handoff document.
-4. Inspect the current git status.
-5. Claim exactly one task ID by setting it to `in_progress` in the master plan.
-6. Add a takeover entry to `docs/TASK_HANDOFF.md`.
+4. Read and parity-check the two Chinese mirrors.
+5. Inspect the current git status.
+6. Claim exactly one task ID by setting it to `in_progress` in both progress documents.
+7. Add a takeover entry to both handoff documents.
 
 Before ending any implementation, documentation, test, commit, or phase task, every agent must:
 
 1. Update the claimed task status in the master plan.
 2. Add an exit entry to `docs/TASK_HANDOFF.md`.
-3. Record verification evidence, changed files, commit status, push status, blockers, and the next exact action.
+3. Synchronize the equivalent Chinese progress and handoff entries.
+4. Record verification evidence, changed files, commit status, push status, blockers, and the next exact action in both language sets.
 
-No task is complete unless both control documents are updated. Do not create a competing tracker, roadmap, or handoff file unless the user explicitly replaces these paths.
+No task is complete unless both authoritative English control documents and both mandatory Chinese mirrors are updated or an explicit mirror-sync blocker/catch-up action is recorded. Do not create another competing tracker, roadmap, or handoff file unless the user explicitly replaces these paths.
 
 ## Codex quota exhaustion protocol
 

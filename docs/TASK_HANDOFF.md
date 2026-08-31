@@ -67,6 +67,34 @@ Next exact action: commit and push, then P3-T03
 Approval needed: none
 Secret/external-write status: no secrets handled; no cloud calls or Herdr execution
 
+## 2026-08-31 - P0-T09 - takeover
+
+Executor: Codex root agent
+Starting git state: clean and synchronized with `origin/main` at `6fac496`
+Scope: create two user-approved Chinese control-document mirrors in MyNote and enforce future bilingual synchronization
+English authoritative files: `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md`, `docs/TASK_HANDOFF.md`
+Chinese mirror folder: `/Users/rouice/Library/Mobile Documents/iCloud~md~obsidian/Documents/MyNote/00_资源库/11_项目开发/Forma AI`
+Files intended: `AGENTS.md`, both English control docs, and two Chinese Markdown mirrors
+Planned verification: file existence, task/state/next-action parity, required sync-rule anchors, `git diff --check`, and repository cleanliness after commit/push
+Approval: user explicitly approved writing the two mirrors to the named MyNote folder
+Secret/external-write status: no secrets; authorized local MyNote writes only
+
+## 2026-08-31 - P0-T09 - exit
+
+Executor: Codex root agent
+Starting git state: clean and synchronized with `origin/main` at `6fac496`
+Scope: create two Chinese MyNote control-document mirrors and enforce future bilingual synchronization
+Actions: created a Chinese granular progress tracker and Chinese task handoff; added their exact paths and same-task parity gate to `AGENTS.md`, the English plan, and the English handoff
+Verification: both external files exist; `P0-T09`, `P3-T03`, current-state, next-action, synchronization, and parity anchors were found; `git diff --check` passed
+Files changed: `AGENTS.md`, both English control docs, and two authorized MyNote Chinese mirrors
+Commit: pending this task commit
+Push: pending this task push
+Decisions: English repository documents remain authoritative for Git and machine execution; Chinese documents are mandatory equivalent operational mirrors, and mismatch blocks new work
+Blocked items: none
+Next exact action: commit and push, backfill the real commit into all four documents, then claim P3-T03 in both language sets
+Approval: user explicitly approved the MyNote destination
+Secret/external-write status: no secrets; only the approved local MyNote writes occurred
+
 ## Handoff Rules
 
 - Claim exactly one task ID from the master plan before editing.
@@ -77,6 +105,7 @@ Secret/external-write status: no secrets handled; no cloud calls or Herdr execut
 - For cloud providers, record provider name, policy decision, approximate cost boundary, result class, and correlation ID if available. Do not record keys.
 - For screenshots, record what the screenshot actually proves. Do not treat a wrong-window or background capture as UI evidence.
 - If an external agent, tool, or parallel task takes over, it must add a takeover entry before work and an exit entry after work.
+- The two Chinese mirrors in the user-approved MyNote `00_资源库/11_项目开发/Forma AI` folder must receive the equivalent baton and progress update during the same takeover/exit. The English repository documents remain authoritative; a parity mismatch must be repaired before product work resumes.
 - A Codex quota warning triggers immediate closeout: start no new work, verify the smallest safe unit, update tracker and handoff, commit and push, and confirm repository cleanliness. Never discard unrelated dirty work merely to make status clean; inventory and isolate it instead.
 
 ## Current Baton
@@ -84,8 +113,8 @@ Secret/external-write status: no secrets handled; no cloud calls or Herdr execut
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
 Master plan task: P3-T03
-State: P3-T02 verified; P3-T03 pending
-Next required action: commit and push P3-T02, then claim P3-T03 and write the two-mock-task spawn red test.
+State: P0-T09 verified; P3-T03 pending
+Next required action: commit and push P0-T09, verify all four control documents are synchronized, then claim P3-T03 in both language sets.
 
 ## Product Goal Snapshot
 
