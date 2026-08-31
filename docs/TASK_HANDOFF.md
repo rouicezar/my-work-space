@@ -6,7 +6,8 @@ Executor: Codex root agent
 Reason: independent audit confirmed the implementation and all eight reachable contract-driven sections, but found stale capability, commit, and baton evidence plus acceptance wording broader than the tests prove
 Corrections: set CAP-12 to partial; recorded exact implementation commit `51fdfe2`; limited acceptance to Settings information architecture and reachable surface; explicitly left full Agents, Memory, Permissions, Data management and a verified first-run user flow pending
 Verification: bilingual control-document parity inspection and `git diff --check`; no product code changed and the independently rerun Swift result remains 35 passed with 2 real-Keychain skips
-Next exact action: commit and push this documentation calibration, confirm a clean synchronized repository, then leave P4-T07A pending for a separate takeover
+Commit and push: `98747f6 docs: calibrate P4-T07 acceptance boundary` pushed to `origin/main`; this closeout metadata is recorded in the following synchronization commit
+Next exact action: confirm the closeout synchronization is pushed and the repository is clean; P4-T07A remains pending for a separate takeover
 Secret/external-write status: no credentials, cloud calls, downloads, or destructive actions; mandatory Chinese mirror synchronization only
 
 ## 2026-08-31 - P4-T07 - exit
@@ -550,7 +551,7 @@ Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
 Master plan task: P4-T07A
 State: P4-T07 verified; P4-T07A pending
-Next required action: commit and push the P4-T07 documentation calibration, confirm a clean synchronized repository, and keep P4-T07A pending until a separate takeover.
+Next required action: confirm the P4-T07 documentation-calibration closeout is pushed and the repository is clean; keep P4-T07A pending until a separate takeover.
 
 ## Product Goal Snapshot
 
