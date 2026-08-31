@@ -60,6 +60,37 @@ public struct TaskHistoryContract: Sendable {
     public let previewFixturesAllowed: Bool
 }
 
+public enum RecoveryPlacement: Sendable, Equatable {
+    case taskDetail
+}
+
+public enum RecoverableTaskState: Sendable, Equatable {
+    case blocked
+    case failed
+    case interrupted
+    case unknown
+}
+
+public enum ResumeSource: Sendable, Equatable {
+    case persistedTaskAndVerifiedNativeSession
+}
+
+public enum RecoveryReconciliation: Sendable, Equatable {
+    case freshSnapshotAndRevisionBeforeResume
+}
+
+public enum ForceTerminationPolicy: Sendable, Equatable {
+    case separateExplicitApproval
+}
+
+public struct TaskRecoveryContract: Sendable {
+    public let placement: RecoveryPlacement
+    public let visibleStates: [RecoverableTaskState]
+    public let resumeSource: ResumeSource
+    public let reconciliation: RecoveryReconciliation
+    public let forceTermination: ForceTerminationPolicy
+}
+
 public struct WorkbenchSurfaceContract: Sendable {
     public let initialDestination: WorkbenchDestination
     public let composerPlacement: ComposerPlacement
@@ -67,6 +98,7 @@ public struct WorkbenchSurfaceContract: Sendable {
     public let setupAndRecoveryPlacement: SetupAndRecoveryPlacement
     public let modelSelection: ModelSelectionContract
     public let history: TaskHistoryContract
+    public let recovery: TaskRecoveryContract
 
     public static let productDefault = WorkbenchSurfaceContract(
         initialDestination: .newTask,
@@ -84,6 +116,13 @@ public struct WorkbenchSurfaceContract: Sendable {
             source: .persistedTaskRecords,
             emptyState: .explicitNoHistory,
             previewFixturesAllowed: false
+        ),
+        recovery: TaskRecoveryContract(
+            placement: .taskDetail,
+            visibleStates: [.blocked, .failed, .interrupted, .unknown],
+            resumeSource: .persistedTaskAndVerifiedNativeSession,
+            reconciliation: .freshSnapshotAndRevisionBeforeResume,
+            forceTermination: .separateExplicitApproval
         )
     )
 }

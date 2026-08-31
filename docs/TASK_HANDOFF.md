@@ -1,5 +1,16 @@
 # Forma AI Task Handoff
 
+## 2026-08-31 - P4-T06 - green correction
+
+Executor: Codex root agent
+Reason: the same Swift target cannot retain a permanent compile-red recovery test and still provide valid P4-T07 verification
+Actions: implemented only the contract enums and immutable recovery contract for task-detail placement, visible recovery states, verified native-session resume source, fresh snapshot/revision reconciliation, and separate force-termination approval
+Verification: filtered recovery test passed; full Swift package passed 34 tests with 2 real-Keychain tests skipped; `git diff --check` passed
+Evidence boundary: no recovery buttons, persistence, cancellation request, process control, or duplicate Herdr lifecycle state was added
+Files changed: `ProductManifest.swift` and synchronized English/Chinese control documents
+Commit and push: included in the following green-correction closeout commit
+Next exact action: P4-T07 starts as a separate batch for the eight-section Settings information architecture
+
 ## 2026-08-31 - P4-T06 - exit
 
 Executor: Codex root agent
