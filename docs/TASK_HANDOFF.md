@@ -1,5 +1,17 @@
 # Forma AI Task Handoff
 
+## 2026-08-31 - P0-T10 - exit
+
+Executor: Codex root agent
+Scope: repair the README product-role conflict and stale current Git baseline across the bilingual control set
+Actions: made the product-owned native workbench the explicit default entry in README; reclassified holaOS as a non-visual capability/workflow source and optional separately installed advanced interface; replaced stale current-state Git claims with the verified `709fee0` takeover fact while preserving dated historical evidence; returned the baton to P4-T07A
+Verification: role-conflict scan found no active claim that holaOS owns the default UI; Python suite passed 242 tests with 1 opt-in real Semantica test skipped; Swift suite passed 35 tests with 2 real-Keychain tests skipped; bilingual task/status/next-action/Git facts were inspected; `git diff --check` passed
+Files changed: `README.md`, both English control documents, and both mandatory Chinese mirrors
+Commit and push: repair commit `9454cdd docs: repair product role and git baseline drift`; closeout synchronization is recorded in the following commit and both will be pushed to `origin/main`
+Blocked items: none
+Next exact action: P4-T07A verifies the separately installed holaOS non-visual adapter boundary without bundling uncleared UI/assets
+Secret/external-write status: no credentials, cloud calls, downloads, or destructive actions; mandatory Chinese mirror synchronization only
+
 ## 2026-08-31 - P0-T10 - takeover
 
 Executor: Codex root agent
@@ -561,9 +573,9 @@ Secret/external-write status: no secrets; mocks only
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P0-T10
-State: in progress; repairing README role drift and stale current Git evidence
-Next required action: verify bilingual parity and restore P4-T07A as the pending baton after this governance repair.
+Master plan task: P4-T07A
+State: P0-T10 verified; P4-T07A pending
+Next required action: verify the separately installed holaOS non-visual adapter boundary without bundling uncleared UI/assets.
 
 ## Product Goal Snapshot
 
@@ -578,7 +590,7 @@ The product is a local-first, multi-agent Mac AI workbench.
 
 ## Current Worktree Fact
 
-At the P0-T10 takeover, `git status -sb` reported `main` clean and synchronized with `origin/main` at `709fee0`. Remote refresh found no additional branch to merge. The detached worktree at `87f067e` is already an ancestor of `main` and is not current unmerged work. There are no currently uncommitted paths assigned to another owner.
+At the P0-T10 takeover, `git status -sb` reported `main` clean and synchronized with `origin/main` at `709fee0`. Remote refresh found no additional branch to merge. The detached worktree at `87f067e` is already an ancestor of `main` and is not current unmerged work. Repair commit `9454cdd` is the latest verified implementation/documentation change before closeout synchronization. There are no currently uncommitted paths assigned to another owner.
 
 ## Historical Interrupted Paths
 

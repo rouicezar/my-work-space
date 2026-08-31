@@ -30,13 +30,14 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-08-31 Asia/Shanghai
 Current phase: P4 independent workbench product experience
-Current task: P0-T10
-Current status: in_progress
-Next action: repair the stale Git baseline and README product-role drift, verify bilingual parity, then restore P4-T07A as the pending baton.
+Current task: P4-T07A
+Current status: pending
+Next action: verify the separately installed holaOS non-visual adapter boundary without bundling uncleared frontend code or assets.
 
 Current Git fact at P0-T10 takeover:
 
 - `main` was clean and synchronized with `origin/main` at `709fee0`; remote refresh found no additional branches to merge.
+- P0-T10 repair commit `9454cdd` corrected the README role and current Git baselines; closeout metadata follows in the synchronization commit.
 
 Completed parallel task: P4-T04
 Parallel status: verified; the dedicated task produced no P4-T05 changes before primary takeover
@@ -137,7 +138,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | P0-T07 | verified | Reconcile product-role conflicts and enforce upstream-first reuse | `AGENTS.md`, requirements, decisions, ADRs, active/legacy plans, handoff | `rg` conflict scan plus `git diff --check` | Conflicting role statements are superseded or corrected; upstream-first rule, universal agent adapter, and full Settings scope are explicit |
 | P0-T08 | verified | Rename product globally to Forma AI and add an original macOS icon | tracked source, tests, docs, packaging, app assets, filenames | legacy-name absence scan, Python tests, Swift tests, app bundle inspection | Tracked product surface has no legacy name; 225 Python tests passed with 1 skipped; 30 Swift tests passed with 2 skipped; signed Forma AI app contains valid ICNS |
 | P0-T09 | verified | Create and govern synchronized Chinese mirrors of the execution tracker and handoff | `AGENTS.md`, both English control docs, user-approved MyNote Forma AI folder | existence, required-anchor, state-parity, and `git diff --check` checks | Two Chinese documents exist and every future task exit must synchronize both language sets |
-| P0-T10 | in_progress | Repair README product-role drift and stale current Git baselines | `README.md`, both English control docs, both Chinese mirrors | role-conflict scan, bilingual state parity, `git diff --check`, Python and Swift tests | README names the product-owned native workbench as default; current Git evidence is accurate; P4-T07A remains the next product task |
+| P0-T10 | verified | Repair README product-role drift and stale current Git baselines | `README.md`, both English control docs, both Chinese mirrors | role-conflict scan, bilingual state parity, `git diff --check`, Python and Swift tests | README names the product-owned native workbench as default; current Git evidence is accurate; P4-T07A remains the next product task |
 
 ### P1: Upstream Capability and License Inventory
 
