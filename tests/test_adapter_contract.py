@@ -2,8 +2,10 @@ import unittest
 
 from forma_ai.adapter_contract import (
     AdapterIdentity,
+    AuditEnvelope,
     CapabilityDeclaration,
     HealthEnvelope,
+    PolicyPreview,
 )
 
 
@@ -57,6 +59,44 @@ class AdapterIdentityAndHealthContractTests(unittest.TestCase):
             "capability_id": "agent_execution",
             "operations": ["dispatch", "status", "cancel", "resume"],
             "proof": "contract_tested",
+        })
+
+    def test_policy_preview_binds_exact_payload_and_approval_boundary(self):
+        preview = PolicyPreview(
+            correlation_id="run-123",
+            action="cloud.inference",
+            data_classes=("user_text",),
+            external_write=True,
+            approval_required=True,
+            payload_sha256="a" * 64,
+        )
+
+        self.assertEqual(preview.to_dict(), {
+            "correlation_id": "run-123",
+            "action": "cloud.inference",
+            "data_classes": ["user_text"],
+            "external_write": True,
+            "approval_required": True,
+            "payload_sha256": "a" * 64,
+        })
+
+    def test_audit_envelope_is_correlated_and_redaction_explicit(self):
+        audit = AuditEnvelope(
+            event_id="event-123",
+            correlation_id="run-123",
+            action="cloud.inference",
+            outcome="approved",
+            occurred_at="2026-08-31T12:00:00Z",
+            redacted_fields=("prompt", "credential"),
+        )
+
+        self.assertEqual(audit.to_dict(), {
+            "event_id": "event-123",
+            "correlation_id": "run-123",
+            "action": "cloud.inference",
+            "outcome": "approved",
+            "occurred_at": "2026-08-31T12:00:00Z",
+            "redacted_fields": ["prompt", "credential"],
         })
 
 

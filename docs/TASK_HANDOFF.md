@@ -20,9 +20,9 @@ Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-ma
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P2-T05
-State: P2-T04 capability implementation verified; implementation commit and push pending
-Next required action: commit/push P2-T04, then claim P2-T05 and write failing policy-preview/audit-envelope tests.
+Master plan task: P2-T06
+State: P2-T05 expected failing preview/audit tests verified; red-test commit and push pending
+Next required action: commit/push P2-T05, then claim P2-T06 and implement only the required envelopes.
 
 ## Product Goal Snapshot
 
@@ -111,6 +111,46 @@ Quota state and closeout action:
 ```
 
 ## Handoff Log
+
+## 2026-08-31 - P2-T05 - exit
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `a012fcd`
+Scope: define intentionally failing policy-preview and audit-envelope contract tests
+Files intended: test, master tracker, and handoff
+Actions: added exact payload digest/data-class/external-write/approval preview contract and correlated outcome/timestamp/redacted-field audit contract; added no implementation
+Verification: targeted unittest failed at intended boundary with missing `AuditEnvelope` import; `PolicyPreview` is also intentionally absent
+Evidence: unittest output and two red tests
+Files changed: test, master tracker, and handoff
+Commit: pending red-test commit
+Push: pending
+Decisions: raw payload, prompt, and credential values are absent from the audit envelope by construction
+Assumptions: tuple fields serialize as ordered JSON lists
+Blocked items: none; failure intentional
+Next exact action: commit/push P2-T05, then claim P2-T06
+Approval needed: none
+Secret/external-write status: no secrets
+Quota state and closeout action: no warning; red unit ready to push
+
+## 2026-08-31 - P2-T05 - takeover
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `a012fcd`
+Scope: define intentionally failing policy-preview and audit-envelope contract tests
+Files intended: `tests/test_adapter_contract.py`, master tracker, and handoff
+Actions: claimed P2-T05 in plan order and reconciled the prior baton with pushed P2-T04
+Verification: pending expected failing unittest
+Evidence: product approval/audit rules and existing cloud proposal/audit implementations
+Files changed: tracker and handoff at takeover
+Commit: none yet
+Push: none yet
+Decisions: preview binds exact payload digest, data classes, external-write and approval state; audit stores correlation/action/outcome/timestamp and names redacted fields without payload content
+Assumptions: event and correlation IDs remain opaque in this minimal contract slice
+Blocked items: none
+Next exact action: add red tests and capture the missing-symbol failure
+Approval needed: none
+Secret/external-write status: no secrets; repository-local tests only
+Quota state and closeout action: no warning; close and push current red unit on warning
 
 ## 2026-08-31 - P2-T04 - exit
 
