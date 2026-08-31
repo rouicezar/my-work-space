@@ -33,8 +33,8 @@ Scope: failing test for official Herdr binary availability discovery
 Actions: added deterministic missing-binary and discovered-only cases; both keep reachability and readiness false until a later real probe
 Verification: `python3 -m unittest tests.test_herdr_adapter -v` failed as expected with `ModuleNotFoundError: No module named 'forma_ai.herdr_adapter'`
 Files changed: `tests/test_herdr_adapter.py`, tracker, handoff
-Commit: pending this task commit
-Push: pending this task push
+Commit: `6fc033b`
+Push: pushed to `origin/main`
 Decisions: executable discovery is availability evidence only and cannot satisfy Herdr health or execution acceptance
 Blocked items: none
 Next exact action: commit and push, then claim P3-T02
@@ -59,8 +59,8 @@ Scope: minimal Herdr availability adapter skeleton
 Actions: added injected official-binary discovery and generic identity/health envelopes; missing and discovered-only states remain explicitly unready
 Verification: `python3 -m unittest tests.test_herdr_adapter tests.test_adapter_contract tests.test_agent_adapter_contract -v` passed 11 tests; `git diff --check` passed
 Files changed: `forma_ai/herdr_adapter.py`, tracker, handoff
-Commit: pending this task commit
-Push: pending this task push
+Commit: `5b4584d` plus this closeout record
+Push: `5b4584d` pushed to `origin/main`; this closeout record is pushed in its follow-up commit
 Decisions: no health probe, dispatch API, socket client, binary acquisition, or runtime duplication belongs in this skeleton
 Blocked items: none
 Next exact action: commit and push, then P3-T03
