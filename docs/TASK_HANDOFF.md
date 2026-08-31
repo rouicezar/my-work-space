@@ -186,6 +186,30 @@ Next exact action: commit/push correction, then P3-T05
 Approval needed: none
 Secret/external-write status: no secrets; mocks only
 
+## 2026-08-31 - P3-T05 - resumed takeover
+
+Executor: Codex root agent
+Starting git state: clean and synchronized with `origin/main` at `e6c4106`
+Scope: resume lifecycle red tests on the corrected protocol 20 mapping
+Test boundary: exact-pane graceful interrupt through `pane.send_keys`; native resume must first reconcile `agent.get` session reference and revision, then call schema-valid `agent.start`
+Next exact action: add tests and preserve expected missing-method failures
+Approval needed: none; mocks only
+
+## 2026-08-31 - P3-T05 - exit
+
+Executor: Codex root agent
+Scope: lifecycle red tests on corrected Herdr protocol 20 mapping
+Actions: added exact-pane graceful interrupt test using `pane.send_keys` and native resume test requiring `agent.get` session/revision reconciliation before schema-valid `agent.start`
+Verification: `python3 -m unittest tests.test_herdr_adapter -v` passed 3 existing tests and failed 2 new tests as expected with missing `cancel_task` and `resume_task`
+Files changed: `tests/test_herdr_adapter.py`, English and Chinese control documents
+Commit: pending this task commit
+Push: pending this task push
+Decisions: no fictional `agent.cancel`; no native session field is sent in `AgentStartParams`; force close remains separately approval-gated
+Blocked items: none
+Next exact action: commit and push, then P3-T06
+Approval needed: none
+Secret/external-write status: no secrets; mocks only
+
 ## Handoff Rules
 
 - Claim exactly one task ID from the master plan before editing.
@@ -203,9 +227,9 @@ Secret/external-write status: no secrets; mocks only
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P3-T05
-State: P3-T04 corrected and verified against pinned protocol 20 shapes; P3-T05 pending
-Next required action: commit and push the P3-T04 correction, then reclaim P3-T05 in both language sets.
+Master plan task: P3-T06
+State: P3-T05 lifecycle red tests verified; P3-T06 pending
+Next required action: commit and push P3-T05, then claim P3-T06 in both language sets and implement the minimal lifecycle mapping.
 
 ## Product Goal Snapshot
 

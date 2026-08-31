@@ -132,6 +132,120 @@ class HerdrAdapterTaskTests(unittest.TestCase):
         )
         self.assertEqual(calls[2][1], {"target": "pane-001"})
 
+    def test_graceful_cancel_targets_the_exact_pane(self):
+        calls = []
+
+        def request(method, params):
+            calls.append((method, params))
+            if method == "agent.start":
+                return {
+                    "type": "agent_started",
+                    "agent": self._agent_info(pane_id="pane-001", revision=1),
+                    "argv": ["codex"],
+                }
+            if method == "pane.send_keys":
+                return {"type": "ok"}
+            self.fail(f"unexpected method: {method}")
+
+        adapter = HerdrAdapter(request=request)
+        task = adapter.spawn_task(
+            task_id="task-001",
+            correlation_id="corr-001",
+            agent_name="forma-task-001",
+            agent_kind="codex",
+            pane_id="pane-001",
+        )
+
+        result = adapter.cancel_task(
+            run_id=task.run_id,
+            correlation_id="corr-cancel-001",
+            expected_revision=1,
+        )
+
+        self.assertEqual(result.task_id, "task-001")
+        self.assertEqual(result.run_id, task.run_id)
+        self.assertEqual(result.action, "graceful_interrupt")
+        self.assertEqual(result.state, "cancel_requested")
+        self.assertEqual(calls[-1], ("pane.send_keys", {"pane_id": "pane-001", "keys": ["ctrl+c"]}))
+
+    def test_native_resume_reconciles_session_and_revision_before_start(self):
+        calls = []
+        session_ref = {
+            "source": "integration",
+            "agent": "codex",
+            "kind": "id",
+            "value": "session-001",
+        }
+        start_count = 0
+
+        def request(method, params):
+            nonlocal start_count
+            calls.append((method, params))
+            if method == "agent.start":
+                start_count += 1
+                revision = start_count
+                return {
+                    "type": "agent_started",
+                    "agent": self._agent_info(
+                        pane_id="pane-001",
+                        revision=revision,
+                        session_ref=session_ref if revision == 1 else None,
+                    ),
+                    "argv": ["codex"],
+                }
+            if method == "agent.get":
+                return {
+                    "type": "agent_info",
+                    "agent": self._agent_info(
+                        pane_id="pane-001",
+                        revision=1,
+                        session_ref=session_ref,
+                    ),
+                }
+            self.fail(f"unexpected method: {method}")
+
+        adapter = HerdrAdapter(request=request)
+        task = adapter.spawn_task(
+            task_id="task-001",
+            correlation_id="corr-001",
+            agent_name="forma-task-001",
+            agent_kind="codex",
+            pane_id="pane-001",
+        )
+
+        result = adapter.resume_task(
+            run_id=task.run_id,
+            correlation_id="corr-resume-001",
+            expected_revision=1,
+            native_session_ref=session_ref,
+            agent_name="forma-task-001",
+            agent_kind="codex",
+        )
+
+        self.assertEqual(result.action, "native_resume")
+        self.assertEqual(result.state, "starting")
+        self.assertEqual(
+            [method for method, _params in calls],
+            ["agent.start", "agent.get", "agent.start"],
+        )
+        self.assertEqual(
+            calls[-1][1],
+            {"name": "forma-task-001", "kind": "codex", "pane_id": "pane-001"},
+        )
+
+    @staticmethod
+    def _agent_info(*, pane_id, revision, session_ref=None):
+        return {
+            "terminal_id": f"terminal-{pane_id[-3:]}",
+            "agent_status": "unknown",
+            "workspace_id": f"workspace-{pane_id[-3:]}",
+            "tab_id": f"tab-{pane_id[-3:]}",
+            "pane_id": pane_id,
+            "focused": False,
+            "revision": revision,
+            "agent_session": session_ref,
+        }
+
 
 if __name__ == "__main__":
     unittest.main()
