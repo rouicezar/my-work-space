@@ -8,8 +8,8 @@ Actions: added automatic-local-first, local-only, and cloud-with-approval choice
 Verification: filtered selector contract passed; full Swift package passed 32 tests with 2 real-Keychain tests skipped; source review confirms cloud remains guarded by Keychain credential state, exact proposal UI, and explicit Approve and run action
 Evidence: tests prove the selector contract and app compile; source state proves unsupported preferences are not silently submitted; no claim is made that local-only/cloud-preference routing is wired into Supervisor yet
 Files changed: `ProductManifest.swift`, `FormaAIApp.swift`, and synchronized English/Chinese control documents
-Commit: pending implementation commit
-Push: pending implementation push
+Commit: `318c7e0 feat: add governed model route selector`
+Push: `318c7e0` pushed to `origin/main`; this closeout metadata follows in a documentation-only commit
 Decisions: automatic local-first remains the only execution-bound choice in this task; local-only and cloud-with-approval are truthful pending preferences, with visible pending status and disabled submit
 Blocked items: none
 Next exact action: commit and push P4-T04, notify the P3 owner to synchronize, then P4-T05 adds the history visible-state red test
