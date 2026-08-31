@@ -334,10 +334,10 @@ Executor: Codex root agent
 Recovered breakpoint: P3-T05 red tests at `db9c0ee`, P3 batch closeout at `8e09942`, P3-T06 pending; P4-T01 was fast-forwarded through `5fe31d0` before implementation
 Scope: minimal Herdr graceful-cancel/native-session-resume mapping
 Actions: added immutable lifecycle result; exact cached-pane `pane.send_keys` with `ctrl+c`; revision conflict rejection; full native session reference reconciliation through `agent.get`; schema-valid `agent.start` only after reconciliation
-Verification: `python3 -m unittest tests.test_herdr_adapter tests.test_adapter_contract tests.test_agent_adapter_contract -v` passed 14 tests; `git diff --check` passed; origin remained at `5fe31d0` at pre-closeout fetch
+Verification: `python3 -m unittest tests.test_herdr_adapter tests.test_adapter_contract tests.test_agent_adapter_contract -v` passed 14 tests; after rebasing onto P4-T02, `swift test --package-path prototypes/packaging` passed 31 tests with 2 real-Keychain skips; `git diff --check` passed
 Files changed: `forma_ai/herdr_adapter.py`, English and Chinese control documents
-Commit: pending this task commit
-Push: pending integration with any newer P4 origin commit and this task push
+Commit: rebased after P4-T02 as `8f6e37a` plus this closeout record
+Push: pending this closeout push
 Decisions: force close is not implemented; session or revision drift fails closed; Herdr pane/agent responses remain authoritative
 Blocked items: none
 Next exact action: synchronize Chinese exit, recheck origin, commit/rebase if needed, push, then P3-T07
