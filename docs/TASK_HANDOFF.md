@@ -21,8 +21,8 @@ Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-ma
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
 Master plan task: P2-T08
-State: P2-T07 universal AI-agent contract verified; contract commit and push pending
-Next required action: commit/push P2-T07, then audit and close the complete P2 adapter-contract phase.
+State: P2-T07 universal AI-agent contract committed/pushed as `2b5227c`; P2-T08 pending
+Next required action: claim P2-T08, audit the complete P2 adapter-contract chain, and close the phase if its exit gate passes.
 
 ## Product Goal Snapshot
 
@@ -122,12 +122,12 @@ Actions: defined normative discover/dispatch/status/handoff/cancel/resume/artifa
 Verification: `python3 -m unittest tests.test_agent_adapter_contract tests.test_adapter_contract -v` passed 9 tests; `git diff --check` passed
 Evidence: contract document plus machine checks for all operations, runtime/memory authority, cancellation/recovery, approval/audit, artifacts, and parallel-run conformance
 Files changed: `docs/contracts/agent-adapter.md`, `tests/test_agent_adapter_contract.py`, master tracker, and handoff
-Commit: pending contract commit
-Push: pending
+Commit: `2b5227c` (`docs: specify universal agent adapter contract`)
+Push: pushed to `origin/main`; branch synchronized
 Decisions: adapter implementations translate to Herdr rather than replacing it; unknown/disconnected/blocked states never become success; force cancellation and external writes remain approval-gated
 Assumptions: concrete Codex/Claude adapters will prove this same contract in later implementation tasks
 Blocked items: none for specification; concrete runtime conformance remains later work
-Next exact action: commit/push P2-T07, then claim P2-T08
+Next exact action: claim P2-T08 and audit/close P2
 Approval needed: none
 Secret/external-write status: no secrets; repository-local docs/tests only
 Quota state and closeout action: no warning; verified contract unit ready to push
