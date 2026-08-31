@@ -1,5 +1,32 @@
 # Forma AI Task Handoff
 
+## 2026-08-31 - P4-T06 - exit
+
+Executor: Codex root agent
+Scope: recovery-action visible-state contract red test only
+Prerequisite correction: Swift compiles the full test target before filtering, so the unimplemented P4-T05 red test masked P4-T06; P4-T05 was minimally implemented as a pure contract and turned green before P4-T06 was retried
+Actions: P4-T05 added contract-only history placement/source/empty-state/no-fixture semantics; P4-T06 added assertions for task-detail recovery visibility, eligible recovery states, verified native-session resume source, fresh snapshot/revision reconciliation, and separate force-termination approval
+Verification: P4-T05 target passed and full Swift package passed 33 tests with 2 real-Keychain skips; after that correction, filtered P4-T06 failed exactly because `WorkbenchSurfaceContract` has no `recovery` member; `git diff --check` passed
+Evidence: P4-T06 now has one independent missing-contract root cause; no persistence, static history rows, recovery buttons, real cancellation, or duplicate runtime state was added
+Files changed: `ProductManifest.swift`, `ProductManifestTests.swift`, and synchronized English/Chinese control documents
+Commit and push: included in the following verified correction/red-test commit
+Decisions: permanent compile-red tests cannot be accumulated in one Swift target; each prerequisite contract must turn green before the next red contract is evidence
+Blocked items: none
+Next exact action: P4-T07 implements complete product Settings information architecture and separates it from setup/recovery
+Approval needed: none
+Secret/external-write status: no secrets, cloud calls, real Herdr execution, or destructive actions
+
+## 2026-08-31 - P4-T06 - takeover
+
+Executor: Codex root agent
+Starting git state: clean and synchronized at `22df91a` after P4-T05 red-test closeout
+Scope: add the recovery-action visible-state contract red test only; do not implement static resume/cancel controls or duplicate Herdr lifecycle authority
+Design: recovery is visible from task detail for blocked, failed, interrupted, and unknown states; resume requires persisted task plus verified native session and a fresh snapshot/revision reconciliation; force termination remains a separately approved action
+Files intended: `ProductManifestTests.swift` plus synchronized English/Chinese control documents
+Planned verification: filtered Swift test fails specifically because the workbench contract lacks recovery visibility semantics; `git diff --check`
+Approval needed: none; no real cancellation, cloud call, credential, or destructive action
+Next exact action: write the failing recovery contract test and capture the exact missing API
+
 ## 2026-08-31 - P4-T05 - exit
 
 Executor: Codex root agent
@@ -474,9 +501,9 @@ Secret/external-write status: no secrets; mocks only
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P4-T06
-State: P4-T05 verified as the expected history-contract red unit; P4-T06 pending
-Next required action: commit and push P4-T05, then claim P4-T06 and add its recovery-action visible-state red test.
+Master plan task: P4-T07
+State: P4-T05 green after prerequisite correction; P4-T06 verified as the independent recovery-contract red unit; P4-T07 pending
+Next required action: commit and push the P4-T05 correction/P4-T06 red unit, then claim P4-T07.
 
 ## Product Goal Snapshot
 

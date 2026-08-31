@@ -54,6 +54,16 @@ private func repositoryRoot() -> URL {
     #expect(history.previewFixturesAllowed == false)
 }
 
+@Test func taskRecoveryActionsAreVisibleAndFailClosed() {
+    let recovery = WorkbenchSurfaceContract.productDefault.recovery
+
+    #expect(recovery.placement == .taskDetail)
+    #expect(recovery.visibleStates == [.blocked, .failed, .interrupted, .unknown])
+    #expect(recovery.resumeSource == .persistedTaskAndVerifiedNativeSession)
+    #expect(recovery.reconciliation == .freshSnapshotAndRevisionBeforeResume)
+    #expect(recovery.forceTermination == .separateExplicitApproval)
+}
+
 @Test func realProductManifestLoadsAndOrdersComponents() throws {
     let manifestURL = repositoryRoot().appending(path: "config/product-manifest.json")
     let manifest = try ProductManifest.load(from: manifestURL)

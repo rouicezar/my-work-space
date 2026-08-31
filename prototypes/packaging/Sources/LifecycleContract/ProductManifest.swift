@@ -41,12 +41,32 @@ public struct ModelSelectionContract: Sendable {
     public let cloudGuard: CloudSelectionGuard
 }
 
+public enum HistoryPlacement: Sendable, Equatable {
+    case primaryNavigation
+}
+
+public enum HistorySource: Sendable, Equatable {
+    case persistedTaskRecords
+}
+
+public enum HistoryEmptyState: Sendable, Equatable {
+    case explicitNoHistory
+}
+
+public struct TaskHistoryContract: Sendable {
+    public let placement: HistoryPlacement
+    public let source: HistorySource
+    public let emptyState: HistoryEmptyState
+    public let previewFixturesAllowed: Bool
+}
+
 public struct WorkbenchSurfaceContract: Sendable {
     public let initialDestination: WorkbenchDestination
     public let composerPlacement: ComposerPlacement
     public let taskSubmissionBinding: TaskSubmissionBinding
     public let setupAndRecoveryPlacement: SetupAndRecoveryPlacement
     public let modelSelection: ModelSelectionContract
+    public let history: TaskHistoryContract
 
     public static let productDefault = WorkbenchSurfaceContract(
         initialDestination: .newTask,
@@ -58,6 +78,12 @@ public struct WorkbenchSurfaceContract: Sendable {
             defaultChoice: .automaticLocalFirst,
             availableChoices: [.automaticLocalFirst, .localOnly, .cloudWithApproval],
             cloudGuard: .credentialAndPerRequestApproval
+        ),
+        history: TaskHistoryContract(
+            placement: .primaryNavigation,
+            source: .persistedTaskRecords,
+            emptyState: .explicitNoHistory,
+            previewFixturesAllowed: false
         )
     )
 }

@@ -30,9 +30,9 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-08-31 Asia/Shanghai
 Current phase: P4 independent workbench product experience
-Current task: P4-T06
+Current task: P4-T07
 Current status: pending
-Next action: add the recovery-action visible-state contract red test without implementing static recovery controls.
+Next action: implement the complete eight-section Settings information architecture while keeping setup and recovery separate from normal product settings.
 
 Completed parallel task: P4-T04
 Parallel status: verified; the dedicated task produced no P4-T05 changes before primary takeover
@@ -193,8 +193,8 @@ P2 completion never waives these gates and must not be cited as evidence that an
 | P4-T02 | verified | Move daily work surface above setup/recovery | `prototypes/packaging/Sources/FormaAIApp/FormaAIApp.swift` | `swift test --package-path prototypes/packaging` | Target contract passed; full Swift package passed 31 tests with 2 real-Keychain tests skipped |
 | P4-T03 | verified | Add model/provider selection contract | Lifecycle contract tests | `swift test --package-path prototypes/packaging` | Filtered test fails because `WorkbenchSurfaceContract` has no `modelSelection` member |
 | P4-T04 | verified | Implement cloud/local model selector state | Swift app and manifest files | `swift test --package-path prototypes/packaging` | Selector target passed; full Swift package passed 32 tests with 2 real-Keychain tests skipped |
-| P4-T05 | verified | Add task history visible state contract | Swift tests | `swift test --package-path prototypes/packaging` | Filtered test fails because `WorkbenchSurfaceContract` has no `history` member |
-| P4-T06 | pending | Add recovery action visible state contract | Swift tests | `swift test --package-path prototypes/packaging` | Recovery state test passes |
+| P4-T05 | verified | Add task history visible state contract | Swift tests | `swift test --package-path prototypes/packaging` | Target history test passed; full Swift package passed 33 tests with 2 real-Keychain skips |
+| P4-T06 | verified | Add recovery action visible state contract | Swift tests | `swift test --package-path prototypes/packaging` | Filtered test fails because `WorkbenchSurfaceContract` has no `recovery` member |
 | P4-T07 | pending | Add complete Settings information architecture and contracts | Swift app, manifest, and tests | `swift test --package-path prototypes/packaging` | All eight settings sections are reachable and setup/recovery is separated |
 | P4-T07A | pending | Verify the separately installed holaOS non-visual adapter boundary | holaOS adapter, tests, and capability/reuse ledger | Targeted adapter conformance test plus upstream entry-point audit | Generic identity, health, and capability smoke test passes without bundling uncleared UI/assets |
 | P4-T08 | pending | Capture foreground UI evidence | `evidence/ui/workbench-first-screen-YYYY-MM-DD.png` | Manual launch plus screenshot review | Screenshot proves first screen is workbench |
@@ -290,4 +290,5 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 - 2026-08-31 - P3-T06 - Codex root agent - recovered the exact P3-T05 breakpoint and implemented exact-pane graceful cancel plus fail-closed native-session resume with revision/session reconciliation before schema-valid restart - 14 Herdr/generic protocol tests, integrated P4 Swift package 31 passed with 2 real-Keychain skips, and `git diff --check` passed - rebased after P4-T03 as implementation `9616aa1`, closeout `2fdd62b`, plus final sync record - next P3-T07
 - 2026-08-31 - P3-T07 - Codex root agent - added an explicit default-off Supervisor feature boundary that delegates enabled execution exactly once to `HerdrAdapter.spawn_task` without copying runtime state - focused 2 tests and restored full Python suite 242 tests passed with 1 opt-in Semantica integration skip; initial sandbox-only temp-directory errors were cleared by the authorized rerun - commit and push recorded in the paired handoff - next P3-T08
 - 2026-08-31 - P3-T08/P3-T09 - Codex root agent - added preview-injected parallel Agent cards with stable task/run/pane identities, running and blocked states, and an explicit non-runtime-evidence label while production defaults to an empty Agent list - Swift package 32 tests passed with 2 real-Keychain skips, source boundary inspection and `git diff --check` passed - committed/pushed in the paired handoff - P3 complete; next P4-T05
-- 2026-08-31 - P4-T05 - Codex root agent - primary takeover after a clean crossed handoff; added a history truth-boundary red test requiring primary navigation, persisted-task sourcing, an explicit empty state, and no preview fixtures - filtered Swift test failed exactly because `WorkbenchSurfaceContract` lacks `history`; dependent enum inference errors were consequential - committed/pushed in the paired handoff - next P4-T06
+- 2026-08-31 - P4-T05 - Codex root agent - corrected the invalid permanent-red closeout after Swift target compilation proved it blocked later contract tests; implemented only the history truth-boundary contract for primary navigation, persisted-task sourcing, explicit empty state, and no preview fixtures - target test passed and full Swift package passed 33 tests with 2 real-Keychain skips; no persistence or fake rows added - next P4-T06
+- 2026-08-31 - P4-T06 - Codex root agent - added a recovery visibility red contract for task-detail placement, blocked/failed/interrupted/unknown states, persisted verified-session resume, fresh snapshot/revision reconciliation, and separately approved force termination - filtered test failed exactly because `WorkbenchSurfaceContract` lacks `recovery`; dependent enum inference errors were consequential - committed/pushed in the paired handoff - next P4-T07
