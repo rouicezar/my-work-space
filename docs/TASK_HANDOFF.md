@@ -850,8 +850,8 @@ Scope: repair the stale handoff state and overbroad P2 exit gate
 Actions: replaced present-tense dirty-work claims with current clean Git evidence and a clearly historical inventory; redefined P2 as generic protocol freeze; assigned concrete conformance to P3, P4-T07A, P5, and P6
 Verification: `python3 -m unittest tests.test_adapter_contract tests.test_agent_adapter_contract -v` passed 9 tests; downstream ownership anchors were found; obsolete current-dirty headings were absent; `git diff --check` passed
 Files changed: `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md`, `docs/TASK_HANDOFF.md`
-Commit: pending this closeout commit
-Push: pending this closeout push
+Commit: `a6b701d` plus this closeout record
+Push: `a6b701d` pushed to `origin/main`; this closeout record is pushed in its follow-up commit
 Decisions: P2 is verified only for the generic protocol; no concrete adapter is implemented or verified by this phase
 Blocked items: none
 Next exact action: commit and push, then claim P3-T01 and write the failing Herdr availability test
