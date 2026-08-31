@@ -8,8 +8,8 @@ Actions: added assertions for a composer-toolbar selector whose default is autom
 Verification: filtered Swift test failed at compile time because `WorkbenchSurfaceContract` has no `modelSelection` member; dependent enum cases were consequently unresolved
 Evidence: the failure precisely identifies the absent selector contract; no static selector or fake provider readiness was added
 Files changed: `ProductManifestTests.swift` plus synchronized English/Chinese control documents
-Commit: pending red-test commit
-Push: pending red-test push
+Commit: `e287939 test: define governed model selector contract`
+Push: `e287939` pushed to `origin/main`; this closeout metadata follows in a documentation-only commit
 Decisions: composer selection governs routing behavior, while provider credentials/catalog details remain truthful Settings/runtime state; selecting cloud must never authorize transmission by itself
 Blocked items: none
 Next exact action: commit and push P4-T03; P4-T04 must implement selector contract/state and visible composer UI while preserving approval guards
