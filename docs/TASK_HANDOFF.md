@@ -87,8 +87,8 @@ Scope: create two Chinese MyNote control-document mirrors and enforce future bil
 Actions: created a Chinese granular progress tracker and Chinese task handoff; added their exact paths and same-task parity gate to `AGENTS.md`, the English plan, and the English handoff
 Verification: both external files exist; `P0-T09`, `P3-T03`, current-state, next-action, synchronization, and parity anchors were found; `git diff --check` passed
 Files changed: `AGENTS.md`, both English control docs, and two authorized MyNote Chinese mirrors
-Commit: pending this task commit
-Push: pending this task push
+Commit: `66434ff` plus this closeout record
+Push: `66434ff` pushed to `origin/main`; this closeout record is pushed in its follow-up commit
 Decisions: English repository documents remain authoritative for Git and machine execution; Chinese documents are mandatory equivalent operational mirrors, and mismatch blocks new work
 Blocked items: none
 Next exact action: commit and push, backfill the real commit into all four documents, then claim P3-T03 in both language sets
