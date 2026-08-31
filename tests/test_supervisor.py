@@ -24,6 +24,11 @@ from forma_ai.deepseek_adapter import DeepSeekResult, DeepSeekUsage
 from forma_ai.local_tasks import LocalTaskError, LocalTaskResult
 from forma_ai.cloud_preferences import CloudPreferenceStore
 from forma_ai.system_resources import MemoryEvidence
+from forma_ai.supervisor import (
+    Supervisor,
+    SupervisorFeatures,
+    SupervisorFeatureUnavailable,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -853,6 +858,51 @@ class SupervisorProtocolTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "not running"):
                     supervisor.run(args)
             sample.assert_not_called()
+
+
+class SupervisorHerdrFeatureTests(unittest.TestCase):
+    def test_herdr_dispatch_fails_closed_when_feature_is_disabled(self):
+        herdr = Mock()
+        instance = Supervisor(features=SupervisorFeatures(), herdr=herdr)
+
+        with self.assertRaisesRegex(
+            SupervisorFeatureUnavailable, "HERDR_EXECUTION_DISABLED"
+        ):
+            instance.dispatch_agent_task(
+                task_id="task-001",
+                correlation_id="corr-001",
+                agent_name="forma-task-001",
+                agent_kind="codex",
+                pane_id="pane-001",
+            )
+
+        herdr.spawn_task.assert_not_called()
+
+    def test_enabled_herdr_dispatch_delegates_exactly_once(self):
+        expected = object()
+        herdr = Mock()
+        herdr.spawn_task.return_value = expected
+        instance = Supervisor(
+            features=SupervisorFeatures(herdr_execution_enabled=True),
+            herdr=herdr,
+        )
+
+        result = instance.dispatch_agent_task(
+            task_id="task-001",
+            correlation_id="corr-001",
+            agent_name="forma-task-001",
+            agent_kind="codex",
+            pane_id="pane-001",
+        )
+
+        self.assertIs(result, expected)
+        herdr.spawn_task.assert_called_once_with(
+            task_id="task-001",
+            correlation_id="corr-001",
+            agent_name="forma-task-001",
+            agent_kind="codex",
+            pane_id="pane-001",
+        )
 
 
 if __name__ == "__main__":

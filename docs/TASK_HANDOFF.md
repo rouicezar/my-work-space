@@ -1,5 +1,31 @@
 # Forma AI Task Handoff
 
+## 2026-08-31 - P3-T07 - exit
+
+Executor: Codex root agent
+Scope: minimal feature-flagged Supervisor delegation to the existing Herdr adapter
+Actions: added an immutable default-off feature configuration; disabled dispatch fails closed with `HERDR_EXECUTION_DISABLED`; enabled dispatch forwards the exact task envelope once to `HerdrAdapter.spawn_task`
+Verification: focused supervisor tests passed 2; the first full run exposed only read-only-sandbox temporary-directory errors; after restoring the pre-existing Supervisor test body from an accidental uncommitted overwrite, the authorized rerun passed all 242 tests with 1 opt-in real Semantica integration skip; `git diff --check` passed
+Evidence: the recording adapter proves exact one-time delegation; the disabled adapter is never invoked; no scheduler or duplicate runtime state was added
+Files changed: `forma_ai/supervisor.py`, `tests/test_supervisor.py`, and synchronized English/Chinese control documents
+Commit and push: this implementation and closeout are included in the following verified commit
+Decisions: the feature is explicit and default-off; Herdr remains execution authority; this task does not claim real-process acceptance
+Blocked items: none
+Next exact action: P3-T08 adds a truthful UI task-state fixture for parallel agents
+Approval needed: none
+Secret/external-write status: no secrets, cloud calls, or real Herdr processes; mandatory control-document sync only
+
+## 2026-08-31 - P3-T07 - takeover
+
+Executor: Codex root agent
+Starting git state: clean and synchronized at `fa53378` after integrating and pushing P3-T06 plus P4-T03
+Scope: wire the product supervisor to the existing Herdr adapter behind an explicit feature flag
+Upstream boundary: reuse `HerdrAdapter.spawn_task`; do not add a scheduler, duplicate runtime state, or make Herdr execution claims while disabled
+Files intended: `forma_ai/supervisor.py`, focused tests, and synchronized English/Chinese control documents
+Planned verification: focused supervisor tests, full Python unittest discovery, and `git diff --check`
+Approval needed: none; mock transport only, no cloud calls, credentials, or real Herdr process
+Next exact action: define the fail-closed feature-flag test, implement the minimal delegation boundary, then verify
+
 ## 2026-08-31 - P4-T03 - parallel exit
 
 Executor: Codex delegated workbench agent
@@ -361,9 +387,9 @@ Secret/external-write status: no secrets; mocks only
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P3-T07
-State: P3-T06 verified; P3-T07 pending; dedicated workbench task completed P4-T03 and retains P4-T04 ownership
-Next required action: push the integrated P3-T06/P4-T03 history, then claim P3-T07 without modifying P4 ownership.
+Master plan task: P3-T08
+State: P3-T07 verified; P3-T08 pending; dedicated workbench task completed P4-T03 and retains P4-T04 ownership
+Next required action: claim P3-T08 and add the truthful parallel-agent UI task-state fixture without modifying P4 ownership.
 
 ## Product Goal Snapshot
 
