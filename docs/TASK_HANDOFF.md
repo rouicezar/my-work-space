@@ -8,8 +8,8 @@ Actions: added `WorkbenchSurfaceContract.productDefault` with New task as the in
 Verification: filtered P4-T01 contract test passed; full Swift package passed 31 tests with 2 real-Keychain tests skipped; source inspection confirms task execution still calls `SupervisorClient.submitTask`
 Evidence: machine tests prove the contract exists and the app consumes its initial destination; they do not prove model selection, Herdr parallel execution, history persistence, or final visual quality
 Files changed: `ProductManifest.swift`, `FormaAIApp.swift`, and synchronized English/Chinese control documents
-Commit: pending implementation commit
-Push: pending implementation push
+Commit: `53ab109 feat: bind first-screen workbench contract`
+Push: `53ab109` pushed to `origin/main`; this closeout metadata follows in a documentation-only commit
 Decisions: the contract is product-owned UI/integration behavior and does not duplicate an upstream non-visual capability; no holaOS asset or frontend code is copied
 Blocked items: none
 Next exact action: commit and push P4-T02, then claim P4-T03 and add the model/provider selection red test
