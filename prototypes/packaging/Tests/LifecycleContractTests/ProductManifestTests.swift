@@ -45,6 +45,15 @@ private func repositoryRoot() -> URL {
     #expect(selection.cloudGuard == .credentialAndPerRequestApproval)
 }
 
+@Test func taskHistoryIsVisibleButNeverFabricated() {
+    let history = WorkbenchSurfaceContract.productDefault.history
+
+    #expect(history.placement == .primaryNavigation)
+    #expect(history.source == .persistedTaskRecords)
+    #expect(history.emptyState == .explicitNoHistory)
+    #expect(history.previewFixturesAllowed == false)
+}
+
 @Test func realProductManifestLoadsAndOrdersComponents() throws {
     let manifestURL = repositoryRoot().appending(path: "config/product-manifest.json")
     let manifest = try ProductManifest.load(from: manifestURL)

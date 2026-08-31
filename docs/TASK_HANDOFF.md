@@ -1,5 +1,31 @@
 # Forma AI Task Handoff
 
+## 2026-08-31 - P4-T05 - exit
+
+Executor: Codex root agent
+Scope: task-history visible-state contract red test only
+Actions: added assertions for primary-navigation placement, persisted-task-record sourcing, an explicit no-history state, and a hard prohibition on preview fixtures as history
+Verification: filtered Swift test failed at compile time because `WorkbenchSurfaceContract` has no `history` member; the unresolved enum cases were direct consequences of that missing contract; `git diff --check` passed
+Evidence: failure precisely identifies the absent history truth boundary; no static rows, persistence store, or second state authority was added
+Files changed: `ProductManifestTests.swift` plus synchronized English/Chinese control documents
+Commit and push: included in the following verified red-test commit
+Decisions: P7 remains responsible for persistence implementation; P4-T05 defines only truthful visible-state requirements
+Blocked items: none
+Next exact action: P4-T06 adds the recovery-action visible-state red contract without implementing static recovery controls
+Approval needed: none
+Secret/external-write status: no secrets, credentials, cloud calls, real Herdr execution, or destructive actions
+
+## 2026-08-31 - P4-T05 - primary takeover
+
+Executor: Codex root agent
+Previous owner state: the dedicated workbench task synchronized to `87f067e` but produced no file changes, tests, or takeover record during repeated waits; its worktree remained clean and it was told to stop
+Scope: add the task-history visible-state contract red test only; do not implement static history entries or alter P4-T06
+Design: history must live in primary navigation, read persisted task records, expose an explicit empty state, and forbid preview fixtures from masquerading as history; persistence implementation remains P7 and no second state authority is introduced
+Files intended: `ProductManifestTests.swift` plus synchronized English/Chinese control documents
+Planned verification: existing Swift baseline remains green; the filtered new test fails specifically because the workbench contract lacks history visibility semantics; `git diff --check`
+Approval needed: none; no credentials, cloud calls, real Herdr execution, or destructive actions
+Next exact action: write the failing contract test, capture the exact missing API, then close and push the red unit
+
 ## 2026-08-31 - P3-T08/P3-T09 - exit
 
 Executor: Codex root agent
@@ -448,9 +474,9 @@ Secret/external-write status: no secrets; mocks only
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P4-T05
-State: P3-T08 and P3-T09 verified; P3 core slice complete; dedicated workbench task completed P4-T04 and may claim P4-T05
-Next required action: push the P3 closeout, then notify the dedicated workbench task to claim P4-T05.
+Master plan task: P4-T06
+State: P4-T05 verified as the expected history-contract red unit; P4-T06 pending
+Next required action: commit and push P4-T05, then claim P4-T06 and add its recovery-action visible-state red test.
 
 ## Product Goal Snapshot
 
