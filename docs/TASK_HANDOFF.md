@@ -1,5 +1,40 @@
 # Forma AI Task Handoff
 
+## 2026-08-31 - P4-T03 - parallel exit
+
+Executor: Codex delegated workbench agent
+Scope: model/provider selection contract red test only
+Actions: added assertions for a composer-toolbar selector whose default is automatic local-first and whose choices are automatic local-first, local-only, and cloud-with-approval; cloud requires credential plus per-request approval
+Verification: filtered Swift test failed at compile time because `WorkbenchSurfaceContract` has no `modelSelection` member; dependent enum cases were consequently unresolved
+Evidence: the failure precisely identifies the absent selector contract; no static selector or fake provider readiness was added
+Files changed: `ProductManifestTests.swift` plus synchronized English/Chinese control documents
+Commit: pending red-test commit
+Push: pending red-test push
+Decisions: composer selection governs routing behavior, while provider credentials/catalog details remain truthful Settings/runtime state; selecting cloud must never authorize transmission by itself
+Blocked items: none
+Next exact action: commit and push P4-T03; P4-T04 must implement selector contract/state and visible composer UI while preserving approval guards
+Approval needed: none
+Secret/external-write status: no secrets, credentials, cloud calls, or destructive actions
+
+## 2026-08-31 - P4-T03 - parallel takeover
+
+Executor: Codex delegated workbench agent
+Starting git state: clean detached worktree at `e8d7359`, pushed to `origin/main`; primary P3 task notified to synchronize before pushing
+Scope: add the failing model/provider selection contract test only; do not implement UI state or alter P3
+Files intended: lifecycle contract test plus synchronized English/Chinese control documents
+Actions: claimed P4-T03 after P4-T02 made the first-screen workbench contract green
+Verification: existing Swift baseline remains known-green; filtered new test must fail specifically because model selection is absent from the workbench contract
+Evidence: pending red-test result
+Files changed: control documents at takeover
+Commit: none yet
+Push: none yet
+Decisions: the selector contract will default to automatic local-first, expose local-only and cloud-with-approval choices, and retain credential plus per-request approval for cloud
+Assumptions: provider brand details remain Settings/catalog concerns; the composer selector chooses governed routing behavior rather than exposing secrets or pretending unavailable providers are ready
+Blocked items: none
+Next exact action: add the failing selector contract assertions and run the filtered Swift test
+Approval needed: none
+Secret/external-write status: no secrets, credentials, cloud calls, or destructive actions
+
 ## 2026-08-31 - P4-T02 - parallel exit
 
 Executor: Codex delegated workbench agent

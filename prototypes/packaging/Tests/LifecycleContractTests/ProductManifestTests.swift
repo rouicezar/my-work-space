@@ -32,6 +32,19 @@ private func repositoryRoot() -> URL {
     #expect(contract.setupAndRecoveryPlacement == .separateSettings)
 }
 
+@Test func taskComposerRequiresAVisibleGovernedModelSelector() {
+    let selection = WorkbenchSurfaceContract.productDefault.modelSelection
+
+    #expect(selection.placement == .composerToolbar)
+    #expect(selection.defaultChoice == .automaticLocalFirst)
+    #expect(selection.availableChoices == [
+        .automaticLocalFirst,
+        .localOnly,
+        .cloudWithApproval,
+    ])
+    #expect(selection.cloudGuard == .credentialAndPerRequestApproval)
+}
+
 @Test func realProductManifestLoadsAndOrdersComponents() throws {
     let manifestURL = repositoryRoot().appending(path: "config/product-manifest.json")
     let manifest = try ProductManifest.load(from: manifestURL)
