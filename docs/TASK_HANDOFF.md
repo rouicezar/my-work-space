@@ -116,7 +116,7 @@ Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
 Master plan task: P3-T03
 State: P0-T09 verified; P3-T03 pending
-Next required action: commit and push P0-T09, verify all four control documents are synchronized, then claim P3-T03 in both language sets.
+Next required action: claim P3-T03 in both language sets and write the two-mock-task spawn red test.
 
 ## Product Goal Snapshot
 
