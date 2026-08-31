@@ -95,6 +95,8 @@ Next exact action: commit and push, backfill the real commit into all four docum
 Approval: user explicitly approved the MyNote destination
 Secret/external-write status: no secrets; only the approved local MyNote writes occurred
 
+P0-T09 post-closeout index note: the two Chinese Markdown files are present and synchronized, but the optional GBrain refresh was not executed because `/Users/rouice/Gbrain/scripts/daily-growth/preflight.sh` failed its existing health gate with 2584 stale chunks not embedded. This is an indexing-health blocker, not a file-write or document-parity failure. Repair the GBrain stale-chunk condition before attempting refresh; do not rerun refresh past a failed preflight.
+
 ## Handoff Rules
 
 - Claim exactly one task ID from the master plan before editing.
