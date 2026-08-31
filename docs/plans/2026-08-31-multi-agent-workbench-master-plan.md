@@ -28,12 +28,16 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 ## Current State
 
 Updated: 2026-08-31 Asia/Shanghai
-Current phase: P2 Adapter protocol and contracts
-Current task: P2-T08
+Current phase: P3 Herdr core multi-agent runtime
+Current task: P3-T01
 Current status: pending
-Next action: audit the complete P2 contract chain, run the protocol tests, commit any final closeout record, and verify the phase exit gate.
+Next action: claim P3-T01 and write the failing Herdr adapter availability test against the documented official integration boundary.
 
-Known uncommitted implementation work that must not be overwritten by this documentation task:
+Current Git fact at P2-T08 takeover:
+
+- `main` was clean and synchronized with `origin/main` at `5061ba7`; there were no uncommitted paths to preserve.
+
+Historical interrupted-work inventory retained for recovery context only (this is not a statement about the current worktree and does not establish current ownership):
 
 - `forma_ai/deepseek_adapter.py`
 - `tests/test_deepseek_adapter.py`
@@ -86,13 +90,13 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | CAP-02 | Multi-agent parallel work | Herdr/holaOS/Codex | Multiple visible workers with owner, state, logs, and artifacts | not_started | None |
 | CAP-03 | Agent command and review loop | Codex-style task execution | User can assign, inspect, interrupt, resume, and review | not_started | None |
 | CAP-04 | Local model control | oMLX | Local model can route/summarize/answer simple requests | partial | oMLX setup exists; runtime stopped in screenshot |
-| CAP-05 | Cloud model setup | DeepSeek/OpenAI-compatible providers | Settings has provider list, credential state, low-cost test, and removal | partial | Uncommitted DeepSeek/settings work exists |
+| CAP-05 | Cloud model setup | DeepSeek/OpenAI-compatible providers | Settings has provider list, credential state, low-cost test, and removal | partial | Historical DeepSeek/settings work is recorded; current implementation and real-call evidence remain to be revalidated in P5 |
 | CAP-06 | Governed memory | Semantica | Retrieval, candidate memory, approval, audit | not_started | None |
 | CAP-07 | History and recovery | Product workbench | Task history, failed run recovery, cancel/resume | partial | Sidebar exists; user reports unclear product function |
 | CAP-08 | Tool/process console | Herdr | Task execution logs and external tool lifecycle | not_started | None |
 | CAP-09 | Permission and audit | Product policy layer | External writes and cloud calls require preview/approval/audit | partial | Policy intent exists; full UI not verified |
 | CAP-10 | Distribution readiness | Packaging/lifecycle | Clean install, upgrade, rollback, uninstall, recovery gates | partial | Packaging tests exist; product experience incomplete |
-| CAP-11 | Universal agent adapters | Codex/Claude/compatible tools | Capability discovery, dispatch, status, handoff, cancel, resume, artifacts, audit | not_started | None |
+| CAP-11 | Universal agent adapters | Codex/Claude/compatible tools | Capability discovery, dispatch, status, handoff, cancel, resume, artifacts, audit | mapped | Generic contract: `docs/contracts/agent-adapter.md`; concrete runtime conformance remains pending in P3 and later adapter tasks |
 | CAP-12 | Complete product settings | Product workbench | General, providers, agents/tools, memory, permissions, runtime, privacy, diagnostics/recovery | not_started | Current screen is setup/recovery only |
 
 ## Milestone Tracker
@@ -101,7 +105,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 |---|---|---|---|
 | P0 | Correct governance and stop product drift | verified | Tracker, handoff, role documents, and upstream-first reuse rules agree |
 | P1 | Inventory upstream capabilities and licenses | verified | Reuse decisions for all four upstreams have evidence |
-| P2 | Define adapter protocol and contracts | pending | Protocol tests cover Semantica, holaOS, Herdr, oMLX, cloud providers |
+| P2 | Freeze the vendor-neutral adapter protocol and assign concrete conformance gates | verified | Generic identity, health, capability, policy, audit, and agent-lifecycle contracts pass machine tests; every concrete adapter has a named downstream conformance owner |
 | P3 | Make Herdr-backed multi-agent loop real | pending | Two parallel tasks run, stream status, cancel, resume, and recover |
 | P4 | Make independent workbench usable | pending | First-run user can start a task without visiting recovery settings |
 | P5 | Make local/cloud model cooperation real | pending | oMLX local proof plus approved low-cost DeepSeek loop |
@@ -148,7 +152,18 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | P2-T05 | verified | Write failing test for policy preview/audit fields | `tests/test_adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Fails on missing policy fields |
 | P2-T06 | verified | Implement policy preview/audit envelope | `forma_ai/adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Contract tests pass |
 | P2-T07 | verified | Specify vendor-neutral AI agent adapter for Codex, Claude, and compatible tools | `docs/contracts/agent-adapter.md`, contract tests | `python3 -m unittest tests.test_agent_adapter_contract tests.test_adapter_contract -v` | Discovery, dispatch, status, handoff, cancel, resume, artifacts, and audit are covered |
-| P2-T08 | pending | Commit adapter contract | Adapter contract, agent contract, and tests | `git diff --check` then `git commit` | Commit created |
+| P2-T08 | verified | Audit and close the generic adapter-contract phase without claiming concrete adapter conformance | Adapter contract, agent contract, tests, tracker, handoff | Contract tests plus `git diff --check` | Generic contract gate is truthful and concrete conformance has named downstream owners |
+
+Concrete adapter conformance is deliberately outside the P2 completion claim. A protocol document or generic unit test cannot make a concrete adapter compatible. The following ownership is mandatory, and the corresponding phase cannot close until its real or faithfully mockable boundary tests pass:
+
+| Concrete boundary | Downstream owner | Required evidence before conformance may be claimed |
+|---|---|---|
+| Herdr plus Codex/Claude/compatible agent execution | P3-T01 through P3-T09 | Official CLI/socket/API discovery, two parallel tasks, stable states, cancel, resume, reconnect/recovery, artifacts, and audit mapping |
+| Separately installed holaOS non-visual interface | P4-T07A | Upstream entry point and license decision plus identity/health/capability smoke test through the generic contract; no uncleared frontend/assets bundled |
+| oMLX local inference and DeepSeek/OpenAI-compatible cloud execution | P5-T01 through P5-T07 | Real oMLX completion or embedding response; credential state, preview, explicit approval, low-cost DeepSeek response, routing decision, and audit evidence |
+| Semantica governed memory | P6-T01 through P6-T07 | Health, retrieval/candidate, approval-to-commit, provenance, and audit-event contract tests against the selected upstream boundary |
+
+P2 completion never waives these gates and must not be cited as evidence that any concrete adapter is implemented or verified.
 
 ### P3: Herdr Core Multi-Agent Runtime
 
@@ -175,6 +190,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | P4-T05 | pending | Add task history visible state contract | Swift tests | `swift test --package-path prototypes/packaging` | History state test passes |
 | P4-T06 | pending | Add recovery action visible state contract | Swift tests | `swift test --package-path prototypes/packaging` | Recovery state test passes |
 | P4-T07 | pending | Add complete Settings information architecture and contracts | Swift app, manifest, and tests | `swift test --package-path prototypes/packaging` | All eight settings sections are reachable and setup/recovery is separated |
+| P4-T07A | pending | Verify the separately installed holaOS non-visual adapter boundary | holaOS adapter, tests, and capability/reuse ledger | Targeted adapter conformance test plus upstream entry-point audit | Generic identity, health, and capability smoke test passes without bundling uncleared UI/assets |
 | P4-T08 | pending | Capture foreground UI evidence | `evidence/ui/workbench-first-screen-YYYY-MM-DD.png` | Manual launch plus screenshot review | Screenshot proves first screen is workbench |
 | P4-T09 | pending | Commit workbench product experience slice | Swift files, tests, evidence if allowed | `git diff --check` then `git commit` | Commit created |
 
@@ -258,3 +274,4 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 - 2026-08-31 - P2-T05 - Codex root agent - added red tests binding exact policy payload/approval fields and correlated redaction-explicit audit fields - expected missing `AuditEnvelope`/`PolicyPreview` boundary observed - commit pending closeout - next P2-T06
 - 2026-08-31 - P2-T06 - Codex root agent - implemented immutable exact-payload policy preview and redaction-explicit audit envelopes without raw payload fields - 5 targeted contract tests passed - commit pending closeout - next P2-T07
 - 2026-08-31 - P2-T07 - Codex root agent - specified and machine-tested the universal Codex/Claude/compatible-agent lifecycle contract with Herdr authority, recovery, policy, audit, artifact, idempotency, and conformance rules - 9 combined contract tests passed - committed/pushed as `2b5227c` - next P2-T08
+- 2026-08-31 - P2-T08 - Codex root agent - replaced stale current-dirty claims with verified Git fact, narrowed P2 to the generic protocol boundary, and assigned concrete Herdr, holaOS, oMLX/DeepSeek, and Semantica conformance gates downstream - 9 combined contract tests, ownership scan, and `git diff --check` passed - commit pending closeout - next P3-T01

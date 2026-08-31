@@ -2,6 +2,17 @@
 
 This is the authoritative handoff document for agent takeover, interruption recovery, and cross-tool continuity.
 
+## 2026-08-31 - P2-T08 - takeover
+
+Executor: Codex root agent
+Starting git state: clean and synchronized with `origin/main` at `5061ba7`
+Scope: repair stale handoff/worktree statements and make the P2 exit gate truthful
+Files intended: `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md`, `docs/TASK_HANDOFF.md`
+Planned verification: adapter-contract unit tests, downstream conformance ownership audit, `git diff --check`, and final Git status
+Decisions: P2 may close only as a generic protocol-definition phase; no concrete upstream adapter may claim conformance until its named downstream tests pass
+Approval needed: none; documentation and local tests only
+Secret/external-write status: no secrets handled; no cloud calls
+
 Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md`, and `AGENTS.md` before changing product code.
 
 ## Handoff Rules
@@ -21,8 +32,8 @@ Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-ma
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
 Master plan task: P2-T08
-State: P2-T07 universal AI-agent contract committed/pushed as `2b5227c`; P2-T08 pending
-Next required action: claim P2-T08, audit the complete P2 adapter-contract chain, and close the phase if its exit gate passes.
+State: P2-T08 verified for the generic protocol boundary; concrete adapter conformance remains pending under P3, P4-T07A, P5, and P6
+Next required action: commit and push the P2 control-document repair, then claim P3-T01 and write the failing Herdr availability test.
 
 ## Product Goal Snapshot
 
@@ -35,9 +46,13 @@ The product is a local-first, multi-agent Mac AI workbench.
 - oMLX is the local inference runtime and must prove real inference.
 - Cloud models are optional, explicit, credential-gated, approval-gated, and audited.
 
-## Dirty Worktree at This Handoff
+## Current Worktree Fact
 
-These paths were already dirty before the documentation-control task and must be preserved:
+At the P2-T08 takeover, `git status -sb` reported `main` clean and synchronized with `origin/main` at `5061ba7`. There are no currently uncommitted paths assigned to another owner.
+
+## Historical Interrupted Paths
+
+The following paths appeared in an earlier dirty-worktree handoff. They are retained only as historical recovery context and must not be treated as currently dirty, currently owned, or currently verified:
 
 - `forma_ai/deepseek_adapter.py`
 - `tests/test_deepseek_adapter.py`
@@ -47,7 +62,7 @@ These paths were already dirty before the documentation-control task and must be
 - `build/`
 - `evidence/ui/cloud-settings-review-2026-08-31.png`
 
-Do not include these implementation changes in the governance-doc commit unless a later task explicitly claims and verifies them.
+Before resuming related work, inspect the current file and Git history, claim the applicable master-plan task, and revalidate behavior. Do not infer present changes from this historical list.
 
 ## Interrupted Work Summary
 
@@ -826,6 +841,22 @@ Blocked items: none
 Next exact action: commit this completion-record update, push, then mark P0-T06 verified
 Approval needed: none
 Secret/external-write status: no secrets handled; no external cloud calls
+
+## 2026-08-31 - P2-T08 - exit
+
+Executor: Codex root agent
+Starting git state: clean and synchronized with `origin/main` at `5061ba7`
+Scope: repair the stale handoff state and overbroad P2 exit gate
+Actions: replaced present-tense dirty-work claims with current clean Git evidence and a clearly historical inventory; redefined P2 as generic protocol freeze; assigned concrete conformance to P3, P4-T07A, P5, and P6
+Verification: `python3 -m unittest tests.test_adapter_contract tests.test_agent_adapter_contract -v` passed 9 tests; downstream ownership anchors were found; obsolete current-dirty headings were absent; `git diff --check` passed
+Files changed: `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md`, `docs/TASK_HANDOFF.md`
+Commit: pending this closeout commit
+Push: pending this closeout push
+Decisions: P2 is verified only for the generic protocol; no concrete adapter is implemented or verified by this phase
+Blocked items: none
+Next exact action: commit and push, then claim P3-T01 and write the failing Herdr availability test
+Approval needed: none
+Secret/external-write status: no secrets handled; no cloud calls
 
 ## 2026-08-31 - P0-T06 - exit
 
