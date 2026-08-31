@@ -37,6 +37,15 @@ class HerdrTask:
     revision: int
 
 
+@dataclass(frozen=True)
+class HerdrLifecycleResult:
+    task_id: str
+    run_id: str
+    action: str
+    state: str
+    revision: int
+
+
 class HerdrAdapter:
     """Discover Herdr without mistaking executable presence for health."""
 
@@ -52,6 +61,7 @@ class HerdrAdapter:
         self._request = request
         self._task_ids_by_run_id: dict[str, str] = {}
         self._pane_ids_by_run_id: dict[str, str] = {}
+        self._tasks_by_run_id: dict[str, HerdrTask] = {}
 
     def availability(self) -> HerdrAvailability:
         executable_path = self._executable_finder("herdr")
@@ -109,6 +119,7 @@ class HerdrAdapter:
         )
         self._task_ids_by_run_id[task.run_id] = task.task_id
         self._pane_ids_by_run_id[task.run_id] = task.pane_id
+        self._tasks_by_run_id[task.run_id] = task
         _ = correlation_id
         return task
 
@@ -118,10 +129,81 @@ class HerdrAdapter:
         response = self._send("agent.get", {"target": pane_id})
         if response["type"] != "agent_info":
             raise ValueError("unexpected Herdr agent.get response")
-        return self._task_from_agent(
+        task = self._task_from_agent(
             task_id=task_id,
             run_id=run_id,
             agent=response["agent"],
+        )
+        self._tasks_by_run_id[run_id] = task
+        return task
+
+    def cancel_task(
+        self,
+        *,
+        run_id: str,
+        correlation_id: str,
+        expected_revision: int,
+    ) -> HerdrLifecycleResult:
+        task = self._tasks_by_run_id[run_id]
+        if task.revision != expected_revision:
+            raise ValueError("Herdr task revision changed before cancel")
+        response = self._send(
+            "pane.send_keys",
+            {"pane_id": task.pane_id, "keys": ["ctrl+c"]},
+        )
+        if response["type"] != "ok":
+            raise ValueError("unexpected Herdr pane.send_keys response")
+        _ = correlation_id
+        return HerdrLifecycleResult(
+            task_id=task.task_id,
+            run_id=run_id,
+            action="graceful_interrupt",
+            state="cancel_requested",
+            revision=expected_revision,
+        )
+
+    def resume_task(
+        self,
+        *,
+        run_id: str,
+        correlation_id: str,
+        expected_revision: int,
+        native_session_ref: dict[str, str],
+        agent_name: str,
+        agent_kind: str,
+    ) -> HerdrLifecycleResult:
+        task_id = self._task_ids_by_run_id[run_id]
+        pane_id = self._pane_ids_by_run_id[run_id]
+        current = self._send("agent.get", {"target": pane_id})
+        if current["type"] != "agent_info":
+            raise ValueError("unexpected Herdr agent.get response")
+        current_agent = current["agent"]
+        if not isinstance(current_agent, dict):
+            raise ValueError("Herdr response is missing agent data")
+        if int(current_agent["revision"]) != expected_revision:
+            raise ValueError("Herdr task revision changed before resume")
+        if current_agent.get("agent_session") != native_session_ref:
+            raise ValueError("Herdr native session reference changed before resume")
+
+        restarted = self._send(
+            "agent.start",
+            {"name": agent_name, "kind": agent_kind, "pane_id": pane_id},
+        )
+        if restarted["type"] != "agent_started":
+            raise ValueError("unexpected Herdr agent.start response")
+        task = self._task_from_agent(
+            task_id=task_id,
+            run_id=run_id,
+            agent=restarted["agent"],
+        )
+        self._tasks_by_run_id[run_id] = task
+        _ = correlation_id
+        return HerdrLifecycleResult(
+            task_id=task_id,
+            run_id=run_id,
+            action="native_resume",
+            state=task.state,
+            revision=task.revision,
         )
 
     def _send(

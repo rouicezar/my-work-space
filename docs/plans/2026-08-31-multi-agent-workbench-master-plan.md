@@ -30,9 +30,9 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-08-31 Asia/Shanghai
 Current phase: P3 Herdr core multi-agent runtime
-Current task: P3-T06
+Current task: P3-T07
 Current status: pending
-Next action: claim P3-T06 in both language sets and implement graceful-cancel/native-resume mapping that makes the two lifecycle red tests pass.
+Next action: after integrating any newer P4 commits, claim P3-T07 in both language sets and wire the supervisor to the Herdr adapter behind a feature flag.
 
 User-approved parallel task: P4-T03
 Parallel status: verified
@@ -180,7 +180,7 @@ P2 completion never waives these gates and must not be cited as evidence that an
 | P3-T03 | verified | Write failing test for spawning two mock tasks | `tests/test_herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Fails on missing spawn |
 | P3-T04 | verified | Implement mockable task spawn/status methods | `forma_ai/herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Two tasks have stable IDs and states |
 | P3-T05 | verified | Write failing test for cancel and resume envelope | `tests/test_herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Fails on missing lifecycle |
-| P3-T06 | pending | Implement cancel/resume mapping | `forma_ai/herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Lifecycle tests pass |
+| P3-T06 | verified | Implement cancel/resume mapping | `forma_ai/herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Lifecycle tests pass |
 | P3-T07 | pending | Wire supervisor to Herdr adapter behind feature flag | `forma_ai/supervisor.py` | `python -m unittest discover tests -v` | Existing tests pass |
 | P3-T08 | pending | Add UI task state fixture for parallel agents | `prototypes/packaging/Sources/FormaAIApp/FormaAIApp.swift` | `swift test --package-path prototypes/packaging` | Swift tests pass |
 | P3-T09 | pending | Commit Herdr core slice | Adapter, supervisor, tests, Swift fixture | `git diff --check` then `git commit` | Commit created |
@@ -287,3 +287,4 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 - 2026-08-31 - P3-T03 - Codex root agent - added the two-mock-task Herdr spawn/status red test with stable task/run/pane IDs, independent state reads, and revision evidence - expected `TypeError` on missing injectable request boundary observed while two prior tests stayed green - committed/pushed as `e652ed2` - next P3-T04
 - 2026-08-31 - P3-T04 - Codex root agent - implemented and then corrected immutable Herdr task envelopes plus injected `agent.start`/`agent.get` translation to exact pinned protocol 20 `AgentStartParams`, `agent_started`, and `agent_info` shapes while leaving state authority upstream - schema-conformant red/green correction plus 12 Herdr/generic protocol tests and `git diff --check` passed - initial commit `2d56064`, corrective commit `e6c4106`, both pushed - next P3-T05
 - 2026-08-31 - P3-T05 - Codex root agent - added protocol-grounded red tests for exact-pane graceful cancel and native-session resume with session/revision reconciliation before schema-valid restart - 3 existing Herdr tests passed and 2 new tests failed as expected on missing lifecycle methods - committed/pushed as `db9c0ee` plus closeout record - next P3-T06
+- 2026-08-31 - P3-T06 - Codex root agent - recovered the exact P3-T05 breakpoint and implemented exact-pane graceful cancel plus fail-closed native-session resume with revision/session reconciliation before schema-valid restart - 14 Herdr and generic protocol tests plus `git diff --check` passed - commit pending closeout - next P3-T07

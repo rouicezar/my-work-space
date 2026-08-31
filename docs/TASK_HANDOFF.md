@@ -315,6 +315,35 @@ Next exact action: commit and push, then P3-T06
 Approval needed: none
 Secret/external-write status: no secrets; mocks only
 
+## 2026-08-31 - P3-T06 - takeover
+
+Executor: Codex root agent
+Starting git state: clean at `5fe31d0` after fast-forwarding P4-T01; `origin/main` synchronized at takeover
+Recovered breakpoint: P3-T05 red tests committed/pushed as `db9c0ee`; P3 batch closeout `8e09942`; P3-T06 was pending
+Parallel boundary: P4-T02 is owned by the dedicated workbench task; this task changes only P3 lifecycle mapping and shared control records
+Scope: implement graceful cancel and native-session resume mappings
+Implementation boundary: exact cached pane target; `pane.send_keys` with `ctrl+c`; no force close; reconcile `agent.get` session and revision before schema-valid `agent.start`
+Files intended: `forma_ai/herdr_adapter.py`, English and Chinese control documents
+Planned verification: Herdr adapter tests, generic adapter-contract tests, `git diff --check`, then commit/push after integrating any newer P4 origin commits
+Approval needed: none; mocks only
+Secret/external-write status: no secrets; mandatory Chinese control-document synchronization only
+
+## 2026-08-31 - P3-T06 - exit
+
+Executor: Codex root agent
+Recovered breakpoint: P3-T05 red tests at `db9c0ee`, P3 batch closeout at `8e09942`, P3-T06 pending; P4-T01 was fast-forwarded through `5fe31d0` before implementation
+Scope: minimal Herdr graceful-cancel/native-session-resume mapping
+Actions: added immutable lifecycle result; exact cached-pane `pane.send_keys` with `ctrl+c`; revision conflict rejection; full native session reference reconciliation through `agent.get`; schema-valid `agent.start` only after reconciliation
+Verification: `python3 -m unittest tests.test_herdr_adapter tests.test_adapter_contract tests.test_agent_adapter_contract -v` passed 14 tests; `git diff --check` passed; origin remained at `5fe31d0` at pre-closeout fetch
+Files changed: `forma_ai/herdr_adapter.py`, English and Chinese control documents
+Commit: pending this task commit
+Push: pending integration with any newer P4 origin commit and this task push
+Decisions: force close is not implemented; session or revision drift fails closed; Herdr pane/agent responses remain authoritative
+Blocked items: none
+Next exact action: synchronize Chinese exit, recheck origin, commit/rebase if needed, push, then P3-T07
+Approval needed: none
+Secret/external-write status: no secrets; mocks only
+
 ## Handoff Rules
 
 - Claim exactly one task ID from the master plan before editing.
@@ -332,9 +361,9 @@ Secret/external-write status: no secrets; mocks only
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P3-T06
-State: P3-T05 lifecycle red tests verified; P3-T06 pending
-Next required action: commit and push P3-T05, then claim P3-T06 in both language sets and implement the minimal lifecycle mapping.
+Master plan task: P3-T07
+State: P3-T06 verified; P3-T07 pending; dedicated workbench task retains P4-T02 ownership
+Next required action: commit and push P3-T06 after checking origin, then claim P3-T07 without modifying P4 ownership.
 
 ## Product Goal Snapshot
 
