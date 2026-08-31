@@ -2,7 +2,7 @@
 
 ![Forma AI app icon](assets/branding/forma-ai-app-icon-1024.png)
 
-Forma AI 是一套面向普通 Mac 用户、通用且可分发的 AI 工作操作系统。它组合 Semantica、holaOS、Herdr 与 oMLX，提供统一入口、长期记忆、端到端审计、多 Agent 并行、本地优先推理，以及经过权限闸门的真实工具操作。
+Forma AI 是一套面向普通 Mac 用户、通用且可分发的 AI 工作操作系统。产品自有原生工作台是默认用户入口；它通过适配协议组合 Semantica、holaOS、Herdr 与 oMLX 的许可内能力，提供长期记忆、端到端审计、多 Agent 并行、本地优先推理，以及经过权限闸门的真实工具操作。
 
 目标不是让四个上游项目“同时启动”，而是把它们产品化为一套开箱即用、部署简单、操作方便、安全可恢复的完整系统。
 
@@ -19,7 +19,8 @@ Forma AI 是一套面向普通 Mac 用户、通用且可分发的 AI 工作操�
 
 | 组件 | 产品职责 |
 |---|---|
-| holaOS | 普通用户的统一图形入口、应用连接与任务交互 |
+| Forma AI 原生工作台 | 默认分发 UI，承载普通用户的任务、批准、状态、结果、设置与恢复 |
+| holaOS | 非视觉能力与工作流参考；在分发许可澄清前仅通过适配边界复用，并可作为独立安装的高级外部界面 |
 | Herdr | 高级模式下的多 Agent、终端和后台进程控制台 |
 | Semantica | 经过治理的长期知识、决策、证据与审计权威层 |
 | oMLX | Apple Silicon 上的本地模型、Embedding 与 Reranking 推理层 |
