@@ -29,9 +29,9 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-08-31 Asia/Shanghai
 Current phase: P2 Adapter protocol and contracts
-Current task: P2-T07
+Current task: P2-T08
 Current status: pending
-Next action: commit/push P2-T06, then claim P2-T07 and specify the vendor-neutral Codex/Claude/compatible-agent adapter contract with validation tests.
+Next action: audit the complete P2 contract chain, run the protocol tests, commit any final closeout record, and verify the phase exit gate.
 
 Known uncommitted implementation work that must not be overwritten by this documentation task:
 
@@ -147,7 +147,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | P2-T04 | verified | Implement capability declaration model | `forma_ai/adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Capabilities pass |
 | P2-T05 | verified | Write failing test for policy preview/audit fields | `tests/test_adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Fails on missing policy fields |
 | P2-T06 | verified | Implement policy preview/audit envelope | `forma_ai/adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Contract tests pass |
-| P2-T07 | pending | Specify vendor-neutral AI agent adapter for Codex, Claude, and compatible tools | `docs/contracts/agent-adapter.md`, contract tests | Contract validation command | Discovery, dispatch, status, handoff, cancel, resume, artifacts, and audit are covered |
+| P2-T07 | verified | Specify vendor-neutral AI agent adapter for Codex, Claude, and compatible tools | `docs/contracts/agent-adapter.md`, contract tests | `python3 -m unittest tests.test_agent_adapter_contract tests.test_adapter_contract -v` | Discovery, dispatch, status, handoff, cancel, resume, artifacts, and audit are covered |
 | P2-T08 | pending | Commit adapter contract | Adapter contract, agent contract, and tests | `git diff --check` then `git commit` | Commit created |
 
 ### P3: Herdr Core Multi-Agent Runtime
@@ -257,3 +257,4 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 - 2026-08-31 - P2-T04 - Codex root agent - implemented the immutable capability declaration with JSON-compatible ordered operations and proof level - 3 targeted tests passed - commit pending closeout - next P2-T05
 - 2026-08-31 - P2-T05 - Codex root agent - added red tests binding exact policy payload/approval fields and correlated redaction-explicit audit fields - expected missing `AuditEnvelope`/`PolicyPreview` boundary observed - commit pending closeout - next P2-T06
 - 2026-08-31 - P2-T06 - Codex root agent - implemented immutable exact-payload policy preview and redaction-explicit audit envelopes without raw payload fields - 5 targeted contract tests passed - commit pending closeout - next P2-T07
+- 2026-08-31 - P2-T07 - Codex root agent - specified and machine-tested the universal Codex/Claude/compatible-agent lifecycle contract with Herdr authority, recovery, policy, audit, artifact, idempotency, and conformance rules - 9 combined contract tests passed - commit pending closeout - next P2-T08

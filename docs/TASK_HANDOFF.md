@@ -20,9 +20,9 @@ Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-ma
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P2-T07
-State: P2-T06 preview/audit implementation verified; implementation commit and push pending
-Next required action: commit/push P2-T06, then claim P2-T07 and specify/test the universal AI-agent adapter contract.
+Master plan task: P2-T08
+State: P2-T07 universal AI-agent contract verified; contract commit and push pending
+Next required action: commit/push P2-T07, then audit and close the complete P2 adapter-contract phase.
 
 ## Product Goal Snapshot
 
@@ -111,6 +111,46 @@ Quota state and closeout action:
 ```
 
 ## Handoff Log
+
+## 2026-08-31 - P2-T07 - exit
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `026e9da`
+Scope: specify a vendor-neutral AI-agent adapter for Codex, Claude, and compatible terminal/API tools
+Files intended: contract document, contract tests, master tracker, and handoff
+Actions: defined normative discover/dispatch/status/handoff/cancel/resume/artifacts/audit operations; fixed Herdr execution authority, reconnect/revision/idempotency behavior, secret/policy/audit boundaries, and minimum conformance evidence
+Verification: `python3 -m unittest tests.test_agent_adapter_contract tests.test_adapter_contract -v` passed 9 tests; `git diff --check` passed
+Evidence: contract document plus machine checks for all operations, runtime/memory authority, cancellation/recovery, approval/audit, artifacts, and parallel-run conformance
+Files changed: `docs/contracts/agent-adapter.md`, `tests/test_agent_adapter_contract.py`, master tracker, and handoff
+Commit: pending contract commit
+Push: pending
+Decisions: adapter implementations translate to Herdr rather than replacing it; unknown/disconnected/blocked states never become success; force cancellation and external writes remain approval-gated
+Assumptions: concrete Codex/Claude adapters will prove this same contract in later implementation tasks
+Blocked items: none for specification; concrete runtime conformance remains later work
+Next exact action: commit/push P2-T07, then claim P2-T08
+Approval needed: none
+Secret/external-write status: no secrets; repository-local docs/tests only
+Quota state and closeout action: no warning; verified contract unit ready to push
+
+## 2026-08-31 - P2-T07 - takeover
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `026e9da`
+Scope: specify a vendor-neutral AI-agent adapter for Codex, Claude, and compatible terminal/API tools
+Files intended: `docs/contracts/agent-adapter.md`, contract tests, master tracker, and handoff
+Actions: claimed P2-T07 in plan order
+Verification: pending contract validation test
+Evidence: Herdr v0.8.2 capability ledger, holaOS harness map, and P2 identity/capability/policy/audit envelopes
+Files changed: tracker and handoff at takeover
+Commit: none yet
+Push: none yet
+Decisions: contract covers discover, dispatch, status, handoff, cancel, resume, artifacts, audit and reconnect semantics; Herdr remains execution authority
+Assumptions: document requirements can be machine-checked before concrete adapter implementations exist
+Blocked items: none
+Next exact action: inspect contract/test layout, create the specification and its validation test, then run it
+Approval needed: none
+Secret/external-write status: no secrets; repository-local docs/tests only
+Quota state and closeout action: no warning; close and push current unit on warning
 
 ## 2026-08-31 - P2-T06 - exit
 
