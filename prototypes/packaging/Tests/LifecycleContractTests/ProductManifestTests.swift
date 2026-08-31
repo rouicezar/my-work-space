@@ -23,6 +23,15 @@ private func repositoryRoot() -> URL {
         .deletingLastPathComponent()
 }
 
+@Test func firstScreenIsARealTaskComposerInsteadOfSetupOrRecovery() {
+    let contract = WorkbenchSurfaceContract.productDefault
+
+    #expect(contract.initialDestination == .newTask)
+    #expect(contract.composerPlacement == .firstScreen)
+    #expect(contract.taskSubmissionBinding == .supervisorUnifiedTask)
+    #expect(contract.setupAndRecoveryPlacement == .separateSettings)
+}
+
 @Test func realProductManifestLoadsAndOrdersComponents() throws {
     let manifestURL = repositoryRoot().appending(path: "config/product-manifest.json")
     let manifest = try ProductManifest.load(from: manifestURL)

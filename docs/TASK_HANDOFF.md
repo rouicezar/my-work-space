@@ -1,5 +1,40 @@
 # Forma AI Task Handoff
 
+## 2026-08-31 - P4-T01 - parallel exit
+
+Executor: Codex delegated workbench agent
+Scope: first-screen task-composer contract red test only
+Actions: added a lifecycle contract test requiring New task as the initial destination, the composer on the first screen, unified Supervisor task submission, and setup/recovery in separate Settings
+Verification: full Swift baseline passed 30 tests with 2 real-Keychain tests skipped; the filtered new test then failed at compile time because `WorkbenchSurfaceContract` is not in scope, with the four required enum values consequently unresolved
+Evidence: the failure is contract absence, not a runtime, dependency, or unrelated regression; no product implementation was added in this red-test unit
+Files changed: `prototypes/packaging/Tests/LifecycleContractTests/ProductManifestTests.swift` plus synchronized English/Chinese control documents
+Commit: pending red-test commit
+Push: pending red-test push
+Decisions: the contract must describe truthful runtime binding and first-screen placement; a screenshot or existing SwiftUI text is insufficient acceptance evidence
+Blocked items: none
+Next exact action: commit and push P4-T01, then claim P4-T02 and implement the smallest contract/UI binding that turns this test green
+Approval needed: none
+Secret/external-write status: no secrets, credentials, cloud calls, or destructive actions
+
+## 2026-08-31 - P4-T01 - parallel takeover
+
+Executor: Codex delegated workbench agent
+Starting git state: clean detached worktree at `8e09942`, matching `main` and `origin/main`; the primary checkout remains the P3 owner
+Scope: write the failing UI contract test for the first-screen task composer only; do not change P3 task state
+Files intended: lifecycle contract test plus synchronized English/Chinese control documents
+Actions: reviewed the current SwiftUI workbench, manifest contract, and Swift tests; confirmed a real task submission surface exists but no machine-readable first-screen workbench contract exists
+Verification: targeted Swift package test must fail specifically because the composer contract is absent while existing tests remain green
+Evidence: `FormaAIApp.swift` currently defaults to New task and submits through `SupervisorClient`, but the lifecycle contract exposes no first-screen task-composer declaration
+Files changed: control documents at takeover
+Commit: none yet
+Push: none yet
+Decisions: P4-T01 is a red-test-only unit; model selection, agent state, history, recovery, settings IA, and real Herdr wiring remain later tasks
+Assumptions: the user's explicit parallel delegation permits P4-T01 to be `in_progress` while P3-T06 remains owned by the primary task
+Blocked items: none
+Next exact action: add a contract test that requires task-composer placement, truthful runtime binding, and separation from setup/recovery, then run the targeted Swift suite and preserve the expected red result
+Approval needed: none; repository-local tests only
+Secret/external-write status: no secrets, credentials, cloud calls, or destructive actions
+
 This is the authoritative handoff document for agent takeover, interruption recovery, and cross-tool continuity.
 
 ## 2026-08-31 - P2-T08 - takeover
