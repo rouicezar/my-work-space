@@ -21,6 +21,7 @@ struct FormaAIPrototypeApp: App {
 struct ManifestOverview: View {
     private let surfaceContract: WorkbenchSurfaceContract
     @State private var section: WorkspaceSection?
+    @State private var selectedModelChoice: ModelRouteChoice
     @State private var prompt = ""
     @State private var currentTaskPrompt = ""
     @State private var taskState: WorkbenchTaskState = .idle
@@ -36,6 +37,7 @@ struct ManifestOverview: View {
     init(surfaceContract: WorkbenchSurfaceContract = .productDefault) {
         self.surfaceContract = surfaceContract
         _section = State(initialValue: WorkspaceSection(surfaceContract.initialDestination))
+        _selectedModelChoice = State(initialValue: surfaceContract.modelSelection.defaultChoice)
     }
 
     var body: some View {
@@ -184,6 +186,23 @@ struct ManifestOverview: View {
 
     private var composer: some View {
         VStack(spacing: 10) {
+            HStack(spacing: 8) {
+                Label("Model route", systemImage: "cpu")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Picker("Model route", selection: $selectedModelChoice) {
+                    ForEach(surfaceContract.modelSelection.availableChoices) { choice in
+                        Text(choice.title).tag(choice)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .fixedSize()
+                Spacer()
+                Text(selectedModelChoice.bindingStatus)
+                    .font(.caption2)
+                    .foregroundStyle(selectedModelChoice.isExecutionBound ? Color.secondary : Color.orange)
+            }
             HStack(alignment: .bottom, spacing: 12) {
                 TextField("Message Forma AI", text: $prompt, axis: .vertical)
                     .textFieldStyle(.plain)
@@ -195,13 +214,17 @@ struct ManifestOverview: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .buttonBorderShape(.circle)
-                .disabled(prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || taskState.isBusy)
+                .disabled(
+                    prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        || taskState.isBusy
+                        || !selectedModelChoice.isExecutionBound
+                )
                 .accessibilityLabel("Submit task")
             }
             .padding(14)
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(.separator.opacity(0.7)))
-            Text("Local by default. A cloud proposal never sends data until you approve the exact request.")
+            Text(selectedModelChoice.safetyDescription)
                 .font(.caption2).foregroundStyle(.tertiary)
         }
         .padding(.horizontal, 28).padding(.bottom, 22)
@@ -1328,6 +1351,38 @@ private enum WorkspaceSection: String, Hashable {
         case .newTask: self = .newTask
         case .history: self = .history
         case .settings: self = .settings
+        }
+    }
+}
+
+private extension ModelRouteChoice {
+    var title: String {
+        switch self {
+        case .automaticLocalFirst: "Automatic · local first"
+        case .localOnly: "Local only"
+        case .cloudWithApproval: "Cloud · ask every time"
+        }
+    }
+
+    var isExecutionBound: Bool {
+        self == .automaticLocalFirst
+    }
+
+    var bindingStatus: String {
+        switch self {
+        case .automaticLocalFirst: "Ready"
+        case .localOnly, .cloudWithApproval: "Execution binding pending"
+        }
+    }
+
+    var safetyDescription: String {
+        switch self {
+        case .automaticLocalFirst:
+            "Local by default. A cloud proposal never sends data until you approve the exact request."
+        case .localOnly:
+            "Local-only preference is saved for this task, but submission waits until the Supervisor routing contract accepts it."
+        case .cloudWithApproval:
+            "Cloud preference never authorizes sending. A credential, exact payload preview, and separate approval are still required; submission waits for routing-contract support."
         }
     }
 }

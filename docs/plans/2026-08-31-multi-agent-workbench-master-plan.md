@@ -34,8 +34,9 @@ Current task: P3-T08
 Current status: pending
 Next action: add the product-owned UI task-state fixture for parallel Herdr agents without fabricating runtime evidence.
 
-User-approved parallel task: P4-T03
+User-approved parallel task: P4-T04
 Parallel status: verified
+Parallel next action: claim P4-T05 in both language sets and add the task-history visible-state contract test; do not change P3 ownership or status.
 Parallel next action: claim P4-T04 in both language sets and implement truthful selector state plus composer-toolbar UI, without changing P3 ownership or status.
 
 Current Git fact at P2-T08 takeover:
@@ -192,7 +193,7 @@ P2 completion never waives these gates and must not be cited as evidence that an
 | P4-T01 | verified | Write UI contract test for first-screen task composer | `prototypes/packaging/Tests/LifecycleContractTests/ProductManifestTests.swift` | `swift test --package-path prototypes/packaging` | Baseline 30 tests passed with 2 skipped; new target fails because `WorkbenchSurfaceContract` is absent |
 | P4-T02 | verified | Move daily work surface above setup/recovery | `prototypes/packaging/Sources/FormaAIApp/FormaAIApp.swift` | `swift test --package-path prototypes/packaging` | Target contract passed; full Swift package passed 31 tests with 2 real-Keychain tests skipped |
 | P4-T03 | verified | Add model/provider selection contract | Lifecycle contract tests | `swift test --package-path prototypes/packaging` | Filtered test fails because `WorkbenchSurfaceContract` has no `modelSelection` member |
-| P4-T04 | pending | Implement cloud/local model selector state | Swift app and manifest files | `swift test --package-path prototypes/packaging` | Selector state passes tests |
+| P4-T04 | verified | Implement cloud/local model selector state | Swift app and manifest files | `swift test --package-path prototypes/packaging` | Selector target passed; full Swift package passed 32 tests with 2 real-Keychain tests skipped |
 | P4-T05 | pending | Add task history visible state contract | Swift tests | `swift test --package-path prototypes/packaging` | History state test passes |
 | P4-T06 | pending | Add recovery action visible state contract | Swift tests | `swift test --package-path prototypes/packaging` | Recovery state test passes |
 | P4-T07 | pending | Add complete Settings information architecture and contracts | Swift app, manifest, and tests | `swift test --package-path prototypes/packaging` | All eight settings sections are reachable and setup/recovery is separated |

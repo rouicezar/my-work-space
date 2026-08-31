@@ -18,17 +18,47 @@ public enum SetupAndRecoveryPlacement: Sendable {
     case separateSettings
 }
 
+public enum ModelSelectorPlacement: Sendable {
+    case composerToolbar
+}
+
+public enum ModelRouteChoice: String, CaseIterable, Identifiable, Sendable {
+    case automaticLocalFirst
+    case localOnly
+    case cloudWithApproval
+
+    public var id: Self { self }
+}
+
+public enum CloudSelectionGuard: Sendable {
+    case credentialAndPerRequestApproval
+}
+
+public struct ModelSelectionContract: Sendable {
+    public let placement: ModelSelectorPlacement
+    public let defaultChoice: ModelRouteChoice
+    public let availableChoices: [ModelRouteChoice]
+    public let cloudGuard: CloudSelectionGuard
+}
+
 public struct WorkbenchSurfaceContract: Sendable {
     public let initialDestination: WorkbenchDestination
     public let composerPlacement: ComposerPlacement
     public let taskSubmissionBinding: TaskSubmissionBinding
     public let setupAndRecoveryPlacement: SetupAndRecoveryPlacement
+    public let modelSelection: ModelSelectionContract
 
     public static let productDefault = WorkbenchSurfaceContract(
         initialDestination: .newTask,
         composerPlacement: .firstScreen,
         taskSubmissionBinding: .supervisorUnifiedTask,
-        setupAndRecoveryPlacement: .separateSettings
+        setupAndRecoveryPlacement: .separateSettings,
+        modelSelection: ModelSelectionContract(
+            placement: .composerToolbar,
+            defaultChoice: .automaticLocalFirst,
+            availableChoices: [.automaticLocalFirst, .localOnly, .cloudWithApproval],
+            cloudGuard: .credentialAndPerRequestApproval
+        )
     )
 }
 

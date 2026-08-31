@@ -1,5 +1,40 @@
 # Forma AI Task Handoff
 
+## 2026-08-31 - P4-T04 - parallel exit
+
+Executor: Codex delegated workbench agent
+Scope: model-selection contract, local UI state, and visible composer-toolbar selector
+Actions: added automatic-local-first, local-only, and cloud-with-approval choices; bound the selector to view state; kept automatic routing executable while showing and disabling submission for preferences whose Supervisor binding is pending
+Verification: filtered selector contract passed; full Swift package passed 32 tests with 2 real-Keychain tests skipped; source review confirms cloud remains guarded by Keychain credential state, exact proposal UI, and explicit Approve and run action
+Evidence: tests prove the selector contract and app compile; source state proves unsupported preferences are not silently submitted; no claim is made that local-only/cloud-preference routing is wired into Supervisor yet
+Files changed: `ProductManifest.swift`, `FormaAIApp.swift`, and synchronized English/Chinese control documents
+Commit: pending implementation commit
+Push: pending implementation push
+Decisions: automatic local-first remains the only execution-bound choice in this task; local-only and cloud-with-approval are truthful pending preferences, with visible pending status and disabled submit
+Blocked items: none
+Next exact action: commit and push P4-T04, notify the P3 owner to synchronize, then P4-T05 adds the history visible-state red test
+Approval needed: none
+Secret/external-write status: no secrets, credentials, cloud calls, or destructive actions
+
+## 2026-08-31 - P4-T04 - parallel takeover
+
+Executor: Codex delegated workbench agent
+Starting git state: clean detached worktree synchronized to primary/`origin/main` at `4e0941a`; P3-T08 remains pending and owned by the primary task
+Scope: implement the model-selection contract, local UI state, and visible composer-toolbar selector; do not change P3 or claim provider readiness
+Files intended: lifecycle contract, SwiftUI app, and synchronized English/Chinese control documents
+Actions: repaired the stale detached baseline before claiming P4-T04; confirmed the P4-T03 red test is present and the current P3 baton is P3-T08
+Verification: filtered selector test and full Swift package must pass; source/state review must prove cloud selection still requires configured credentials and separate per-request approval
+Evidence: pending implementation and tests
+Files changed: control documents at takeover
+Commit: none yet
+Push: none yet
+Decisions: selector choices govern routing preference only; they cannot mark a provider ready, expose credentials, or authorize data transmission
+Assumptions: current Supervisor unified-task request has no route-preference input, so P4-T04 may expose truthful local UI preference state but must label execution binding as pending until the later routing contract is extended
+Blocked items: none
+Next exact action: implement the contract types, add selector state/UI in the composer, keep explicit pending-binding copy, and run targeted/full Swift tests
+Approval needed: none
+Secret/external-write status: no secrets, credentials, cloud calls, or destructive actions
+
 ## 2026-08-31 - P3-T07 - exit
 
 Executor: Codex root agent
