@@ -1,5 +1,32 @@
 # Forma AI Task Handoff
 
+## 2026-08-31 - P4-T07 - exit
+
+Executor: Codex root agent
+Scope: complete product Settings information architecture and native SwiftUI surface
+Actions: added a public eight-section Settings contract; renamed primary navigation from Settings & recovery to Settings; added a native macOS split settings surface; routed existing cloud/model, memory, runtime, and diagnostics controls to their responsible sections; kept first-run setup separate and progressively disclosed installation/recovery controls only under Diagnostics & Recovery
+Verification: the target Settings contract test passed; full Swift package passed 35 tests with 2 real-Keychain tests skipped; source inspection confirmed all eight contract sections are rendered from `surfaceContract.settings.sections`, normal navigation says Settings, and setup/recovery wording exists only in the diagnostics path; `git diff --check` passed
+Evidence boundary: tests prove contract reachability and compilation, not final visual acceptance or every future setting's backend binding; unavailable functions remain honest explanatory states
+Files changed: `ProductManifest.swift`, `ProductManifestTests.swift`, `FormaAIApp.swift`, and synchronized English/Chinese control documents
+Commit and push: included in the following verified P4-T07 commit
+Design influence: the frontend-design skill led to a restrained, information-dense native macOS hierarchy with section-specific summaries instead of a generic card wall; macOS platform conventions took precedence over web typography guidance
+Blocked items: none
+Next exact action: P4-T07A verifies the separately installed holaOS non-visual adapter boundary without bundling uncleared UI/assets
+Approval needed: none
+Secret/external-write status: no credentials, cloud calls, downloads, or destructive actions; mandatory control-document sync only
+
+## 2026-08-31 - P4-T07 - takeover
+
+Executor: Codex root agent
+Starting git state: clean and synchronized at `5a39632`; Swift baseline 34 passed with 2 real-Keychain skips
+Scope: replace the setup-shaped Settings page with a normal eight-section product Settings information architecture while preserving truthful existing controls
+Requirements: General; Models & Providers; Agents & Tools; Memory; Permissions & Approvals; Local Runtime; Data & Privacy; Diagnostics & Recovery; first-run setup remains separate and recovery is progressively disclosed under its named section
+Design: restrained native macOS split settings surface with clear section identity, compact status summaries, and no copied upstream visual assets; existing runtime/provider controls are routed to their appropriate sections rather than duplicated
+Files intended: lifecycle contract, SwiftUI app, lifecycle tests, and synchronized English/Chinese control documents
+Planned verification: red contract test first, then target/full Swift tests, source inspection for eight reachable sections and separate setup/recovery semantics, `git diff --check`
+Approval needed: none; UI/contract work only, no credentials, cloud calls, downloads, or destructive actions
+Next exact action: write the eight-section failing contract test before implementation
+
 ## 2026-08-31 - P4-T06 - green correction
 
 Executor: Codex root agent
@@ -512,9 +539,9 @@ Secret/external-write status: no secrets; mocks only
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P4-T07
-State: P4-T05 green after prerequisite correction; P4-T06 verified as the independent recovery-contract red unit; P4-T07 pending
-Next required action: commit and push the P4-T05 correction/P4-T06 red unit, then claim P4-T07.
+Master plan task: P4-T07A
+State: P4-T07 verified; P4-T07A pending
+Next required action: commit and push P4-T07, then verify the separately installed holaOS non-visual adapter boundary.
 
 ## Product Goal Snapshot
 

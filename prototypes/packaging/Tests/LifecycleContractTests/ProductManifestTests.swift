@@ -64,6 +64,24 @@ private func repositoryRoot() -> URL {
     #expect(recovery.forceTermination == .separateExplicitApproval)
 }
 
+@Test func settingsAreACompleteProductSurfaceNotASetupScreen() {
+    let settings = WorkbenchSurfaceContract.productDefault.settings
+
+    #expect(settings.placement == .primaryNavigation)
+    #expect(settings.sections == [
+        .general,
+        .modelsAndProviders,
+        .agentsAndTools,
+        .memory,
+        .permissionsAndApprovals,
+        .localRuntime,
+        .dataAndPrivacy,
+        .diagnosticsAndRecovery,
+    ])
+    #expect(settings.firstRunSetup == .separateAssistant)
+    #expect(settings.recovery == .diagnosticsAndRecoverySection)
+}
+
 @Test func realProductManifestLoadsAndOrdersComponents() throws {
     let manifestURL = repositoryRoot().appending(path: "config/product-manifest.json")
     let manifest = try ProductManifest.load(from: manifestURL)

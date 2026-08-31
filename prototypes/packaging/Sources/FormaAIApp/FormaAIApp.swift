@@ -26,6 +26,7 @@ struct ManifestOverview: View {
     @State private var currentTaskPrompt = ""
     @State private var taskState: WorkbenchTaskState = .idle
     @State private var agentTasks: [AgentTaskViewState]
+    @State private var selectedSettingsSection: LifecycleContract.SettingsSection = .general
     @State private var cloudSetupState: CloudSetupViewState = .loading
     @State private var deepSeekAPIKey = ""
     @State private var result: Result<ProductManifest, Error>?
@@ -55,7 +56,7 @@ struct ManifestOverview: View {
                         .tag(WorkspaceSection.history)
                 }
                 Section {
-                    Label("Settings & recovery", systemImage: "gearshape")
+                    Label("Settings", systemImage: "gearshape")
                         .tag(WorkspaceSection.settings)
                 }
             }
@@ -74,7 +75,7 @@ struct ManifestOverview: View {
             switch section ?? .newTask {
             case .newTask: workbench
             case .history: history
-            case .settings: setupAssistant
+            case .settings: settingsSurface
             }
         }
         .task {
@@ -287,52 +288,96 @@ struct ManifestOverview: View {
         .navigationTitle("History")
     }
 
-    private var setupAssistant: some View {
-        ScrollView {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("Settings & recovery")
-                .font(.largeTitle.bold())
-            Text("Installation, local runtime, models, and advanced diagnostics")
-                .foregroundStyle(.secondary)
-
-            supervisorSection
-            cloudSettingsSection
-            installationSection
-            modelSection
-            embeddingSection
-            runtimeSection
-
-            switch result {
-            case .success(let manifest):
-                Label("Lifecycle contract valid", systemImage: "checkmark.shield.fill")
-                    .foregroundStyle(.green)
-                    .accessibilityLabel("Lifecycle contract is valid")
-                Text("Manifest \(manifest.manifestVersion)")
-                ForEach(manifest.startPlan) { component in
-                    HStack {
-                        Text(component.id)
-                            .font(.headline)
-                        Spacer()
-                        Text(component.version)
-                        Text(component.healthContract)
-                            .foregroundStyle(.secondary)
-                    }
-                    .accessibilityElement(children: .combine)
+    private var settingsSurface: some View {
+        HStack(spacing: 0) {
+            List(selection: $selectedSettingsSection) {
+                ForEach(surfaceContract.settings.sections, id: \.self) { item in
+                    Label(item.title, systemImage: item.symbol).tag(item)
                 }
-                Text("Components are installed only after an explicit first-run approval.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            case .failure(let error):
-                Label("Manifest unavailable", systemImage: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.red)
-                Text(String(describing: error))
-                    .textSelection(.enabled)
-            case nil:
-                ProgressView("Validating product contract…")
             }
-            Spacer()
+            .listStyle(.sidebar)
+            .frame(minWidth: 210, idealWidth: 230, maxWidth: 250)
+
+            Divider()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text(selectedSettingsSection.title).font(.largeTitle.bold())
+                    Text(selectedSettingsSection.summary).foregroundStyle(.secondary)
+                    settingsContent(for: selectedSettingsSection)
+                }
+                .frame(maxWidth: 760, alignment: .leading)
+                .padding(28)
+            }
+            .frame(maxWidth: .infinity)
         }
-        .padding(24)
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    @ViewBuilder
+    private func settingsContent(for item: LifecycleContract.SettingsSection) -> some View {
+        switch item {
+        case .general:
+            settingsNotice("Forma AI", icon: "app.badge", detail: "Local-first workbench · updates, language, appearance, and launch behavior will live here.")
+        case .modelsAndProviders:
+            cloudSettingsSection
+            modelSection
+        case .agentsAndTools:
+            settingsNotice("Herdr agent runtime", icon: "rectangle.3.group", detail: "Agent adapters remain governed by capability, permission, and lifecycle contracts. Live adapter management arrives with verified runtime binding.")
+        case .memory:
+            embeddingSection
+            settingsNotice("Governed memory", icon: "brain.head.profile", detail: "Semantica remains the only long-term memory authority. Nothing is promoted without provenance and policy approval.")
+        case .permissionsAndApprovals:
+            settingsNotice("Approval policy", icon: "hand.raised", detail: "Cloud transmission, external writes, and force termination require explicit task-bound approval.")
+        case .localRuntime:
+            runtimeSection
+        case .dataAndPrivacy:
+            settingsNotice("Private by default", icon: "lock.shield", detail: "Local execution is preferred. Credentials stay in Keychain and audit records never include secret values.")
+        case .diagnosticsAndRecovery:
+            settingsNotice("Setup is separate from everyday settings", icon: "wrench.and.screwdriver", detail: "Installation and repair controls are shown here only when you choose diagnostics or recovery.")
+            supervisorSection
+            installationSection
+            manifestDiagnostics
+        }
+    }
+
+    private func settingsNotice(_ title: String, icon: String, detail: String) -> some View {
+        GroupBox {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: icon).font(.title2).foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(title).font(.headline)
+                    Text(detail).font(.callout).foregroundStyle(.secondary)
+                }
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    @ViewBuilder
+    private var manifestDiagnostics: some View {
+        switch result {
+        case .success(let manifest):
+            GroupBox("Component diagnostics") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("Lifecycle contract valid", systemImage: "checkmark.shield.fill")
+                        .foregroundStyle(.green)
+                    Text("Manifest \(manifest.manifestVersion)").foregroundStyle(.secondary)
+                    ForEach(manifest.startPlan) { component in
+                        HStack {
+                            Text(component.id).font(.headline)
+                            Spacer()
+                            Text(component.version)
+                            Text(component.healthContract).foregroundStyle(.secondary)
+                        }
+                    }
+                }.frame(maxWidth: .infinity, alignment: .leading)
+            }
+        case .failure(let error):
+            settingsNotice("Manifest unavailable", icon: "exclamationmark.triangle.fill", detail: String(describing: error))
+        case nil:
+            ProgressView("Validating product contract…")
         }
     }
 
@@ -1432,6 +1477,47 @@ private extension ModelRouteChoice {
             "Local-only preference is saved for this task, but submission waits until the Supervisor routing contract accepts it."
         case .cloudWithApproval:
             "Cloud preference never authorizes sending. A credential, exact payload preview, and separate approval are still required; submission waits for routing-contract support."
+        }
+    }
+}
+
+private extension LifecycleContract.SettingsSection {
+    var title: String {
+        switch self {
+        case .general: "General"
+        case .modelsAndProviders: "Models & Providers"
+        case .agentsAndTools: "Agents & Tools"
+        case .memory: "Memory"
+        case .permissionsAndApprovals: "Permissions & Approvals"
+        case .localRuntime: "Local Runtime"
+        case .dataAndPrivacy: "Data & Privacy"
+        case .diagnosticsAndRecovery: "Diagnostics & Recovery"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .general: "gearshape"
+        case .modelsAndProviders: "cpu"
+        case .agentsAndTools: "rectangle.3.group"
+        case .memory: "brain.head.profile"
+        case .permissionsAndApprovals: "hand.raised"
+        case .localRuntime: "server.rack"
+        case .dataAndPrivacy: "lock.shield"
+        case .diagnosticsAndRecovery: "stethoscope"
+        }
+    }
+
+    var summary: String {
+        switch self {
+        case .general: "Everyday product preferences, separate from first-run setup."
+        case .modelsAndProviders: "Local models, optional cloud providers, and truthful credential state."
+        case .agentsAndTools: "Agent adapters, capabilities, and tool availability."
+        case .memory: "Governed long-term memory and semantic retrieval."
+        case .permissionsAndApprovals: "Review what agents may do and when Forma AI must ask."
+        case .localRuntime: "Local inference status and runtime controls."
+        case .dataAndPrivacy: "Data routes, retention, credentials, and audit boundaries."
+        case .diagnosticsAndRecovery: "Progressively disclosed installation, repair, and component diagnostics."
         }
     }
 }

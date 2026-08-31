@@ -30,9 +30,9 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-08-31 Asia/Shanghai
 Current phase: P4 independent workbench product experience
-Current task: P4-T07
+Current task: P4-T07A
 Current status: pending
-Next action: implement the complete eight-section Settings information architecture while keeping setup and recovery separate from normal product settings.
+Next action: verify the separately installed holaOS non-visual adapter boundary without bundling uncleared frontend code or assets.
 
 Completed parallel task: P4-T04
 Parallel status: verified; the dedicated task produced no P4-T05 changes before primary takeover
@@ -195,7 +195,7 @@ P2 completion never waives these gates and must not be cited as evidence that an
 | P4-T04 | verified | Implement cloud/local model selector state | Swift app and manifest files | `swift test --package-path prototypes/packaging` | Selector target passed; full Swift package passed 32 tests with 2 real-Keychain tests skipped |
 | P4-T05 | verified | Add task history visible state contract | Swift tests | `swift test --package-path prototypes/packaging` | Target history test passed; full Swift package passed 33 tests with 2 real-Keychain skips |
 | P4-T06 | verified | Add recovery action visible state contract | Swift tests | `swift test --package-path prototypes/packaging` | Target recovery test passed; full Swift package passed 34 tests with 2 real-Keychain skips |
-| P4-T07 | pending | Add complete Settings information architecture and contracts | Swift app, manifest, and tests | `swift test --package-path prototypes/packaging` | All eight settings sections are reachable and setup/recovery is separated |
+| P4-T07 | verified | Add complete Settings information architecture and contracts | Swift app, manifest, and tests | `swift test --package-path prototypes/packaging` | Target Settings contract passed; full Swift package passed 35 tests with 2 real-Keychain skips |
 | P4-T07A | pending | Verify the separately installed holaOS non-visual adapter boundary | holaOS adapter, tests, and capability/reuse ledger | Targeted adapter conformance test plus upstream entry-point audit | Generic identity, health, and capability smoke test passes without bundling uncleared UI/assets |
 | P4-T08 | pending | Capture foreground UI evidence | `evidence/ui/workbench-first-screen-YYYY-MM-DD.png` | Manual launch plus screenshot review | Screenshot proves first screen is workbench |
 | P4-T09 | pending | Commit workbench product experience slice | Swift files, tests, evidence if allowed | `git diff --check` then `git commit` | Commit created |
@@ -293,3 +293,4 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 - 2026-08-31 - P4-T05 - Codex root agent - corrected the invalid permanent-red closeout after Swift target compilation proved it blocked later contract tests; implemented only the history truth-boundary contract for primary navigation, persisted-task sourcing, explicit empty state, and no preview fixtures - target test passed and full Swift package passed 33 tests with 2 real-Keychain skips; no persistence or fake rows added - next P4-T06
 - 2026-08-31 - P4-T06 - Codex root agent - added a recovery visibility red contract for task-detail placement, blocked/failed/interrupted/unknown states, persisted verified-session resume, fresh snapshot/revision reconciliation, and separately approved force termination - filtered test failed exactly because `WorkbenchSurfaceContract` lacks `recovery`; dependent enum inference errors were consequential - committed/pushed in the paired handoff - next P4-T07
 - 2026-08-31 - P4-T06 correction - Codex root agent - implemented only the pure recovery visibility contract required to prevent a permanent compile-red blocker before P4-T07 - target recovery test passed and full Swift package passed 34 tests with 2 real-Keychain skips; no recovery UI, persistence, or lifecycle authority was invented - next P4-T07
+- 2026-08-31 - P4-T07 - Codex root agent - replaced the setup-shaped Settings page with a contract-driven native macOS split surface containing General, Models & Providers, Agents & Tools, Memory, Permissions & Approvals, Local Runtime, Data & Privacy, and Diagnostics & Recovery; renamed primary navigation to Settings and progressively disclosed existing installation/repair diagnostics only in the final section - target contract passed, full Swift package passed 35 tests with 2 real-Keychain skips, and source boundary inspection passed - next P4-T07A

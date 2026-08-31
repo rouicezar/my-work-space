@@ -91,6 +91,36 @@ public struct TaskRecoveryContract: Sendable {
     public let forceTermination: ForceTerminationPolicy
 }
 
+public enum SettingsPlacement: Sendable, Equatable {
+    case primaryNavigation
+}
+
+public enum SettingsSection: String, CaseIterable, Sendable, Equatable, Hashable {
+    case general
+    case modelsAndProviders
+    case agentsAndTools
+    case memory
+    case permissionsAndApprovals
+    case localRuntime
+    case dataAndPrivacy
+    case diagnosticsAndRecovery
+}
+
+public enum FirstRunSetupPlacement: Sendable, Equatable {
+    case separateAssistant
+}
+
+public enum RecoverySettingsPlacement: Sendable, Equatable {
+    case diagnosticsAndRecoverySection
+}
+
+public struct SettingsSurfaceContract: Sendable {
+    public let placement: SettingsPlacement
+    public let sections: [SettingsSection]
+    public let firstRunSetup: FirstRunSetupPlacement
+    public let recovery: RecoverySettingsPlacement
+}
+
 public struct WorkbenchSurfaceContract: Sendable {
     public let initialDestination: WorkbenchDestination
     public let composerPlacement: ComposerPlacement
@@ -99,6 +129,7 @@ public struct WorkbenchSurfaceContract: Sendable {
     public let modelSelection: ModelSelectionContract
     public let history: TaskHistoryContract
     public let recovery: TaskRecoveryContract
+    public let settings: SettingsSurfaceContract
 
     public static let productDefault = WorkbenchSurfaceContract(
         initialDestination: .newTask,
@@ -123,6 +154,12 @@ public struct WorkbenchSurfaceContract: Sendable {
             resumeSource: .persistedTaskAndVerifiedNativeSession,
             reconciliation: .freshSnapshotAndRevisionBeforeResume,
             forceTermination: .separateExplicitApproval
+        ),
+        settings: SettingsSurfaceContract(
+            placement: .primaryNavigation,
+            sections: SettingsSection.allCases,
+            firstRunSetup: .separateAssistant,
+            recovery: .diagnosticsAndRecoverySection
         )
     )
 }
