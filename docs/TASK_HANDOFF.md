@@ -1,14 +1,23 @@
 # Forma AI Task Handoff
 
+## 2026-08-31 - P4-T07 - documentation calibration
+
+Executor: Codex root agent
+Reason: independent audit confirmed the implementation and all eight reachable contract-driven sections, but found stale capability, commit, and baton evidence plus acceptance wording broader than the tests prove
+Corrections: set CAP-12 to partial; recorded exact implementation commit `51fdfe2`; limited acceptance to Settings information architecture and reachable surface; explicitly left full Agents, Memory, Permissions, Data management and a verified first-run user flow pending
+Verification: bilingual control-document parity inspection and `git diff --check`; no product code changed and the independently rerun Swift result remains 35 passed with 2 real-Keychain skips
+Next exact action: commit and push this documentation calibration, confirm a clean synchronized repository, then leave P4-T07A pending for a separate takeover
+Secret/external-write status: no credentials, cloud calls, downloads, or destructive actions; mandatory Chinese mirror synchronization only
+
 ## 2026-08-31 - P4-T07 - exit
 
 Executor: Codex root agent
 Scope: complete product Settings information architecture and native SwiftUI surface
-Actions: added a public eight-section Settings contract; renamed primary navigation from Settings & recovery to Settings; added a native macOS split settings surface; routed existing cloud/model, memory, runtime, and diagnostics controls to their responsible sections; kept first-run setup separate and progressively disclosed installation/recovery controls only under Diagnostics & Recovery
+Actions: added a public eight-section Settings contract; renamed primary navigation from Settings & recovery to Settings; added a native macOS split settings surface; routed existing cloud/model, memory, runtime, and diagnostics controls to their responsible sections; the contract declares first-run setup separate and installation/recovery controls are progressively disclosed only under Diagnostics & Recovery
 Verification: the target Settings contract test passed; full Swift package passed 35 tests with 2 real-Keychain tests skipped; source inspection confirmed all eight contract sections are rendered from `surfaceContract.settings.sections`, normal navigation says Settings, and setup/recovery wording exists only in the diagnostics path; `git diff --check` passed
-Evidence boundary: tests prove contract reachability and compilation, not final visual acceptance or every future setting's backend binding; unavailable functions remain honest explanatory states
+Evidence boundary: tests prove the eight-section information architecture, reachability, and compilation, not final visual acceptance, complete functional management for Agents, Memory, Permissions, or Data, or a verified first-run user flow; `separateAssistant` is a contract statement rather than user-flow evidence, and unavailable functions remain honest explanatory states
 Files changed: `ProductManifest.swift`, `ProductManifestTests.swift`, `FormaAIApp.swift`, and synchronized English/Chinese control documents
-Commit and push: included in the following verified P4-T07 commit
+Commit and push: `51fdfe2 feat: build complete product settings surface` pushed to `origin/main`
 Design influence: the frontend-design skill led to a restrained, information-dense native macOS hierarchy with section-specific summaries instead of a generic card wall; macOS platform conventions took precedence over web typography guidance
 Blocked items: none
 Next exact action: P4-T07A verifies the separately installed holaOS non-visual adapter boundary without bundling uncleared UI/assets
@@ -541,7 +550,7 @@ Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
 Master plan task: P4-T07A
 State: P4-T07 verified; P4-T07A pending
-Next required action: commit and push P4-T07, then verify the separately installed holaOS non-visual adapter boundary.
+Next required action: commit and push the P4-T07 documentation calibration, confirm a clean synchronized repository, and keep P4-T07A pending until a separate takeover.
 
 ## Product Goal Snapshot
 
