@@ -19,7 +19,8 @@ struct FormaAIPrototypeApp: App {
 }
 
 struct ManifestOverview: View {
-    @State private var section: WorkspaceSection? = .newTask
+    private let surfaceContract: WorkbenchSurfaceContract
+    @State private var section: WorkspaceSection?
     @State private var prompt = ""
     @State private var currentTaskPrompt = ""
     @State private var taskState: WorkbenchTaskState = .idle
@@ -31,6 +32,11 @@ struct ManifestOverview: View {
     @State private var modelState: ModelViewState = .loading
     @State private var embeddingState: EmbeddingViewState = .loading
     @State private var runtimeState: RuntimeViewState = .loading
+
+    init(surfaceContract: WorkbenchSurfaceContract = .productDefault) {
+        self.surfaceContract = surfaceContract
+        _section = State(initialValue: WorkspaceSection(surfaceContract.initialDestination))
+    }
 
     var body: some View {
         NavigationSplitView {
@@ -1316,6 +1322,14 @@ private enum WorkspaceSection: String, Hashable {
     case newTask
     case history
     case settings
+
+    init(_ destination: WorkbenchDestination) {
+        switch destination {
+        case .newTask: self = .newTask
+        case .history: self = .history
+        case .settings: self = .settings
+        }
+    }
 }
 
 private enum WorkbenchTaskState: Sendable {

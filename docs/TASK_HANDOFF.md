@@ -1,5 +1,40 @@
 # Forma AI Task Handoff
 
+## 2026-08-31 - P4-T02 - parallel exit
+
+Executor: Codex delegated workbench agent
+Scope: implement the minimal first-screen workbench contract and bind SwiftUI default navigation to it
+Actions: added `WorkbenchSurfaceContract.productDefault` with New task as the initial destination, first-screen composer placement, Supervisor unified-task binding, and separate Settings/recovery; initialized `ManifestOverview` navigation from that contract
+Verification: filtered P4-T01 contract test passed; full Swift package passed 31 tests with 2 real-Keychain tests skipped; source inspection confirms task execution still calls `SupervisorClient.submitTask`
+Evidence: machine tests prove the contract exists and the app consumes its initial destination; they do not prove model selection, Herdr parallel execution, history persistence, or final visual quality
+Files changed: `ProductManifest.swift`, `FormaAIApp.swift`, and synchronized English/Chinese control documents
+Commit: pending implementation commit
+Push: pending implementation push
+Decisions: the contract is product-owned UI/integration behavior and does not duplicate an upstream non-visual capability; no holaOS asset or frontend code is copied
+Blocked items: none
+Next exact action: commit and push P4-T02, then claim P4-T03 and add the model/provider selection red test
+Approval needed: none
+Secret/external-write status: no secrets, credentials, cloud calls, or destructive actions
+
+## 2026-08-31 - P4-T02 - parallel takeover
+
+Executor: Codex delegated workbench agent
+Starting git state: clean detached worktree at `5fe31d0`; P4-T01 and its closeout are pushed to `origin/main`, and the primary P3 task was notified to synchronize before pushing
+Scope: implement the minimal first-screen workbench contract and bind the SwiftUI default navigation to it; do not change P3 state or claim model/agent/history completion
+Files intended: lifecycle contract, SwiftUI app, and synchronized English/Chinese control documents
+Actions: claimed P4-T02 after the P4-T01 red test failed specifically on the absent `WorkbenchSurfaceContract`
+Verification: filtered red test must turn green, full Swift package tests must pass, and source inspection must confirm unified Supervisor submission remains the task execution binding
+Evidence: pending implementation and test results
+Files changed: control documents at takeover
+Commit: none yet
+Push: none yet
+Decisions: the public contract will drive the initial destination and navigation ordering; it will describe the already-real Supervisor unified submission rather than introduce a fixture executor
+Assumptions: extending `LifecycleContract` is necessary because the approved P4-T01 test lives in that target, even though the original P4-T02 file column named only the app source
+Blocked items: none
+Next exact action: add the minimal contract type, bind `ManifestOverview` initial navigation/sidebar to it, and run targeted then full Swift tests
+Approval needed: none
+Secret/external-write status: no secrets, credentials, cloud calls, or destructive actions
+
 ## 2026-08-31 - P4-T01 - parallel exit
 
 Executor: Codex delegated workbench agent

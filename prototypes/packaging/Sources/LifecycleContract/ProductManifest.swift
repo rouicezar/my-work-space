@@ -1,5 +1,37 @@
 import Foundation
 
+public enum WorkbenchDestination: Sendable {
+    case newTask
+    case history
+    case settings
+}
+
+public enum ComposerPlacement: Sendable {
+    case firstScreen
+}
+
+public enum TaskSubmissionBinding: Sendable {
+    case supervisorUnifiedTask
+}
+
+public enum SetupAndRecoveryPlacement: Sendable {
+    case separateSettings
+}
+
+public struct WorkbenchSurfaceContract: Sendable {
+    public let initialDestination: WorkbenchDestination
+    public let composerPlacement: ComposerPlacement
+    public let taskSubmissionBinding: TaskSubmissionBinding
+    public let setupAndRecoveryPlacement: SetupAndRecoveryPlacement
+
+    public static let productDefault = WorkbenchSurfaceContract(
+        initialDestination: .newTask,
+        composerPlacement: .firstScreen,
+        taskSubmissionBinding: .supervisorUnifiedTask,
+        setupAndRecoveryPlacement: .separateSettings
+    )
+}
+
 public enum ManifestArgumentResolver {
     public static func explicitManifestPath(in arguments: [String]) -> String? {
         guard let flag = arguments.firstIndex(of: "--manifest") else { return nil }

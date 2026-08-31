@@ -34,9 +34,9 @@ Current task: P3-T06
 Current status: pending
 Next action: claim P3-T06 in both language sets and implement graceful-cancel/native-resume mapping that makes the two lifecycle red tests pass.
 
-User-approved parallel task: P4-T01
+User-approved parallel task: P4-T02
 Parallel status: verified
-Parallel next action: claim P4-T02 in both language sets and implement the smallest workbench-surface contract plus first-screen binding that makes the red test pass, without changing P3 ownership or status.
+Parallel next action: claim P4-T03 in both language sets and add a failing model/provider selection contract test, without changing P3 ownership or status.
 
 Current Git fact at P2-T08 takeover:
 
@@ -190,7 +190,7 @@ P2 completion never waives these gates and must not be cited as evidence that an
 | ID | Status | Action | Files | Command | Expected Evidence |
 |---|---|---|---|---|---|
 | P4-T01 | verified | Write UI contract test for first-screen task composer | `prototypes/packaging/Tests/LifecycleContractTests/ProductManifestTests.swift` | `swift test --package-path prototypes/packaging` | Baseline 30 tests passed with 2 skipped; new target fails because `WorkbenchSurfaceContract` is absent |
-| P4-T02 | pending | Move daily work surface above setup/recovery | `prototypes/packaging/Sources/FormaAIApp/FormaAIApp.swift` | `swift test --package-path prototypes/packaging` | Contract passes |
+| P4-T02 | verified | Move daily work surface above setup/recovery | `prototypes/packaging/Sources/FormaAIApp/FormaAIApp.swift` | `swift test --package-path prototypes/packaging` | Target contract passed; full Swift package passed 31 tests with 2 real-Keychain tests skipped |
 | P4-T03 | pending | Add model/provider selection contract | Lifecycle contract tests | `swift test --package-path prototypes/packaging` | Provider selector required |
 | P4-T04 | pending | Implement cloud/local model selector state | Swift app and manifest files | `swift test --package-path prototypes/packaging` | Selector state passes tests |
 | P4-T05 | pending | Add task history visible state contract | Swift tests | `swift test --package-path prototypes/packaging` | History state test passes |
