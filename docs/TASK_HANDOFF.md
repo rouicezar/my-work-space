@@ -20,9 +20,9 @@ Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-ma
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P2-T06
-State: P2-T05 expected failing preview/audit tests verified; red-test commit and push pending
-Next required action: commit/push P2-T05, then claim P2-T06 and implement only the required envelopes.
+Master plan task: P2-T07
+State: P2-T06 preview/audit implementation verified; implementation commit and push pending
+Next required action: commit/push P2-T06, then claim P2-T07 and specify/test the universal AI-agent adapter contract.
 
 ## Product Goal Snapshot
 
@@ -111,6 +111,46 @@ Quota state and closeout action:
 ```
 
 ## Handoff Log
+
+## 2026-08-31 - P2-T06 - exit
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `69a21cc`
+Scope: implement only the policy-preview and audit envelopes required by P2-T05
+Files intended: adapter contract, master tracker, and handoff
+Actions: added immutable `PolicyPreview` and `AuditEnvelope` with deterministic JSON-compatible serialization and no raw payload field
+Verification: adapter contract suite passed 5 tests; `git diff --check` passed
+Evidence: targeted unittest output
+Files changed: adapter contract, master tracker, and handoff
+Commit: pending implementation commit
+Push: pending
+Decisions: policy preview binds digest and approval boundary; audit records only correlation/action/outcome/time/redaction metadata
+Assumptions: stricter value validation can be introduced by a later explicit contract revision
+Blocked items: none
+Next exact action: commit/push P2-T06, then claim P2-T07
+Approval needed: none
+Secret/external-write status: no secrets
+Quota state and closeout action: no warning; verified unit ready to push
+
+## 2026-08-31 - P2-T06 - takeover
+
+Executor: Codex root agent
+Starting git state: clean after pushed commit `69a21cc`
+Scope: implement only the policy-preview and audit envelopes required by P2-T05
+Files intended: adapter contract, master tracker, and handoff
+Actions: claimed P2-T06 in plan order
+Verification: pending targeted unittest
+Evidence: P2-T05 red tests
+Files changed: tracker and handoff at takeover
+Commit: none yet
+Push: none yet
+Decisions: immutable envelopes and explicit tuple-to-list serialization; no raw payload content field
+Assumptions: field validation remains outside this minimal planned slice
+Blocked items: none
+Next exact action: add the two dataclasses and run contract tests
+Approval needed: none
+Secret/external-write status: no secrets
+Quota state and closeout action: no warning; close and push current unit on warning
 
 ## 2026-08-31 - P2-T05 - exit
 

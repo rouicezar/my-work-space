@@ -32,6 +32,46 @@ class CapabilityDeclaration:
 
 
 @dataclass(frozen=True)
+class PolicyPreview:
+    correlation_id: str
+    action: str
+    data_classes: tuple[str, ...]
+    external_write: bool
+    approval_required: bool
+    payload_sha256: str
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "correlation_id": self.correlation_id,
+            "action": self.action,
+            "data_classes": list(self.data_classes),
+            "external_write": self.external_write,
+            "approval_required": self.approval_required,
+            "payload_sha256": self.payload_sha256,
+        }
+
+
+@dataclass(frozen=True)
+class AuditEnvelope:
+    event_id: str
+    correlation_id: str
+    action: str
+    outcome: str
+    occurred_at: str
+    redacted_fields: tuple[str, ...]
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "event_id": self.event_id,
+            "correlation_id": self.correlation_id,
+            "action": self.action,
+            "outcome": self.outcome,
+            "occurred_at": self.occurred_at,
+            "redacted_fields": list(self.redacted_fields),
+        }
+
+
+@dataclass(frozen=True)
 class HealthEnvelope:
     schema_version: int
     status: str
