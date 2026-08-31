@@ -15,6 +15,32 @@ Secret/external-write status: no secrets handled; no cloud calls
 
 Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md`, and `AGENTS.md` before changing product code.
 
+## 2026-08-31 - P3-T01 - takeover
+
+Executor: Codex root agent
+Starting git state: clean and synchronized with `origin/main` at `4a1ad1a`
+Scope: add the failing Herdr adapter availability test only
+Upstream boundary: pinned Herdr v0.8.2 official binary discovery; socket/CLI health and real execution remain later tasks
+Files intended: `tests/test_herdr_adapter.py`, tracker, handoff
+Planned verification: targeted unittest must fail because `forma_ai.herdr_adapter` does not yet exist
+Approval needed: none; no binary download or execution
+Secret/external-write status: no secrets handled; no cloud calls
+
+## 2026-08-31 - P3-T01 - exit
+
+Executor: Codex root agent
+Scope: failing test for official Herdr binary availability discovery
+Actions: added deterministic missing-binary and discovered-only cases; both keep reachability and readiness false until a later real probe
+Verification: `python3 -m unittest tests.test_herdr_adapter -v` failed as expected with `ModuleNotFoundError: No module named 'forma_ai.herdr_adapter'`
+Files changed: `tests/test_herdr_adapter.py`, tracker, handoff
+Commit: pending this task commit
+Push: pending this task push
+Decisions: executable discovery is availability evidence only and cannot satisfy Herdr health or execution acceptance
+Blocked items: none
+Next exact action: commit and push, then claim P3-T02
+Approval needed: none
+Secret/external-write status: no secrets handled; no cloud calls or Herdr execution
+
 ## Handoff Rules
 
 - Claim exactly one task ID from the master plan before editing.
@@ -31,9 +57,9 @@ Every agent must read this file, `docs/plans/2026-08-31-multi-agent-workbench-ma
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P2-T08
-State: P2-T08 verified for the generic protocol boundary; concrete adapter conformance remains pending under P3, P4-T07A, P5, and P6
-Next required action: commit and push the P2 control-document repair, then claim P3-T01 and write the failing Herdr availability test.
+Master plan task: P3-T02
+State: P3-T01 red test verified; P3-T02 pending
+Next required action: commit and push P3-T01, then claim P3-T02 and implement only the minimal availability skeleton.
 
 ## Product Goal Snapshot
 
