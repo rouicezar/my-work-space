@@ -123,6 +123,32 @@ Next exact action: commit and push, then P3-T04
 Approval needed: none
 Secret/external-write status: no secrets; no Herdr process or cloud call
 
+## 2026-08-31 - P3-T04 - takeover
+
+Executor: Codex root agent
+Starting git state: clean and synchronized with `origin/main` at `e652ed2`
+Scope: minimal mockable Herdr task spawn/status mapping
+Implementation boundary: injected request callable, immutable task envelope, official `agent.start` and `agent.get` translation only
+Files intended: `forma_ai/herdr_adapter.py`, English and Chinese control documents
+Planned verification: all Herdr adapter tests plus generic adapter-contract tests and `git diff --check`
+Approval needed: none; no real Herdr or cloud execution
+Secret/external-write status: no secrets; mandatory Chinese sync only
+
+## 2026-08-31 - P3-T04 - exit
+
+Executor: Codex root agent
+Scope: minimal mockable Herdr spawn/status mapping
+Actions: added immutable task envelope, injected request boundary, `agent.start` translation, `agent.get` status translation, and run-to-product-task correlation only
+Verification: `python3 -m unittest tests.test_herdr_adapter tests.test_adapter_contract tests.test_agent_adapter_contract -v` passed 12 tests; `git diff --check` passed
+Files changed: `forma_ai/herdr_adapter.py`, English and Chinese control documents
+Commit: pending this task commit
+Push: pending this task push
+Decisions: Herdr responses remain authoritative; the local run/task correlation is not a scheduler or lifecycle state machine
+Blocked items: none
+Next exact action: commit and push, then P3-T05
+Approval needed: none
+Secret/external-write status: no secrets; no real Herdr or cloud execution
+
 ## Handoff Rules
 
 - Claim exactly one task ID from the master plan before editing.
@@ -140,9 +166,9 @@ Secret/external-write status: no secrets; no Herdr process or cloud call
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P3-T04
-State: P3-T03 verified red; P3-T04 pending
-Next required action: commit and push P3-T03, then claim P3-T04 in both language sets and implement the minimal request mapping.
+Master plan task: P3-T05
+State: P3-T04 verified; P3-T05 pending
+Next required action: commit and push P3-T04, then claim P3-T05 in both language sets and write cancel/resume red tests.
 
 ## Product Goal Snapshot
 

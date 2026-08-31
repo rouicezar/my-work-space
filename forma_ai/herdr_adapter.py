@@ -12,6 +12,7 @@ from .adapter_contract import AdapterIdentity, HealthEnvelope
 
 ExecutableFinder = Callable[[str], str | None]
 Clock = Callable[[], str]
+Request = Callable[[str, dict[str, object]], dict[str, object]]
 
 
 def _utc_now() -> str:
@@ -26,6 +27,16 @@ class HerdrAvailability:
     health: HealthEnvelope
 
 
+@dataclass(frozen=True)
+class HerdrTask:
+    task_id: str
+    run_id: str
+    workspace_id: str
+    pane_id: str
+    state: str
+    revision: int
+
+
 class HerdrAdapter:
     """Discover Herdr without mistaking executable presence for health."""
 
@@ -34,9 +45,12 @@ class HerdrAdapter:
         *,
         executable_finder: ExecutableFinder = which,
         clock: Clock = _utc_now,
+        request: Request | None = None,
     ) -> None:
         self._executable_finder = executable_finder
         self._clock = clock
+        self._request = request
+        self._task_ids_by_run_id: dict[str, str] = {}
 
     def availability(self) -> HerdrAvailability:
         executable_path = self._executable_finder("herdr")
@@ -65,4 +79,50 @@ class HerdrAdapter:
             installed=installed,
             executable_path=executable_path,
             health=health,
+        )
+
+    def spawn_task(
+        self,
+        *,
+        task_id: str,
+        correlation_id: str,
+        agent_kind: str,
+        working_directory: str,
+    ) -> HerdrTask:
+        response = self._send(
+            "agent.start",
+            {
+                "task_id": task_id,
+                "correlation_id": correlation_id,
+                "agent_kind": agent_kind,
+                "working_directory": working_directory,
+            },
+        )
+        task = self._task_from_response(task_id=task_id, response=response)
+        self._task_ids_by_run_id[task.run_id] = task.task_id
+        return task
+
+    def task_status(self, run_id: str) -> HerdrTask:
+        task_id = self._task_ids_by_run_id[run_id]
+        response = self._send("agent.get", {"run_id": run_id})
+        return self._task_from_response(task_id=task_id, response=response)
+
+    def _send(
+        self, method: str, params: dict[str, object]
+    ) -> dict[str, object]:
+        if self._request is None:
+            raise RuntimeError("Herdr request transport is not configured")
+        return self._request(method, params)
+
+    @staticmethod
+    def _task_from_response(
+        *, task_id: str, response: dict[str, object]
+    ) -> HerdrTask:
+        return HerdrTask(
+            task_id=task_id,
+            run_id=str(response["run_id"]),
+            workspace_id=str(response["workspace_id"]),
+            pane_id=str(response["pane_id"]),
+            state=str(response["state"]),
+            revision=int(response["revision"]),
         )
