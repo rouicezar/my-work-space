@@ -362,8 +362,8 @@ Secret/external-write status: no secrets; mocks only
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
 Master plan task: P3-T07
-State: P3-T06 verified; P3-T07 pending; dedicated workbench task retains P4-T02 ownership
-Next required action: commit and push P3-T06 after checking origin, then claim P3-T07 without modifying P4 ownership.
+State: P3-T06 verified; P3-T07 pending; dedicated workbench task completed P4-T03 and retains P4-T04 ownership
+Next required action: push the integrated P3-T06/P4-T03 history, then claim P3-T07 without modifying P4 ownership.
 
 ## Product Goal Snapshot
 
