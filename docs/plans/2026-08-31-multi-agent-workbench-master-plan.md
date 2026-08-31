@@ -30,9 +30,9 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-08-31 Asia/Shanghai
 Current phase: P3 Herdr core multi-agent runtime
-Current task: P3-T03
+Current task: P3-T04
 Current status: pending
-Next action: parity-check the English and Chinese control documents, claim P3-T03 in both language sets, and write the failing test for spawning two mock Herdr tasks with stable identifiers and observable states.
+Next action: claim P3-T04 in both language sets and implement the minimal mockable Herdr task spawn/status mapping that makes P3-T03 pass.
 
 Current Git fact at P2-T08 takeover:
 
@@ -173,7 +173,7 @@ P2 completion never waives these gates and must not be cited as evidence that an
 |---|---|---|---|---|---|
 | P3-T01 | verified | Write failing Herdr adapter availability test | `tests/test_herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Fails before adapter exists |
 | P3-T02 | verified | Add Herdr adapter skeleton using adapter contract | `forma_ai/herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Availability test passes |
-| P3-T03 | pending | Write failing test for spawning two mock tasks | `tests/test_herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Fails on missing spawn |
+| P3-T03 | verified | Write failing test for spawning two mock tasks | `tests/test_herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Fails on missing spawn |
 | P3-T04 | pending | Implement mockable task spawn/status methods | `forma_ai/herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Two tasks have stable IDs and states |
 | P3-T05 | pending | Write failing test for cancel and resume envelope | `tests/test_herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Fails on missing lifecycle |
 | P3-T06 | pending | Implement cancel/resume mapping | `forma_ai/herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Lifecycle tests pass |
@@ -280,3 +280,4 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 - 2026-08-31 - P3-T01 - Codex root agent - added Herdr binary-availability contract tests that distinguish missing from discovered-only state without claiming reachability or readiness - expected `ModuleNotFoundError: forma_ai.herdr_adapter` observed before implementation - committed/pushed as `6fc033b` - next P3-T02
 - 2026-08-31 - P3-T02 - Codex root agent - implemented a thin injected Herdr binary-discovery adapter using generic identity and layered health envelopes, with discovered-only state remaining not reachable and not ready - 11 targeted Herdr and protocol tests plus `git diff --check` passed - committed/pushed as `5b4584d` plus closeout record - next P3-T03
 - 2026-08-31 - P0-T09 - Codex root agent - created Chinese operational mirrors of the progress tracker and handoff in the user-approved MyNote folder and made bilingual parity a mandatory takeover/exit gate - file, anchor, state-parity, and `git diff --check` checks passed; optional GBrain refresh was not run because required preflight found 2584 stale chunks - committed/pushed as `66434ff` plus closeout records - next P3-T03
+- 2026-08-31 - P3-T03 - Codex root agent - added the two-mock-task Herdr spawn/status red test with stable task/run/pane IDs, independent state reads, and revision evidence - expected `TypeError` on missing injectable request boundary observed while two prior tests stayed green - commit pending closeout - next P3-T04

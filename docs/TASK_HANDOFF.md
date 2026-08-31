@@ -97,6 +97,32 @@ Secret/external-write status: no secrets; only the approved local MyNote writes 
 
 P0-T09 post-closeout index note: the two Chinese Markdown files are present and synchronized, but the optional GBrain refresh was not executed because `/Users/rouice/Gbrain/scripts/daily-growth/preflight.sh` failed its existing health gate with 2584 stale chunks not embedded. This is an indexing-health blocker, not a file-write or document-parity failure. Repair the GBrain stale-chunk condition before attempting refresh; do not rerun refresh past a failed preflight.
 
+## 2026-08-31 - P3-T03 - takeover
+
+Executor: Codex root agent
+Starting git state: clean and synchronized with `origin/main` at `ce8a1dd`
+Scope: add the failing test for two mock Herdr task starts with stable IDs and observable states
+Upstream boundary: mock the official Herdr request boundary only; do not start a real process or invent an alternate scheduler
+Files intended: `tests/test_herdr_adapter.py`, English and Chinese control documents
+Planned verification: targeted unittest must fail on the missing spawn/status adapter surface
+Approval needed: none; no Herdr process, cloud call, or credential use
+Secret/external-write status: no secrets; only mandatory Chinese control-document synchronization
+
+## 2026-08-31 - P3-T03 - exit
+
+Executor: Codex root agent
+Scope: two-mock-task Herdr spawn/status red test
+Actions: required two `agent.start` calls, stable product/run/pane identities, two independent `agent.get` reads, running state, and monotonic revision evidence
+Verification: `python3 -m unittest tests.test_herdr_adapter -v` kept 2 availability tests green and failed the new test as expected with `TypeError: HerdrAdapter.__init__() got an unexpected keyword argument 'request'`
+Files changed: `tests/test_herdr_adapter.py`, English and Chinese control documents
+Commit: pending this task commit
+Push: pending this task push
+Decisions: the adapter may translate the official request boundary but may not create a competing scheduler or claim real parallel execution from mocks
+Blocked items: none
+Next exact action: commit and push, then P3-T04
+Approval needed: none
+Secret/external-write status: no secrets; no Herdr process or cloud call
+
 ## Handoff Rules
 
 - Claim exactly one task ID from the master plan before editing.
@@ -114,9 +140,9 @@ P0-T09 post-closeout index note: the two Chinese Markdown files are present and 
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P3-T03
-State: P0-T09 verified; P3-T03 pending
-Next required action: claim P3-T03 in both language sets and write the two-mock-task spawn red test.
+Master plan task: P3-T04
+State: P3-T03 verified red; P3-T04 pending
+Next required action: commit and push P3-T03, then claim P3-T04 in both language sets and implement the minimal request mapping.
 
 ## Product Goal Snapshot
 
