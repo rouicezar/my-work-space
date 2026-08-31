@@ -45,18 +45,30 @@ class HerdrAdapterTaskTests(unittest.TestCase):
         start_responses = iter(
             (
                 {
-                    "run_id": "run-001",
-                    "workspace_id": "workspace-001",
-                    "pane_id": "pane-001",
-                    "state": "starting",
-                    "revision": 1,
+                    "type": "agent_started",
+                    "agent": {
+                        "terminal_id": "terminal-001",
+                        "agent_status": "unknown",
+                        "workspace_id": "workspace-001",
+                        "tab_id": "tab-001",
+                        "pane_id": "pane-001",
+                        "focused": False,
+                        "revision": 1,
+                    },
+                    "argv": ["codex"],
                 },
                 {
-                    "run_id": "run-002",
-                    "workspace_id": "workspace-002",
-                    "pane_id": "pane-002",
-                    "state": "starting",
-                    "revision": 1,
+                    "type": "agent_started",
+                    "agent": {
+                        "terminal_id": "terminal-002",
+                        "agent_status": "unknown",
+                        "workspace_id": "workspace-002",
+                        "tab_id": "tab-002",
+                        "pane_id": "pane-002",
+                        "focused": False,
+                        "revision": 1,
+                    },
+                    "argv": ["claude"],
                 },
             )
         )
@@ -67,11 +79,16 @@ class HerdrAdapterTaskTests(unittest.TestCase):
                 return next(start_responses)
             if method == "agent.get":
                 return {
-                    "run_id": params["run_id"],
-                    "workspace_id": f"workspace-{params['run_id'][-3:]}",
-                    "pane_id": f"pane-{params['run_id'][-3:]}",
-                    "state": "running",
-                    "revision": 2,
+                    "type": "agent_info",
+                    "agent": {
+                        "terminal_id": f"terminal-{params['target'][-3:]}",
+                        "agent_status": "working",
+                        "workspace_id": f"workspace-{params['target'][-3:]}",
+                        "tab_id": f"tab-{params['target'][-3:]}",
+                        "pane_id": params["target"],
+                        "focused": False,
+                        "revision": 2,
+                    },
                 }
             self.fail(f"unexpected method: {method}")
 
@@ -80,20 +97,26 @@ class HerdrAdapterTaskTests(unittest.TestCase):
         first = adapter.spawn_task(
             task_id="task-001",
             correlation_id="corr-001",
+            agent_name="forma-task-001",
             agent_kind="codex",
-            working_directory="/fixture/worktree-001",
+            pane_id="pane-001",
         )
         second = adapter.spawn_task(
             task_id="task-002",
             correlation_id="corr-002",
+            agent_name="forma-task-002",
             agent_kind="claude",
-            working_directory="/fixture/worktree-002",
+            pane_id="pane-002",
         )
         first_running = adapter.task_status(first.run_id)
         second_running = adapter.task_status(second.run_id)
 
-        self.assertEqual((first.task_id, first.run_id), ("task-001", "run-001"))
-        self.assertEqual((second.task_id, second.run_id), ("task-002", "run-002"))
+        self.assertEqual(
+            (first.task_id, first.run_id), ("task-001", "herdr:task-001:pane-001")
+        )
+        self.assertEqual(
+            (second.task_id, second.run_id), ("task-002", "herdr:task-002:pane-002")
+        )
         self.assertNotEqual(first.pane_id, second.pane_id)
         self.assertEqual(first_running.state, "running")
         self.assertEqual(second_running.state, "running")
@@ -103,6 +126,11 @@ class HerdrAdapterTaskTests(unittest.TestCase):
             [method for method, _params in calls],
             ["agent.start", "agent.start", "agent.get", "agent.get"],
         )
+        self.assertEqual(
+            calls[0][1],
+            {"name": "forma-task-001", "kind": "codex", "pane_id": "pane-001"},
+        )
+        self.assertEqual(calls[2][1], {"target": "pane-001"})
 
 
 if __name__ == "__main__":

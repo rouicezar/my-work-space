@@ -51,6 +51,7 @@ class HerdrAdapter:
         self._clock = clock
         self._request = request
         self._task_ids_by_run_id: dict[str, str] = {}
+        self._pane_ids_by_run_id: dict[str, str] = {}
 
     def availability(self) -> HerdrAvailability:
         executable_path = self._executable_finder("herdr")
@@ -86,26 +87,42 @@ class HerdrAdapter:
         *,
         task_id: str,
         correlation_id: str,
+        agent_name: str,
         agent_kind: str,
-        working_directory: str,
+        pane_id: str,
     ) -> HerdrTask:
         response = self._send(
             "agent.start",
             {
-                "task_id": task_id,
-                "correlation_id": correlation_id,
-                "agent_kind": agent_kind,
-                "working_directory": working_directory,
+                "name": agent_name,
+                "kind": agent_kind,
+                "pane_id": pane_id,
             },
         )
-        task = self._task_from_response(task_id=task_id, response=response)
+        if response["type"] != "agent_started":
+            raise ValueError("unexpected Herdr agent.start response")
+        run_id = f"herdr:{task_id}:{pane_id}"
+        task = self._task_from_agent(
+            task_id=task_id,
+            run_id=run_id,
+            agent=response["agent"],
+        )
         self._task_ids_by_run_id[task.run_id] = task.task_id
+        self._pane_ids_by_run_id[task.run_id] = task.pane_id
+        _ = correlation_id
         return task
 
     def task_status(self, run_id: str) -> HerdrTask:
         task_id = self._task_ids_by_run_id[run_id]
-        response = self._send("agent.get", {"run_id": run_id})
-        return self._task_from_response(task_id=task_id, response=response)
+        pane_id = self._pane_ids_by_run_id[run_id]
+        response = self._send("agent.get", {"target": pane_id})
+        if response["type"] != "agent_info":
+            raise ValueError("unexpected Herdr agent.get response")
+        return self._task_from_agent(
+            task_id=task_id,
+            run_id=run_id,
+            agent=response["agent"],
+        )
 
     def _send(
         self, method: str, params: dict[str, object]
@@ -115,14 +132,23 @@ class HerdrAdapter:
         return self._request(method, params)
 
     @staticmethod
-    def _task_from_response(
-        *, task_id: str, response: dict[str, object]
+    def _task_from_agent(
+        *, task_id: str, run_id: str, agent: object
     ) -> HerdrTask:
+        if not isinstance(agent, dict):
+            raise ValueError("Herdr response is missing agent data")
+        state = {
+            "unknown": "starting",
+            "working": "running",
+            "idle": "running",
+            "blocked": "blocked",
+            "done": "succeeded",
+        }.get(str(agent["agent_status"]), "unknown")
         return HerdrTask(
             task_id=task_id,
-            run_id=str(response["run_id"]),
-            workspace_id=str(response["workspace_id"]),
-            pane_id=str(response["pane_id"]),
-            state=str(response["state"]),
-            revision=int(response["revision"]),
+            run_id=run_id,
+            workspace_id=str(agent["workspace_id"]),
+            pane_id=str(agent["pane_id"]),
+            state=state,
+            revision=int(agent["revision"]),
         )

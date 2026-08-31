@@ -149,6 +149,43 @@ Next exact action: commit and push, then P3-T05
 Approval needed: none
 Secret/external-write status: no secrets; no real Herdr or cloud execution
 
+## 2026-08-31 - P3-T05 - takeover
+
+Executor: Codex root agent
+Starting git state: clean and synchronized with `origin/main` at `2d56064`
+Scope: failing graceful-cancel and native-session-resume envelope tests
+Pinned upstream facts: protocol 20 schema exposes `pane.send_keys`, `pane.close`, `pane.report_agent_session`, and `agent.start`; no high-level `agent.cancel` exists
+Safety boundary: graceful cancel targets the exact known pane with `ctrl+c`; force close remains a separately approved future path; resume requires an authoritative native session reference and expected revision
+Files intended: `tests/test_herdr_adapter.py`, English and Chinese control documents
+Planned verification: existing tests stay green and new tests fail on missing lifecycle methods
+Approval needed: none; mocks only
+Secret/external-write status: no secrets; no real Herdr or cloud execution
+
+## 2026-08-31 - P3-T04 - corrective takeover
+
+Executor: Codex root agent
+Trigger: pinned Herdr v0.8.2 protocol 20 schema disproved the first green mock contract
+Incorrect assumption being removed: `agent.start` does not accept Forma task/correlation/working-directory fields and does not return a Forma run envelope
+Verified upstream shape: `AgentStartParams` requires `name`, `kind`, and `pane_id`; success is `agent_started` containing `agent` and `argv`; `agent.get` success is `agent_info` containing `agent`
+Correction boundary: product task/correlation/worktree data remains Forma-owned metadata; adapter maps upstream `AgentInfo` to a product run ID derived from task ID while preserving upstream pane/workspace/revision authority
+Next exact action: correct tests first, observe failure against old implementation, then correct implementation and rerun the protocol suite
+Approval needed: none; mocks and documentation only
+
+## 2026-08-31 - P3-T04 - corrective exit
+
+Executor: Codex root agent
+Scope: repair the initial mock mapping to pinned Herdr v0.8.2 protocol 20
+Actions: changed the red test to exact `AgentStartParams` and wrapped success shapes; observed expected old-implementation failure; corrected adapter to send only `name/kind/pane_id`, parse `agent_started.agent`, query `agent.get` by `target`, and parse `agent_info.agent`
+Verification: corrected red test failed first on missing `agent_name`; after implementation, 12 Herdr and generic protocol tests passed and `git diff --check` passed
+Files changed: `tests/test_herdr_adapter.py`, `forma_ai/herdr_adapter.py`, English and Chinese control documents
+Commit: pending corrective commit
+Push: pending corrective push
+Decisions: Forma task/correlation metadata is not injected into Herdr schema; deterministic Forma run ID correlates the product task to the authoritative pane
+Blocked items: none
+Next exact action: commit/push correction, then P3-T05
+Approval needed: none
+Secret/external-write status: no secrets; mocks only
+
 ## Handoff Rules
 
 - Claim exactly one task ID from the master plan before editing.
@@ -167,8 +204,8 @@ Secret/external-write status: no secrets; no real Herdr or cloud execution
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
 Master plan task: P3-T05
-State: P3-T04 verified; P3-T05 pending
-Next required action: commit and push P3-T04, then claim P3-T05 in both language sets and write cancel/resume red tests.
+State: P3-T04 corrected and verified against pinned protocol 20 shapes; P3-T05 pending
+Next required action: commit and push the P3-T04 correction, then reclaim P3-T05 in both language sets.
 
 ## Product Goal Snapshot
 

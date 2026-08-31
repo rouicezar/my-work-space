@@ -32,7 +32,7 @@ Updated: 2026-08-31 Asia/Shanghai
 Current phase: P3 Herdr core multi-agent runtime
 Current task: P3-T05
 Current status: pending
-Next action: claim P3-T05 in both language sets and write the failing cancel/resume envelope tests against the Herdr request boundary.
+Next action: claim P3-T05 in both language sets and write lifecycle red tests on top of the corrected pinned protocol 20 spawn/status mapping.
 
 Current Git fact at P2-T08 takeover:
 
@@ -281,4 +281,4 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 - 2026-08-31 - P3-T02 - Codex root agent - implemented a thin injected Herdr binary-discovery adapter using generic identity and layered health envelopes, with discovered-only state remaining not reachable and not ready - 11 targeted Herdr and protocol tests plus `git diff --check` passed - committed/pushed as `5b4584d` plus closeout record - next P3-T03
 - 2026-08-31 - P0-T09 - Codex root agent - created Chinese operational mirrors of the progress tracker and handoff in the user-approved MyNote folder and made bilingual parity a mandatory takeover/exit gate - file, anchor, state-parity, and `git diff --check` checks passed; optional GBrain refresh was not run because required preflight found 2584 stale chunks - committed/pushed as `66434ff` plus closeout records - next P3-T03
 - 2026-08-31 - P3-T03 - Codex root agent - added the two-mock-task Herdr spawn/status red test with stable task/run/pane IDs, independent state reads, and revision evidence - expected `TypeError` on missing injectable request boundary observed while two prior tests stayed green - commit pending closeout - next P3-T04
-- 2026-08-31 - P3-T04 - Codex root agent - implemented immutable Herdr task envelopes plus minimal injected `agent.start`/`agent.get` translation while leaving state authority upstream - 12 Herdr and generic protocol tests plus `git diff --check` passed - commit pending closeout - next P3-T05
+- 2026-08-31 - P3-T04 - Codex root agent - implemented and then corrected immutable Herdr task envelopes plus injected `agent.start`/`agent.get` translation to exact pinned protocol 20 `AgentStartParams`, `agent_started`, and `agent_info` shapes while leaving state authority upstream - schema-conformant red/green correction plus 12 Herdr/generic protocol tests and `git diff --check` passed - corrective commit pending closeout - next P3-T05
