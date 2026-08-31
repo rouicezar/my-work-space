@@ -115,8 +115,8 @@ Scope: two-mock-task Herdr spawn/status red test
 Actions: required two `agent.start` calls, stable product/run/pane identities, two independent `agent.get` reads, running state, and monotonic revision evidence
 Verification: `python3 -m unittest tests.test_herdr_adapter -v` kept 2 availability tests green and failed the new test as expected with `TypeError: HerdrAdapter.__init__() got an unexpected keyword argument 'request'`
 Files changed: `tests/test_herdr_adapter.py`, English and Chinese control documents
-Commit: pending this task commit
-Push: pending this task push
+Commit: `e652ed2`
+Push: pushed to `origin/main`
 Decisions: the adapter may translate the official request boundary but may not create a competing scheduler or claim real parallel execution from mocks
 Blocked items: none
 Next exact action: commit and push, then P3-T04
@@ -141,8 +141,8 @@ Scope: minimal mockable Herdr spawn/status mapping
 Actions: added immutable task envelope, injected request boundary, `agent.start` translation, `agent.get` status translation, and run-to-product-task correlation only
 Verification: `python3 -m unittest tests.test_herdr_adapter tests.test_adapter_contract tests.test_agent_adapter_contract -v` passed 12 tests; `git diff --check` passed
 Files changed: `forma_ai/herdr_adapter.py`, English and Chinese control documents
-Commit: pending this task commit
-Push: pending this task push
+Commit: `2d56064`; subsequently corrected by `e6c4106`
+Push: both commits pushed to `origin/main`
 Decisions: Herdr responses remain authoritative; the local run/task correlation is not a scheduler or lifecycle state machine
 Blocked items: none
 Next exact action: commit and push, then P3-T05
@@ -178,8 +178,8 @@ Scope: repair the initial mock mapping to pinned Herdr v0.8.2 protocol 20
 Actions: changed the red test to exact `AgentStartParams` and wrapped success shapes; observed expected old-implementation failure; corrected adapter to send only `name/kind/pane_id`, parse `agent_started.agent`, query `agent.get` by `target`, and parse `agent_info.agent`
 Verification: corrected red test failed first on missing `agent_name`; after implementation, 12 Herdr and generic protocol tests passed and `git diff --check` passed
 Files changed: `tests/test_herdr_adapter.py`, `forma_ai/herdr_adapter.py`, English and Chinese control documents
-Commit: pending corrective commit
-Push: pending corrective push
+Commit: `e6c4106`
+Push: pushed to `origin/main`
 Decisions: Forma task/correlation metadata is not injected into Herdr schema; deterministic Forma run ID correlates the product task to the authoritative pane
 Blocked items: none
 Next exact action: commit/push correction, then P3-T05
@@ -202,8 +202,8 @@ Scope: lifecycle red tests on corrected Herdr protocol 20 mapping
 Actions: added exact-pane graceful interrupt test using `pane.send_keys` and native resume test requiring `agent.get` session/revision reconciliation before schema-valid `agent.start`
 Verification: `python3 -m unittest tests.test_herdr_adapter -v` passed 3 existing tests and failed 2 new tests as expected with missing `cancel_task` and `resume_task`
 Files changed: `tests/test_herdr_adapter.py`, English and Chinese control documents
-Commit: pending this task commit
-Push: pending this task push
+Commit: `db9c0ee` plus this closeout record
+Push: `db9c0ee` pushed to `origin/main`; this closeout record is pushed in its follow-up commit
 Decisions: no fictional `agent.cancel`; no native session field is sent in `AgentStartParams`; force close remains separately approval-gated
 Blocked items: none
 Next exact action: commit and push, then P3-T06
