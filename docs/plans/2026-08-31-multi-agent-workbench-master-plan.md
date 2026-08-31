@@ -29,9 +29,9 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-08-31 Asia/Shanghai
 Current phase: P3 Herdr core multi-agent runtime
-Current task: P3-T02
+Current task: P3-T03
 Current status: pending
-Next action: claim P3-T02 and add the minimal Herdr adapter availability skeleton that makes the red test pass without claiming runtime health.
+Next action: claim P3-T03 and write the failing test for spawning two mock Herdr tasks with stable identifiers and observable states.
 
 Current Git fact at P2-T08 takeover:
 
@@ -170,7 +170,7 @@ P2 completion never waives these gates and must not be cited as evidence that an
 | ID | Status | Action | Files | Command | Expected Evidence |
 |---|---|---|---|---|---|
 | P3-T01 | verified | Write failing Herdr adapter availability test | `tests/test_herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Fails before adapter exists |
-| P3-T02 | pending | Add Herdr adapter skeleton using adapter contract | `forma_ai/herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Availability test passes |
+| P3-T02 | verified | Add Herdr adapter skeleton using adapter contract | `forma_ai/herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Availability test passes |
 | P3-T03 | pending | Write failing test for spawning two mock tasks | `tests/test_herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Fails on missing spawn |
 | P3-T04 | pending | Implement mockable task spawn/status methods | `forma_ai/herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Two tasks have stable IDs and states |
 | P3-T05 | pending | Write failing test for cancel and resume envelope | `tests/test_herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Fails on missing lifecycle |
@@ -276,3 +276,4 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 - 2026-08-31 - P2-T07 - Codex root agent - specified and machine-tested the universal Codex/Claude/compatible-agent lifecycle contract with Herdr authority, recovery, policy, audit, artifact, idempotency, and conformance rules - 9 combined contract tests passed - committed/pushed as `2b5227c` - next P2-T08
 - 2026-08-31 - P2-T08 - Codex root agent - replaced stale current-dirty claims with verified Git fact, narrowed P2 to the generic protocol boundary, and assigned concrete Herdr, holaOS, oMLX/DeepSeek, and Semantica conformance gates downstream - 9 combined contract tests, ownership scan, and `git diff --check` passed - committed/pushed as `a6b701d` plus closeout record - next P3-T01
 - 2026-08-31 - P3-T01 - Codex root agent - added Herdr binary-availability contract tests that distinguish missing from discovered-only state without claiming reachability or readiness - expected `ModuleNotFoundError: forma_ai.herdr_adapter` observed before implementation - commit pending closeout - next P3-T02
+- 2026-08-31 - P3-T02 - Codex root agent - implemented a thin injected Herdr binary-discovery adapter using generic identity and layered health envelopes, with discovered-only state remaining not reachable and not ready - 11 targeted Herdr and protocol tests plus `git diff --check` passed - commit pending closeout - next P3-T03

@@ -41,6 +41,32 @@ Next exact action: commit and push, then claim P3-T02
 Approval needed: none
 Secret/external-write status: no secrets handled; no cloud calls or Herdr execution
 
+## 2026-08-31 - P3-T02 - takeover
+
+Executor: Codex root agent
+Starting git state: clean and synchronized with `origin/main` at `6fc033b`
+Scope: minimal Herdr availability adapter skeleton
+Files intended: `forma_ai/herdr_adapter.py`, tracker, handoff
+Implementation boundary: injected executable discovery plus generic identity/health envelopes; no subprocess, socket, download, dispatch, or duplicate runtime logic
+Planned verification: targeted Herdr tests, existing generic adapter-contract tests, and `git diff --check`
+Approval needed: none
+Secret/external-write status: no secrets handled; no cloud calls or Herdr execution
+
+## 2026-08-31 - P3-T02 - exit
+
+Executor: Codex root agent
+Scope: minimal Herdr availability adapter skeleton
+Actions: added injected official-binary discovery and generic identity/health envelopes; missing and discovered-only states remain explicitly unready
+Verification: `python3 -m unittest tests.test_herdr_adapter tests.test_adapter_contract tests.test_agent_adapter_contract -v` passed 11 tests; `git diff --check` passed
+Files changed: `forma_ai/herdr_adapter.py`, tracker, handoff
+Commit: pending this task commit
+Push: pending this task push
+Decisions: no health probe, dispatch API, socket client, binary acquisition, or runtime duplication belongs in this skeleton
+Blocked items: none
+Next exact action: commit and push, then P3-T03
+Approval needed: none
+Secret/external-write status: no secrets handled; no cloud calls or Herdr execution
+
 ## Handoff Rules
 
 - Claim exactly one task ID from the master plan before editing.
@@ -57,9 +83,9 @@ Secret/external-write status: no secrets handled; no cloud calls or Herdr execut
 
 Updated: 2026-08-31 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P3-T02
-State: P3-T01 red test verified; P3-T02 pending
-Next required action: commit and push P3-T01, then claim P3-T02 and implement only the minimal availability skeleton.
+Master plan task: P3-T03
+State: P3-T02 verified; P3-T03 pending
+Next required action: commit and push P3-T02, then claim P3-T03 and write the two-mock-task spawn red test.
 
 ## Product Goal Snapshot
 
