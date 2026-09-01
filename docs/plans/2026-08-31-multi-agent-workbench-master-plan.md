@@ -30,10 +30,10 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 ## Current State
 
 Updated: 2026-09-01 Asia/Shanghai
-Current phase: P3-T10 official Herdr artifact pinning and protocol verification, executed ahead of P4-T14 as the user-approved relay priority (plan goals, requirements, and audit logic unchanged)
-Current task: P3-T10
-Current status: in_progress
-Next action: pin the official Herdr v0.8.2 release artifacts in `config/upstreams.json`, acquire and digest-verify the macOS aarch64 binary, then verify version, protocol, schema, and license from the official binary itself; the socket transport binding follows in P3-T11; P4-T14 remains the default next frontend task and unchanged
+Current phase: P3-T11 official Herdr socket transport binding, continuing the user-approved relay priority P3-T10～T15 (plan goals, requirements, and audit logic unchanged)
+Current task: P3-T11
+Current status: pending takeover
+Next action: claim P3-T11 — bind the thin Herdr adapter to the official socket transport (newline-delimited JSON over Unix-domain socket, protocol 20 verified from the official binary) with real `ping`, `session.snapshot`, and fail-closed protocol compatibility checks; the verified aarch64 binary is at `~/Library/Application Support/Forma AI/cache/downloads/herdr-macos-aarch64`; note for P3-T12: the official schema has no `pane.run` — use `pane.split` plus `agent.start`/`pane.send_text`; P4-T14 remains the default next frontend task and unchanged
 Audit verdict: every product-owned runtime-like capability is justified, already a thin adapter over an upstream entry point, or scheduled for reduction inside existing downstream tasks (P3-T10+, P5, P6-T01+); no plan goal, requirement, or audit gate change is required; per-capability matrix with file/line evidence: `docs/research/product-runtime-capability-audit-2026-09-01.md`
 Default next frontend task after the audit gate: P4-T14 (bilingual governed-memory review Preview), still pending and unchanged.
 
@@ -217,7 +217,7 @@ P2 completion never waives these gates and must not be cited as evidence that an
 | P3-T07 | verified | Wire supervisor to Herdr adapter behind feature flag | `forma_ai/supervisor.py` | `python -m unittest discover tests -v` | Existing tests pass |
 | P3-T08 | verified | Add UI task state fixture for parallel agents | `prototypes/packaging/Sources/FormaAIApp/FormaAIApp.swift` | `swift test --package-path prototypes/packaging` | Swift tests pass |
 | P3-T09 | verified | Commit Herdr core slice | Adapter, supervisor, tests, Swift fixture | `git diff --check` then `git commit` | Commit created |
-| P3-T10 | in_progress | Acquire and verify the pinned official Herdr artifact and protocol schema | installer/runtime evidence and Herdr ledger | Digest, version, protocol, schema, and license checks | Official Herdr is verified without a product-owned runtime substitute |
+| P3-T10 | verified | Acquire and verify the pinned official Herdr artifact and protocol schema | installer/runtime evidence and Herdr ledger | Digest, version, protocol, schema, and license checks | Official Herdr is verified without a product-owned runtime substitute |
 | P3-T11 | pending | Bind the thin adapter to the official Herdr socket transport | Herdr adapter and transport tests | Real `ping`, `session.snapshot`, and compatible protocol response | Runtime truth comes from Herdr |
 | P3-T12 | pending | Run two real isolated fixture agents through Herdr | integration tests and evidence | Two distinct panes/runs with no input, state, artifact, or cancel leakage | Parallel execution is real |
 | P3-T13 | pending | Bind snapshot and event subscriptions to the workbench presentation provider | adapter, Swift protocol, UI | Reconnect/resubscribe test and live state transition evidence | UI cannot override Herdr semantic state |
