@@ -52,6 +52,18 @@ class HerdrLifecycleResult:
     revision: int
 
 
+@dataclass(frozen=True)
+class HerdrWorkspace:
+    workspace_id: str
+    root_pane_id: str
+
+
+@dataclass(frozen=True)
+class HerdrPane:
+    pane_id: str
+    workspace_id: str
+
+
 class HerdrAdapter:
     """Discover Herdr without mistaking executable presence for health."""
 
@@ -136,6 +148,87 @@ class HerdrAdapter:
             checked_at=self._clock(),
             reason_code="",
         )
+
+    def open_workspace(
+        self, *, cwd: str | None = None, label: str | None = None
+    ) -> HerdrWorkspace:
+        params: dict[str, object] = {}
+        if cwd is not None:
+            params["cwd"] = cwd
+        if label is not None:
+            params["label"] = label
+        response = self._send("workspace.create", params)
+        if response["type"] != "workspace_created":
+            raise ValueError("unexpected Herdr workspace.create response")
+        workspace = response["workspace"]
+        root_pane = response["root_pane"]
+        if not isinstance(workspace, dict) or not isinstance(root_pane, dict):
+            raise ValueError("Herdr response is missing workspace or root pane data")
+        return HerdrWorkspace(
+            workspace_id=str(workspace["workspace_id"]),
+            root_pane_id=str(root_pane["pane_id"]),
+        )
+
+    def open_pane(
+        self,
+        *,
+        direction: str,
+        target_pane_id: str | None = None,
+        cwd: str | None = None,
+    ) -> HerdrPane:
+        params: dict[str, object] = {"direction": direction}
+        if target_pane_id is not None:
+            params["target_pane_id"] = target_pane_id
+        if cwd is not None:
+            params["cwd"] = cwd
+        response = self._send("pane.split", params)
+        if response["type"] != "pane_info":
+            raise ValueError("unexpected Herdr pane.split response")
+        pane = response["pane"]
+        if not isinstance(pane, dict):
+            raise ValueError("Herdr response is missing pane data")
+        return HerdrPane(
+            pane_id=str(pane["pane_id"]),
+            workspace_id=str(pane["workspace_id"]),
+        )
+
+    def spawn_reported_task(
+        self,
+        *,
+        task_id: str,
+        correlation_id: str,
+        agent_name: str,
+        pane_id: str,
+        command: str,
+    ) -> HerdrTask:
+        sent = self._send("pane.send_text", {"pane_id": pane_id, "text": command})
+        if sent["type"] != "ok":
+            raise ValueError("unexpected Herdr pane.send_text response")
+        reported = self._send(
+            "pane.report_agent",
+            {
+                "pane_id": pane_id,
+                "source": "forma-fixture",
+                "agent": agent_name,
+                "state": "working",
+            },
+        )
+        if reported["type"] != "ok":
+            raise ValueError("unexpected Herdr pane.report_agent response")
+        response = self._send("agent.get", {"target": pane_id})
+        if response["type"] != "agent_info":
+            raise ValueError("unexpected Herdr agent.get response")
+        run_id = f"herdr:{task_id}:{pane_id}"
+        task = self._task_from_agent(
+            task_id=task_id,
+            run_id=run_id,
+            agent=response["agent"],
+        )
+        self._task_ids_by_run_id[task.run_id] = task.task_id
+        self._pane_ids_by_run_id[task.run_id] = task.pane_id
+        self._tasks_by_run_id[task.run_id] = task
+        _ = correlation_id
+        return task
 
     def spawn_task(
         self,

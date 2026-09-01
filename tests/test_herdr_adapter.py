@@ -248,6 +248,191 @@ class HerdrAdapterTaskTests(unittest.TestCase):
         }
 
 
+class HerdrAdapterFixtureTests(unittest.TestCase):
+    def test_open_workspace_sends_schema_params_and_extracts_ids(self):
+        calls = []
+
+        def request(method, params):
+            calls.append((method, params))
+            return {
+                "type": "workspace_created",
+                "workspace": {"workspace_id": "w1", "label": "forma-p3t12"},
+                "tab": {"tab_id": "w1:t1"},
+                "root_pane": {
+                    "pane_id": "w1:p1",
+                    "workspace_id": "w1",
+                    "tab_id": "w1:t1",
+                },
+            }
+
+        adapter = HerdrAdapter(request=request)
+
+        workspace = adapter.open_workspace(cwd="/fixtures/a", label="forma-p3t12")
+
+        self.assertEqual(
+            calls,
+            [("workspace.create", {"cwd": "/fixtures/a", "label": "forma-p3t12"})],
+        )
+        self.assertEqual(workspace.workspace_id, "w1")
+        self.assertEqual(workspace.root_pane_id, "w1:p1")
+
+    def test_open_workspace_without_optional_params_sends_empty_params(self):
+        calls = []
+
+        def request(method, params):
+            calls.append((method, params))
+            return {
+                "type": "workspace_created",
+                "workspace": {"workspace_id": "w1"},
+                "tab": {"tab_id": "w1:t1"},
+                "root_pane": {"pane_id": "w1:p1"},
+            }
+
+        adapter = HerdrAdapter(request=request)
+
+        workspace = adapter.open_workspace()
+
+        self.assertEqual(calls, [("workspace.create", {})])
+        self.assertEqual(workspace.workspace_id, "w1")
+        self.assertEqual(workspace.root_pane_id, "w1:p1")
+
+    def test_open_pane_sends_schema_params_and_extracts_ids(self):
+        calls = []
+
+        def request(method, params):
+            calls.append((method, params))
+            return {
+                "type": "pane_info",
+                "pane": {"pane_id": "w1:p2", "workspace_id": "w1"},
+            }
+
+        adapter = HerdrAdapter(request=request)
+
+        pane = adapter.open_pane(
+            direction="right",
+            target_pane_id="w1:p1",
+            cwd="/fixtures/b",
+        )
+
+        self.assertEqual(
+            calls,
+            [
+                (
+                    "pane.split",
+                    {
+                        "direction": "right",
+                        "target_pane_id": "w1:p1",
+                        "cwd": "/fixtures/b",
+                    },
+                )
+            ],
+        )
+        self.assertEqual(pane.pane_id, "w1:p2")
+        self.assertEqual(pane.workspace_id, "w1")
+
+    def test_spawn_reported_task_drives_reports_and_registers_lifecycle(self):
+        calls = []
+
+        def request(method, params):
+            calls.append((method, params))
+            if method == "pane.send_text":
+                return {"type": "ok"}
+            if method == "pane.report_agent":
+                return {"type": "ok"}
+            if method == "agent.get":
+                return {
+                    "type": "agent_info",
+                    "agent": {
+                        "terminal_id": "term-001",
+                        "agent_status": "working",
+                        "workspace_id": "w1",
+                        "tab_id": "w1:t1",
+                        "pane_id": "w1:p1",
+                        "focused": False,
+                        "revision": 3,
+                    },
+                }
+            self.fail(f"unexpected method: {method}")
+
+        adapter = HerdrAdapter(request=request)
+
+        task = adapter.spawn_reported_task(
+            task_id="task-a",
+            correlation_id="corr-a",
+            agent_name="fixture-agent-a",
+            pane_id="w1:p1",
+            command="date +%s > a_start.txt; sleep 8\n",
+        )
+
+        self.assertEqual(
+            [method for method, _params in calls],
+            ["pane.send_text", "pane.report_agent", "agent.get"],
+        )
+        self.assertEqual(
+            calls[0][1],
+            {"pane_id": "w1:p1", "text": "date +%s > a_start.txt; sleep 8\n"},
+        )
+        self.assertEqual(
+            calls[1][1],
+            {
+                "pane_id": "w1:p1",
+                "source": "forma-fixture",
+                "agent": "fixture-agent-a",
+                "state": "working",
+            },
+        )
+        self.assertEqual(calls[2][1], {"target": "w1:p1"})
+        self.assertEqual(task.task_id, "task-a")
+        self.assertEqual(task.run_id, "herdr:task-a:w1:p1")
+        self.assertEqual(task.pane_id, "w1:p1")
+        self.assertEqual(task.state, "running")
+        self.assertEqual(task.revision, 3)
+
+    def test_spawned_fixture_task_cancels_through_existing_lifecycle(self):
+        calls = []
+
+        def request(method, params):
+            calls.append((method, params))
+            if method in ("pane.send_text", "pane.report_agent", "pane.send_keys"):
+                return {"type": "ok"}
+            if method == "agent.get":
+                return {
+                    "type": "agent_info",
+                    "agent": {
+                        "terminal_id": "term-001",
+                        "agent_status": "working",
+                        "workspace_id": "w1",
+                        "tab_id": "w1:t1",
+                        "pane_id": "w1:p1",
+                        "focused": False,
+                        "revision": 3,
+                    },
+                }
+            self.fail(f"unexpected method: {method}")
+
+        adapter = HerdrAdapter(request=request)
+        task = adapter.spawn_reported_task(
+            task_id="task-a",
+            correlation_id="corr-a",
+            agent_name="fixture-agent-a",
+            pane_id="w1:p1",
+            command="sleep 8\n",
+        )
+
+        result = adapter.cancel_task(
+            run_id=task.run_id,
+            correlation_id="corr-cancel-a",
+            expected_revision=task.revision,
+        )
+
+        self.assertEqual(result.action, "graceful_interrupt")
+        self.assertEqual(result.state, "cancel_requested")
+        self.assertEqual(
+            calls[-1],
+            ("pane.send_keys", {"pane_id": "w1:p1", "keys": ["ctrl+c"]}),
+        )
+
+
 class HerdrAdapterProbeTests(unittest.TestCase):
     def _adapter(self, probe):
         return HerdrAdapter(
