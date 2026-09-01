@@ -141,3 +141,191 @@ struct ProductCopy {
         }
     }
 }
+
+enum JourneyCopyKey {
+    case stageCompose
+    case stageRoute
+    case stagePlan
+    case stageParallel
+    case stageApproval
+    case stageValidation
+    case stageResult
+    case journeyPreview
+    case syntheticGoal
+    case routeHeadline
+    case routeBody
+    case routeLocalReason
+    case routeCloudBoundary
+    case planHeadline
+    case planBody
+    case planResearch
+    case planAnalyze
+    case planDraft
+    case parallelHeadline
+    case parallelBody
+    case agentResearch
+    case agentAnalysis
+    case agentDraft
+    case statusComplete
+    case statusRunningPreview
+    case statusQueuedPreview
+    case approvalHeadline
+    case approvalBody
+    case approvalAction
+    case approvalScope
+    case approvalDestination
+    case approvalDestinationValue
+    case approvalEffectLabel
+    case approvalEffect
+    case approvalPreviewOnly
+    case validationHeadline
+    case validationBody
+    case artifactNotes
+    case artifactBrief
+    case checkSources
+    case checkStructure
+    case checkPrivacy
+    case valid
+    case resultHeadline
+    case resultBody
+    case resultSummary
+    case resultEvidence
+    case resultUnresolved
+    case none
+    case nextPreview
+    case showApprovedPreview
+    case showValidationPreview
+    case showResultPreview
+    case backToEdit
+    case previewStateNotice
+}
+
+extension ProductCopy {
+    subscript(key: JourneyCopyKey) -> String {
+        switch (language, key) {
+        case (.simplifiedChinese, .stageCompose): "输入"
+        case (.simplifiedChinese, .stageRoute): "路由审核"
+        case (.simplifiedChinese, .stagePlan): "计划"
+        case (.simplifiedChinese, .stageParallel): "并行执行"
+        case (.simplifiedChinese, .stageApproval): "批准"
+        case (.simplifiedChinese, .stageValidation): "验证"
+        case (.simplifiedChinese, .stageResult): "结果"
+        case (.simplifiedChinese, .journeyPreview): "任务流程预览"
+        case (.simplifiedChinese, .syntheticGoal): "预览目标"
+        case (.simplifiedChinese, .routeHeadline): "先确认 Forma AI 将如何处理这个任务"
+        case (.simplifiedChinese, .routeBody): "本地路径被优先选中；任何能力不足或外部动作都会在继续前明确显示。"
+        case (.simplifiedChinese, .routeLocalReason): "当前内容适合留在这台 Mac 上处理。"
+        case (.simplifiedChinese, .routeCloudBoundary): "没有云端传输，也不会静默切换模型。"
+        case (.simplifiedChinese, .planHeadline): "把目标拆成可监督的工作计划"
+        case (.simplifiedChinese, .planBody): "每一步都有明确责任和可检查输出；这只是合成计划，不会创建 Agent。"
+        case (.simplifiedChinese, .planResearch): "收集并标记相关材料"
+        case (.simplifiedChinese, .planAnalyze): "比较证据并提炼关键发现"
+        case (.simplifiedChinese, .planDraft): "形成可审核的结果与证据摘要"
+        case (.simplifiedChinese, .parallelHeadline): "三个 Agent 并行协作，状态始终可见"
+        case (.simplifiedChinese, .parallelBody): "这里展示未来真实执行时的责任、进度和交接形态；当前没有启动任何进程。"
+        case (.simplifiedChinese, .agentResearch): "资料 Agent"
+        case (.simplifiedChinese, .agentAnalysis): "分析 Agent"
+        case (.simplifiedChinese, .agentDraft): "成稿 Agent"
+        case (.simplifiedChinese, .statusComplete): "已完成预览"
+        case (.simplifiedChinese, .statusRunningPreview): "正在运行的合成状态"
+        case (.simplifiedChinese, .statusQueuedPreview): "等待上游输出"
+        case (.simplifiedChinese, .approvalHeadline): "在外部动作发生前暂停并说明范围"
+        case (.simplifiedChinese, .approvalBody): "这个批准卡展示用户最终会看到的信息，但不会执行批准或写入任何目的地。"
+        case (.simplifiedChinese, .approvalAction): "建议动作"
+        case (.simplifiedChinese, .approvalScope): "发送已验证的结果摘要"
+        case (.simplifiedChinese, .approvalDestination): "目的地"
+        case (.simplifiedChinese, .approvalDestinationValue): "合成项目工作区"
+        case (.simplifiedChinese, .approvalEffectLabel): "影响"
+        case (.simplifiedChinese, .approvalEffect): "一次性外部写入；不会建立长期授权"
+        case (.simplifiedChinese, .approvalPreviewOnly): "下一步只展示‘已批准’后的预览状态。"
+        case (.simplifiedChinese, .validationHeadline): "在给出结果前检查产物和证据"
+        case (.simplifiedChinese, .validationBody): "验证状态与结果分开显示，避免把生成成功误报为任务完成。"
+        case (.simplifiedChinese, .artifactNotes): "来源笔记"
+        case (.simplifiedChinese, .artifactBrief): "可审核简报"
+        case (.simplifiedChinese, .checkSources): "来源覆盖"
+        case (.simplifiedChinese, .checkStructure): "结构完整"
+        case (.simplifiedChinese, .checkPrivacy): "隐私边界"
+        case (.simplifiedChinese, .valid): "通过"
+        case (.simplifiedChinese, .resultHeadline): "结果、证据和未解决项一起交付"
+        case (.simplifiedChinese, .resultBody): "这是合成结果页，用于验证最终阅读顺序，不代表真实模型或 Agent 已完成任务。"
+        case (.simplifiedChinese, .resultSummary): "已形成一份结构化简报，包含关键发现、证据依据和下一步建议。"
+        case (.simplifiedChinese, .resultEvidence): "2 个合成产物 · 3 项验证通过"
+        case (.simplifiedChinese, .resultUnresolved): "未解决项"
+        case (.simplifiedChinese, .none): "无"
+        case (.simplifiedChinese, .nextPreview): "查看下一预览状态"
+        case (.simplifiedChinese, .showApprovedPreview): "查看批准后状态"
+        case (.simplifiedChinese, .showValidationPreview): "查看验证状态"
+        case (.simplifiedChinese, .showResultPreview): "查看结果状态"
+        case (.simplifiedChinese, .backToEdit): "返回编辑"
+        case (.simplifiedChinese, .previewStateNotice): "所有状态均为确定性合成数据，不会执行任务、批准或外部写入。"
+
+        case (.english, .stageCompose): "Compose"
+        case (.english, .stageRoute): "Route review"
+        case (.english, .stagePlan): "Plan"
+        case (.english, .stageParallel): "Parallel work"
+        case (.english, .stageApproval): "Approval"
+        case (.english, .stageValidation): "Validation"
+        case (.english, .stageResult): "Result"
+        case (.english, .journeyPreview): "Task journey preview"
+        case (.english, .syntheticGoal): "Preview goal"
+        case (.english, .routeHeadline): "Review how Forma AI will approach this task"
+        case (.english, .routeBody): "A local route is preferred. Any capability gap or external action remains visible before you continue."
+        case (.english, .routeLocalReason): "This content is suitable for processing on this Mac."
+        case (.english, .routeCloudBoundary): "No cloud transmission and no silent model switch."
+        case (.english, .planHeadline): "Turn the outcome into a plan you can supervise"
+        case (.english, .planBody): "Every step has an owner and inspectable output. This synthetic plan creates no Agents."
+        case (.english, .planResearch): "Collect and mark relevant material"
+        case (.english, .planAnalyze): "Compare evidence and identify key findings"
+        case (.english, .planDraft): "Create a reviewable result and evidence summary"
+        case (.english, .parallelHeadline): "Three Agents collaborate in parallel with visible state"
+        case (.english, .parallelBody): "This shows the responsibility, progress, and handoff shape of future execution. No process is running now."
+        case (.english, .agentResearch): "Research Agent"
+        case (.english, .agentAnalysis): "Analysis Agent"
+        case (.english, .agentDraft): "Draft Agent"
+        case (.english, .statusComplete): "Preview complete"
+        case (.english, .statusRunningPreview): "Synthetic running state"
+        case (.english, .statusQueuedPreview): "Waiting for upstream output"
+        case (.english, .approvalHeadline): "Pause before an external action and show its scope"
+        case (.english, .approvalBody): "This approval card shows the information a user will receive. It performs no approval and writes to no destination."
+        case (.english, .approvalAction): "Proposed action"
+        case (.english, .approvalScope): "Send the validated result summary"
+        case (.english, .approvalDestination): "Destination"
+        case (.english, .approvalDestinationValue): "Synthetic project workspace"
+        case (.english, .approvalEffectLabel): "Effect"
+        case (.english, .approvalEffect): "One-time external write with no standing permission"
+        case (.english, .approvalPreviewOnly): "The next step only shows the after-approval Preview state."
+        case (.english, .validationHeadline): "Check artifacts and evidence before presenting a result"
+        case (.english, .validationBody): "Validation stays separate from generation so a generated output is never mistaken for task completion."
+        case (.english, .artifactNotes): "Source notes"
+        case (.english, .artifactBrief): "Reviewable brief"
+        case (.english, .checkSources): "Source coverage"
+        case (.english, .checkStructure): "Structural completeness"
+        case (.english, .checkPrivacy): "Privacy boundary"
+        case (.english, .valid): "Passed"
+        case (.english, .resultHeadline): "Deliver the result, evidence, and unresolved items together"
+        case (.english, .resultBody): "This synthetic result verifies the final reading order. It does not mean a real model or Agent completed the task."
+        case (.english, .resultSummary): "A structured brief now presents key findings, supporting evidence, and recommended next steps."
+        case (.english, .resultEvidence): "2 synthetic artifacts · 3 validations passed"
+        case (.english, .resultUnresolved): "Unresolved items"
+        case (.english, .none): "None"
+        case (.english, .nextPreview): "Show next preview state"
+        case (.english, .showApprovedPreview): "Show after-approval state"
+        case (.english, .showValidationPreview): "Show validation state"
+        case (.english, .showResultPreview): "Show result state"
+        case (.english, .backToEdit): "Back to editing"
+        case (.english, .previewStateNotice): "Every state is deterministic synthetic data. No task, approval, or external write is performed."
+        }
+    }
+
+    func stageTitle(_ stage: PreviewTransitionStage) -> String {
+        switch stage {
+        case .compose: self[.stageCompose]
+        case .routeReview: self[.stageRoute]
+        case .plan: self[.stagePlan]
+        case .parallelExecution: self[.stageParallel]
+        case .approval: self[.stageApproval]
+        case .validation: self[.stageValidation]
+        case .result: self[.stageResult]
+        }
+    }
+}

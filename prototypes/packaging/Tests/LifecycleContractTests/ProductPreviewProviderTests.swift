@@ -92,3 +92,23 @@ import Testing
     #expect(surface.readsAttachmentContents == false)
     #expect(surface.persistsPreviewHistory == false)
 }
+
+@Test func composeToExecutionPreviewHasOneDeterministicBilingualPath() {
+    let transition = ComposeToExecutionPreviewContract.productDefault
+
+    #expect(transition.stages == [
+        .compose,
+        .routeReview,
+        .plan,
+        .parallelExecution,
+        .approval,
+        .validation,
+        .result,
+    ])
+    #expect(transition.supportedLanguages == [.simplifiedChinese, .english])
+    #expect(transition.allowedInteraction == .showNextPreviewState)
+    #expect(transition.languageSwitchPreservesStage == true)
+    #expect(transition.runtimeActionsAllowed == false)
+    #expect(transition.performsApproval == false)
+    #expect(transition.persistsState == false)
+}

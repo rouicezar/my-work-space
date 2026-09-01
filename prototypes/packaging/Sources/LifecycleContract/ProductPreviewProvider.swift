@@ -154,6 +154,38 @@ public struct DailyWorkbenchSurfaceContract: Sendable {
     )
 }
 
+public enum PreviewTransitionStage: String, CaseIterable, Sendable, Equatable, Identifiable {
+    case compose
+    case routeReview
+    case plan
+    case parallelExecution
+    case approval
+    case validation
+    case result
+
+    public var id: String { rawValue }
+}
+
+public struct ComposeToExecutionPreviewContract: Sendable {
+    public let stages: [PreviewTransitionStage]
+    public let supportedLanguages: [ProductLanguage]
+    public let allowedInteraction: PreviewInteraction
+    public let languageSwitchPreservesStage: Bool
+    public let runtimeActionsAllowed: Bool
+    public let performsApproval: Bool
+    public let persistsState: Bool
+
+    public static let productDefault = ComposeToExecutionPreviewContract(
+        stages: PreviewTransitionStage.allCases,
+        supportedLanguages: [.simplifiedChinese, .english],
+        allowedInteraction: .showNextPreviewState,
+        languageSwitchPreservesStage: true,
+        runtimeActionsAllowed: false,
+        performsApproval: false,
+        persistsState: false
+    )
+}
+
 public struct PreviewAgent: Identifiable, Sendable, Equatable {
     public let id: String
     public let role: String

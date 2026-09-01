@@ -8,6 +8,7 @@ struct DailyWorkbenchPreview: View {
     @State private var route: PreviewComposerRoute = .localFirst
     @State private var supervisionExpanded = true
     @State private var contextPreviewPresented = false
+    @State private var transitionStage: PreviewTransitionStage = .compose
 
     var body: some View {
         let copy = ProductCopy(language: language)
@@ -17,7 +18,7 @@ struct DailyWorkbenchPreview: View {
             HStack(spacing: 0) {
                 sidebar(copy)
                 Divider()
-                composer(copy)
+                mainContent(copy)
                 if supervisionExpanded {
                     Divider()
                     supervisionRail(copy)
@@ -31,6 +32,21 @@ struct DailyWorkbenchPreview: View {
             Button(copy[.dismiss], role: .cancel) {}
         } message: {
             Text(copy[.contextPreviewBody])
+        }
+    }
+
+    @ViewBuilder
+    private func mainContent(_ copy: ProductCopy) -> some View {
+        if transitionStage == .compose {
+            composer(copy)
+        } else {
+            ExecutionJourneyPreview(
+                language: language,
+                stage: transitionStage,
+                goal: prompt,
+                onAdvance: advanceTransition,
+                onBackToEdit: { transitionStage = .compose }
+            )
         }
     }
 
@@ -143,8 +159,8 @@ struct DailyWorkbenchPreview: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer()
-                    Button(copy[.previewPlan]) {}
-                        .buttonStyle(.borderedProminent).disabled(true)
+                    Button(copy[.previewPlan]) { transitionStage = .routeReview }
+                        .buttonStyle(.borderedProminent).disabled(prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
@@ -162,18 +178,21 @@ struct DailyWorkbenchPreview: View {
 
     @ViewBuilder
     private func starterCards(_ copy: ProductCopy) -> some View {
-        starterCard(copy[.starterResearch], "books.vertical")
-        starterCard(copy[.starterWriting], "doc.richtext")
-        starterCard(copy[.starterPlanning], "point.3.connected.trianglepath.dotted")
+        starterCard(copy[.starterResearch], "books.vertical") { prompt = copy[.starterResearch] }
+        starterCard(copy[.starterWriting], "doc.richtext") { prompt = copy[.starterWriting] }
+        starterCard(copy[.starterPlanning], "point.3.connected.trianglepath.dotted") { prompt = copy[.starterPlanning] }
     }
 
-    private func starterCard(_ title: String, _ symbol: String) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Image(systemName: symbol).foregroundStyle(.blue)
-            Text(title).font(.callout.weight(.medium)).fixedSize(horizontal: false, vertical: true)
+    private func starterCard(_ title: String, _ symbol: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 10) {
+                Image(systemName: symbol).foregroundStyle(.blue)
+                Text(title).font(.callout.weight(.medium)).fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(14).frame(maxWidth: .infinity, minHeight: 88, alignment: .topLeading)
+            .background(Color.secondary.opacity(0.07), in: RoundedRectangle(cornerRadius: 13))
         }
-        .padding(14).frame(maxWidth: .infinity, minHeight: 88, alignment: .topLeading)
-        .background(Color.secondary.opacity(0.07), in: RoundedRectangle(cornerRadius: 13))
+        .buttonStyle(.plain)
     }
 
     private func contextCard(_ copy: ProductCopy) -> some View {
@@ -226,15 +245,25 @@ struct DailyWorkbenchPreview: View {
                 .buttonStyle(.plain).help(copy[.collapseSupervision])
             }
             VStack(alignment: .leading, spacing: 8) {
-                Image(systemName: "pause.circle").font(.title).foregroundStyle(.secondary)
-                Text(copy[.noActiveTask]).font(.headline)
-                Text(copy[.supervisionExplanation]).font(.caption).foregroundStyle(.secondary)
+                Image(systemName: transitionStage == .compose ? "pause.circle" : "play.circle.fill")
+                    .font(.title).foregroundStyle(transitionStage == .compose ? Color.secondary : Color.blue)
+                Text(transitionStage == .compose ? copy[.noActiveTask] : copy.stageTitle(transitionStage)).font(.headline)
+                Text(transitionStage == .compose ? copy[.supervisionExplanation] : copy[.previewStateNotice])
+                    .font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.vertical, 8)
             Divider()
-            statusRow(copy[.agentStatus], copy[.waitingForTask], "person.2")
-            statusRow(copy[.evidenceStatus], copy[.nothingProduced], "checkmark.seal")
+            statusRow(
+                copy[.agentStatus],
+                transitionStage == .compose ? copy[.waitingForTask] : copy.stageTitle(transitionStage),
+                "person.2"
+            )
+            statusRow(
+                copy[.evidenceStatus],
+                transitionStage == .validation || transitionStage == .result ? copy[.valid] : copy[.nothingProduced],
+                "checkmark.seal"
+            )
             Spacer()
         }
         .padding(20).frame(width: 270).background(.ultraThinMaterial)
@@ -248,6 +277,12 @@ struct DailyWorkbenchPreview: View {
                 Text(value).font(.caption).foregroundStyle(.secondary)
             }
         }
+    }
+
+    private func advanceTransition() {
+        let stages = ComposeToExecutionPreviewContract.productDefault.stages
+        guard let index = stages.firstIndex(of: transitionStage), index + 1 < stages.count else { return }
+        transitionStage = stages[index + 1]
     }
 }
 

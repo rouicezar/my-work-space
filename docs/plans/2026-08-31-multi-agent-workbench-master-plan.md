@@ -31,9 +31,9 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-09-01 Asia/Shanghai
 Current phase: P4 independent workbench product experience
-Current task: P4-T12C
+Current task: P4-T13
 Current status: pending
-Next action: claim P4-T12C and connect deterministic bilingual compose-to-execution Preview states without submitting a task.
+Next action: claim P4-T13 and build bilingual History and recovery Preview surfaces from the read-only presentation authority.
 
 Current Git fact at P0-T10 takeover:
 
@@ -242,7 +242,7 @@ P2 completion never waives these gates and must not be cited as evidence that an
 | P4-T12A | verified | Build the final first-run assistant | SwiftUI app, lifecycle presentation contract, tests, screenshot | First-run contract, full Swift tests, forbidden upstream/manual-deployment wording scan, window review | User understands the product, privacy, automatic local-AI preparation, optional cloud, permissions, and first action without deploying upstream projects |
 | P4-T12A-C1 | verified | Add first-open Simplified Chinese and English selection and complete first-run localization | First-run contract, SwiftUI, tests, screenshots | Language contract, full Swift tests, both-language window review | Explicit language selection plus separate Chinese and English window evidence; 39 Swift tests passed with 2 real-Keychain skips |
 | P4-T12B | verified | Build the final bilingual daily product shell and New Task workspace | SwiftUI app, presentation/localization contract, tests, screenshots | Shell/navigation/composer/language tests and Chinese/English window review | Explicit language switch, compact/regular window evidence, collapsible supervision rail; 40 Swift tests passed with 2 real-Keychain skips |
-| P4-T12C | pending | Connect deterministic compose-to-execution Preview states | SwiftUI preview navigation and tests | Transition contract, no-command scan, normal-speed walkthrough | User understands how input becomes a plan, parallel work, approval, validation, and result |
+| P4-T12C | verified | Connect deterministic bilingual compose-to-execution Preview states | SwiftUI preview navigation, shared localization, and tests | Transition contract, no-command scan, bilingual normal-speed walkthrough | Seven ordered stages, live language preservation, approval/result evidence, and 41 Swift tests passed with 2 real-Keychain skips |
 | P4-T13 | pending | Build final History and recovery surfaces | SwiftUI app and fixtures | State/recovery UI tests | Interrupted, blocked, failed, partial, cancelled, and completed states are distinct |
 | P4-T14 | pending | Build governed-memory review surfaces | SwiftUI app and Semantica-derived fixtures | Candidate/conflict/correction/delete UI tests | Preview matches the Semantica authority boundary |
 | P4-T15 | pending | Build Agents & Tools and Permissions management surfaces | SwiftUI app and capability-manifest fixtures | Scope and approval UI tests | Herdr/holaOS capabilities are presented without reimplementation |

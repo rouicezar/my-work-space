@@ -1,5 +1,38 @@
 # Forma AI Task Handoff
 
+## 2026-09-01 - P4-T12C - exit
+
+Executor: Codex root agent
+Scope: connect New Task composition to the complete deterministic bilingual execution journey without invoking runtime actions
+Actions: added `PreviewTransitionStage` and `ComposeToExecutionPreviewContract`; enabled typed or starter-goal entry into route review; rendered ordered route, plan, three-Agent parallel, approval, validation, and result states; added return-to-edit and next-state-only navigation; made the supervision rail follow the current Preview stage
+Red/green evidence: target test first failed because `ComposeToExecutionPreviewContract` was absent; after implementation the target passed and the full Swift package passed 41 tests with 2 real-Keychain tests skipped, including a full rerun after the approval-field correction
+Isolation evidence: transition surfaces contain no SupervisorClient, RuntimeSecurity, Keychain, URLSession, FileManager, Process, socket, submit, approve/reject method, or file-picker dependency; the contract forbids runtime actions, approval execution, and persistence; production still defaults to runtime `ManifestOverview`
+Localization evidence: every new stage, explanation, Agent role/state, approval field, artifact, validation, result, and action comes from shared `ProductCopy`; switching from Chinese to English at the final Result state preserved the stage and user-entered goal
+Walkthrough evidence: accessibility-driven normal-speed traversal entered a synthetic goal and visited route review → plan → parallel work → approval → validation → result; the Approval inspection found and corrected a destination/effect semantic mismatch before closeout
+Visual evidence: exact-window screenshots `evidence/ui/product-preview-compose-to-result-zh-2026-09-01.png`, `evidence/ui/product-preview-compose-to-result-en-2026-09-01.png`, and `evidence/ui/product-preview-compose-approval-en-2026-09-01.png` verify bilingual final state and the special approval boundary; one wrong-window capture was immediately overwritten and not retained as evidence
+Files changed: lifecycle transition contract/test, daily Preview integration, new execution-journey SwiftUI, shared bilingual copy, three screenshots, both English controls, and both mandatory Chinese mirrors
+Commit and push: pending the following verified implementation commit; exact commit evidence will be synchronized after push
+Evidence boundary: all agents, artifacts, validations, approval effects, and results are deterministic synthetic presentation; no Herdr session, model inference, memory operation, workflow/tool call, cloud transmission, external write, or task history is created
+Design influence: frontend-design preserved the task-to-supervision split and made the seven-stage rail the memorable orientation device; visual inspection, not tests alone, caught and corrected the approval semantics
+Blocked items: none
+Next exact action: claim P4-T13 and build bilingual History and recovery Preview surfaces
+Secret/external-write status: no credentials, cloud calls, downloads, attachment reads, persistence, approvals, runtime execution, or destructive product actions
+
+## 2026-09-01 - P4-T12C - takeover
+
+Executor: Codex root agent
+Starting git state: `main` clean and synchronized with `origin/main` at `a120153`
+Scope: connect the bilingual New Task shell to a deterministic Preview journey covering compose, route review, plan, parallel execution, approval, validation, and result without runtime submission
+Upstream search result: Herdr remains authoritative for real agent plans/states/artifacts; oMLX/cloud providers for inference; Semantica for governed evidence; holaOS for reusable workflow/tool capabilities. This task only presents repository-defined shapes and ephemeral navigation, so no upstream behavior is reimplemented
+Reusable entry point: `DailyWorkbenchPreview`, shared `ProductCopy`, `ProductPreviewProvider` presentation vocabulary, and the existing permanent Preview isolation banner
+License obligation: no upstream UI/source/assets/brands are copied; only product-owned native SwiftUI and synthetic presentation data are added
+Integration decision: add an immutable transition contract with exactly ordered stages; starting requires user text or a synthetic starter selection; every control advances only to the next in-memory Preview state or returns to editing; approval is described but never performed
+Localization decision: every new stage, state, action, Agent role, approval scope, artifact, validation, and result string must come from the shared Simplified Chinese/English copy authority and switch live without resetting the stage
+Planned verification: expected red contract failure; filtered/full Swift tests; source isolation and production-default scans; both-language final-state screenshots; normal-speed compose-to-result walkthrough including language switch; `git diff --check`
+Commit and push: pending
+Next exact action: add the failing ordered transition contract test
+Secret/external-write status: no credentials, cloud calls, downloads, attachment reads, persistence, approvals, runtime execution, or destructive actions
+
 ## 2026-09-01 - P4-T12B - exit
 
 Executor: Codex root agent
@@ -807,9 +840,9 @@ Secret/external-write status: no secrets; mocks only
 
 Updated: 2026-09-01 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P4-T12C
-State: P4-T12B verified; P4-T12C pending
-Next required action: claim P4-T12C and connect deterministic bilingual compose-to-execution Preview states before History/recovery.
+Master plan task: P4-T13
+State: P4-T12C verified; P4-T13 pending
+Next required action: claim P4-T13 and build bilingual History and recovery Preview surfaces.
 
 ## Product Goal Snapshot
 
