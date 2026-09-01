@@ -311,6 +311,8 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 
 ## Completion Notes
 
+- 2026-09-02 - P3-T12 acceptance correction - Codex root agent - withdrew the shell-only/client-reported real-agent claim and proved two provider-free fixtures through official `agent.start` with pending-launch reconciliation, deterministic cleanup, parallel work, pane-exact cancel, and artifact/output isolation - 49 Herdr tests and full Python 291 passed with 1 expected opt-in skip - implementation/evidence `bc860f2`; synchronization commit follows - next P3-T13 after executing-plans checkpoint
+
 - 2026-08-31 -- P0-T01/P0-T02/P0-T03 verified by Codex root agent. Created master tracker, handoff document, and updated `AGENTS.md`.
 - 2026-08-31 -- P0-T04 verified by Codex root agent. `git diff --check` passed for documentation-control files.
 - 2026-08-31 -- P0-T05 verified by Codex root agent. Commit `3756677` includes only `AGENTS.md`, this tracker, and `docs/TASK_HANDOFF.md`.
