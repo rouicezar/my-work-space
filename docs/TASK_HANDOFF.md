@@ -1,5 +1,19 @@
 # Forma AI Task Handoff
 
+## 2026-09-02 - P3-T13 - exit
+
+Executor: Codex root agent
+Scope: bind Herdr snapshot and non-replaying event delivery to a fail-closed Python/Swift runtime presentation provider and prove real forced socket-loss recovery
+Actions: added `HerdrPresentationProvider`; rejected stale revisioned deltas; reconciled revisionless live events through authoritative snapshots; invalidated old agents to `unknown` before reconnect; proved server restart removes old pane identity and fresh snapshot/new subscription resume on a new pane; added `herdr-snapshot` Supervisor envelope and Swift `RuntimePresentationProvider`; recorded evidence and closed the ledger gap
+Red/correction evidence: provider import initially failed; live restart then exposed an empty snapshot instead of old-pane recovery; the next live failure exposed that v0.8.2 subscription status events omit revision, leading to snapshot reconciliation rather than fabricated ordering
+Verification: 50 focused Python tests passed in 4.433s; full Python 293 passed with 1 expected skip in 18.892s; full Swift 43 passed with 2 environment-gated skips in 9.484s; `git diff --check` clean
+Evidence: `evidence/upstream/herdr-v0.8.2-presentation-reconnect-verification-2026-09-02.md`
+Files changed: Python presentation provider, live/unit tests, Supervisor command/tests, Swift protocol/provider/tests, Herdr ledger/evidence, and four bilingual controls
+Commit and push: implementation/evidence `0c437f6` (`feat: bind herdr presentation recovery`); closeout commit and push pending
+Blocked items: none for P3-T13; real wait/blocked/artifact/cancel is P3-T14, detach/native recovery P3-T15, and runtime card replacement P3-T16
+Next exact action: after the executing-plans checkpoint claim P3-T14 and write real wait/blocked/bounded-artifact/graceful-and-force-cancel acceptance tests
+Secret/external-write status: no credentials, cloud/model calls, production sessions, or default Herdr session; disposable local named sessions only
+
 ## 2026-09-02 - P3-T13 - Codex resume takeover
 
 Executor: Codex root agent
