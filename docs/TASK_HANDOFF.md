@@ -1,5 +1,35 @@
 # Forma AI Task Handoff
 
+## 2026-09-01 - P4-T12A-C1 - exit
+
+Executor: Codex root agent
+Scope: correct the English-only first-run Preview before starting the daily shell
+Actions: added an explicit pre-onboarding `简体中文`/`English` choice, a supported-language lifecycle contract, complete localized copy for all seven steps, localized navigation/actions/boundary text, and an in-flow language switch
+Red/green evidence: the target test first failed because the language-selection and supported-language contract fields were absent; after implementation the target passed and the full Swift package passed 39 tests with 2 real-Keychain tests skipped
+Isolation/copy evidence: both language markers and the no-separate-upstream-deployment promise are present; first-run source contains no oMLX, Herdr, Semantica, holaOS, SupervisorClient, URLSession, FileManager, Process, or Keychain dependency; production remains `ManifestOverview` outside explicit DEBUG Preview
+Visual evidence: window-only screenshots `evidence/ui/product-preview-language-choice-2026-09-01.png`, `evidence/ui/product-preview-first-run-zh-2026-09-01.png`, and `evidence/ui/product-preview-first-run-en-2026-09-01.png` verify the choice page and both localized onboarding surfaces
+Files changed: first-run SwiftUI, lifecycle contract/test, three screenshot evidence files, both English controls, and both mandatory Chinese mirrors
+Commit and push: pending the following verified implementation commit; closeout metadata will follow if needed
+Evidence boundary: selection is intentionally ephemeral in this read-only Preview; persisted first-run completion and later Settings language changes remain product-shell/runtime work
+Blocked items: none
+Next exact action: claim P4-T12B and build the final daily shell/New Task workspace
+Secret/external-write status: no credentials, cloud calls, downloads, permission mutation, runtime execution, or destructive product actions
+
+## 2026-09-01 - P4-T12A-C1 - takeover
+
+Executor: Codex root agent
+Starting git state: `main` clean and synchronized with `origin/main` at `3575a59`
+Trigger: user manual review found the first-run assistant English-only and required an explicit Simplified Chinese/English choice on opening
+Scope: add language selection before onboarding and localize the complete seven-step first-run surface; do not proceed to P4-T12B until both languages are verified
+Upstream search result: localization and first-run language preference are product-owned native presentation concerns; no upstream runtime capability is duplicated or invoked
+Reusable entry point: SwiftUI locale-aware product copy only; future persistence belongs to General settings/onboarding state, not this read-only Preview correction
+License obligation: no upstream code, copy, asset, or brand is reused
+Integration decision: first view offers `简体中文` and `English`; system language may later determine recommendation, but the user makes an explicit Preview selection; all visible onboarding copy follows the selected language
+Planned verification: red language contract; filtered/full Swift tests; Chinese/English string coverage scan; both-language window review; production-default and no-command scans; `git diff --check`
+Commit and push: pending
+Next exact action: add failing supported-language and explicit-selection contract assertions
+Secret/external-write status: no credentials, cloud calls, downloads, permission mutation, runtime execution, or destructive actions
+
 ## 2026-09-01 - P4-T12A - exit
 
 Executor: Codex root agent
@@ -745,7 +775,7 @@ Secret/external-write status: no secrets; mocks only
 Updated: 2026-09-01 Asia/Shanghai
 Owner: Codex root agent
 Master plan task: P4-T12B
-State: P4-T12A verified; P4-T12B pending
+State: P4-T12A-C1 verified; P4-T12B pending
 Next required action: claim P4-T12B and build the final daily shell/New Task workspace before History/recovery.
 
 ## Product Goal Snapshot

@@ -68,4 +68,6 @@ import Testing
     #expect(firstRun.localPreparationIsProductManaged == true)
     #expect(firstRun.requiresManualTerminalSetup == false)
     #expect(firstRun.exposesUpstreamProjectNamesToNovices == false)
+    #expect(firstRun.languageSelection == .requiredBeforeOnboarding)
+    #expect(firstRun.supportedLanguages == [.simplifiedChinese, .english])
 }

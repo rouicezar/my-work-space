@@ -81,10 +81,23 @@ public enum FirstRunStep: String, CaseIterable, Sendable, Equatable {
     case createFirstTask
 }
 
+public enum ProductLanguage: String, CaseIterable, Sendable, Equatable, Identifiable {
+    case simplifiedChinese
+    case english
+
+    public var id: String { rawValue }
+}
+
+public enum FirstRunLanguageSelection: Sendable, Equatable {
+    case requiredBeforeOnboarding
+}
+
 public struct FirstRunSurfaceContract: Sendable {
     public let developmentLaunchArgument: String
     public let productionAppearsOnlyWhenOnboardingIsIncomplete: Bool
     public let steps: [FirstRunStep]
+    public let languageSelection: FirstRunLanguageSelection
+    public let supportedLanguages: [ProductLanguage]
     public let localPreparationIsProductManaged: Bool
     public let requiresManualTerminalSetup: Bool
     public let exposesUpstreamProjectNamesToNovices: Bool
@@ -93,6 +106,8 @@ public struct FirstRunSurfaceContract: Sendable {
         developmentLaunchArgument: "--first-run-preview",
         productionAppearsOnlyWhenOnboardingIsIncomplete: true,
         steps: FirstRunStep.allCases,
+        languageSelection: .requiredBeforeOnboarding,
+        supportedLanguages: [.simplifiedChinese, .english],
         localPreparationIsProductManaged: true,
         requiresManualTerminalSetup: false,
         exposesUpstreamProjectNamesToNovices: false
