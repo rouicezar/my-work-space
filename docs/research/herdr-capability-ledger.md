@@ -2,7 +2,7 @@
 
 Verified: 2026-08-31 Asia/Shanghai
 
-This is a pinned upstream capability map, not runtime acceptance. Forma AI has not yet downloaded or executed Herdr. Every capability below is sourced from the official v0.8.2 release, pinned source, bundled schema, or versioned documentation and still requires product adapter tests.
+This is a pinned upstream capability map, not runtime acceptance. The official artifact was downloaded, digest-verified, and executed for version/protocol/schema checks on 2026-09-01 (P3-T10); no socket request, event subscription, or agent integration has run yet (P3-T11+). Every capability below is sourced from the official v0.8.2 release, pinned source, bundled schema, or versioned documentation and still requires product adapter tests.
 
 ## Immutable evidence snapshot
 
