@@ -27,6 +27,14 @@ Forma AI 是一套面向普通 Mac 用户、通用且可分发的 AI 工作操�
 
 当前 Mac 仅作为首个开发与验收环境，不是产品的唯一目标用户。
 
+## 最终用户文档（目标正式版）
+
+以下文档描述 Forma AI 完整开发并通过发布验收后的目标用户体验；在发布门槛通过前，它们是产品与验收规范，不代表当前开发版已经具备全部能力。
+
+- [中文：完整产品简介与使用指南](docs/guides/forma-ai-user-guide.zh-CN.md)
+- [English: Complete Product Overview and User Guide](docs/guides/forma-ai-user-guide.en.md)
+- [新手用户验收脚本 / Novice-user acceptance script](docs/runbooks/novice-acceptance.md)
+
 - [产品需求](docs/product-requirements.md)
 - [产品架构设计](docs/plans/2026-08-28-forma-ai-design.md)
 - [产品实施计划](docs/plans/2026-08-28-forma-ai.md)

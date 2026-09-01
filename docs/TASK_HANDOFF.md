@@ -1,5 +1,17 @@
 # Forma AI Task Handoff
 
+## 2026-09-01 - P8-T05 - takeover
+
+Executor: Codex root agent
+Starting git state: `main` clean and synchronized with `origin/main` at `afdbd6c`
+Scope: create equivalent Chinese and English target-release user guides and a novice-user acceptance script; add discoverable README links
+Requirements: describe the fully completed product rather than the current development slice; explain what Forma AI is, what it can do, advantages, permanent capability boundaries, unsupported responsibilities, first launch, safe daily use, recovery, and how to get better results
+Design: label both guides as target final-release documents until release acceptance passes; use an outcome-first orientation, a 10-minute first-launch path, capability map, task-writing pattern, approval/privacy model, durable limitations, recovery, best practices, and FAQ; keep Chinese and English structurally and semantically equivalent
+Planned verification: required files and matching section anchors; future-state disclaimer; claims traceability to product requirements; README links; `git diff --check`; full Python and Swift suites
+Commit and push: pending
+Next exact action: draft the target-release bilingual guides and novice acceptance script
+Secret/external-write status: no credentials, cloud calls, downloads, or destructive actions; mandatory Chinese mirror synchronization only
+
 ## 2026-08-31 - P0-T10 - exit
 
 Executor: Codex root agent
