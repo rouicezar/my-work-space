@@ -1,5 +1,20 @@
 # Forma AI Task Handoff
 
+## 2026-09-02 - P3-T13 - Codex resume takeover
+
+Executor: Codex root agent
+Starting git state: `main` clean and synchronized with `origin/main` at `06b26df`
+Trigger: user approved the real-closure sequence and required the next manual build to accept a real task, involve local Qwen, start at least two Herdr agents, show live state, and cancel one task; no further shell beautification is authorized before that gate
+Scope: finish Qoder's committed P3-T13 slice by proving forced listener loss, immediate stale/unknown state, authoritative snapshot reconciliation, revision/sequence rejection, automatic resubscription, resumed live delivery, then bind the Supervisor envelope and Swift runtime presentation provider
+Upstream search result: Herdr v0.8.2 remains the runtime authority; its verified snapshot-first and non-replaying subscription semantics require product-owned lifecycle orchestration only, not a second state store
+Reusable entry point: existing `HerdrSubscriptionListener`, `HerdrAdapter.snapshot()`/`wait_for_event()`, official socket API, SupervisorProtocol bridge, and Swift presentation contract
+License obligation: Apache-2.0 external binary/socket reuse; no upstream source, assets, names, or trademarks copied
+Integration decision: on listener failure, invalidate displayed runtime truth before reconnect; recover only by fresh snapshot reconciliation before opening a new subscription; reject stale deltas by authoritative revision/sequence; runtime UI never falls back to preview cards
+Planned verification: failing forced-loss test first; focused transport/adapter/provider tests; live named-session reconnect proof; Supervisor and Swift mapping tests; full Python and Swift suites; bilingual parity; `git diff --check`
+Commit and push: pending
+Next exact action: write the forced socket-loss red test and the presentation-provider state contract
+Secret/external-write status: no credentials, cloud calls, or production sessions; disposable local Herdr sessions only
+
 ## 2026-09-02 - P3-T12 acceptance correction - exit
 
 Executor: Codex root agent

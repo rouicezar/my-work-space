@@ -10,6 +10,7 @@ import uuid
 from pathlib import Path
 
 from forma_ai.herdr_adapter import HerdrAdapter
+from forma_ai.herdr_presentation import HerdrPresentationProvider
 from forma_ai.herdr_transport import (
     HerdrRequestError,
     HerdrSocketTransport,
@@ -254,20 +255,7 @@ class HerdrEventSubscriptionIntegrationTests(unittest.TestCase):
         )
         self.server = None
         try:
-            self.server = subprocess.Popen(
-                [self.binary, "--session", self.session_name, "server"],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-            deadline = time.monotonic() + 15.0
-            while not os.path.exists(self.socket_path):
-                if time.monotonic() > deadline:
-                    raise AssertionError("Herdr test server socket did not appear")
-                if self.server.poll() is not None:
-                    raise AssertionError(
-                        f"Herdr test server exited early with {self.server.returncode}"
-                    )
-                time.sleep(0.1)
+            self._start_server()
             self.transport = HerdrSocketTransport(
                 socket_path=self.socket_path, environ={}, request_timeout=60.0
             )
@@ -280,6 +268,22 @@ class HerdrEventSubscriptionIntegrationTests(unittest.TestCase):
         except Exception:
             self.tearDown()
             raise
+
+    def _start_server(self):
+        self.server = subprocess.Popen(
+                [self.binary, "--session", self.session_name, "server"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        deadline = time.monotonic() + 15.0
+        while not os.path.exists(self.socket_path):
+            if time.monotonic() > deadline:
+                raise AssertionError("Herdr test server socket did not appear")
+            if self.server.poll() is not None:
+                raise AssertionError(
+                    f"Herdr test server exited early with {self.server.returncode}"
+                )
+            time.sleep(0.1)
 
     def tearDown(self):
         for args in (
@@ -389,17 +393,83 @@ class HerdrEventSubscriptionIntegrationTests(unittest.TestCase):
         )
         self.assertEqual(reconciled_agent.agent_status, "idle")
 
-        received_again = []
-        errors_again = []
-        thread_again = self._subscribe_once(
-            listener, pane_id, received_again, errors_again
+        raw_reconnected_events = []
+
+        class StopAfterEventListener(HerdrSubscriptionListener):
+            def subscribe(inner_self, subscriptions, on_event):
+                def receive(message):
+                    raw_reconnected_events.append(message)
+                    on_event(message)
+                    inner_self.stop()
+
+                return super(StopAfterEventListener, inner_self).subscribe(
+                    subscriptions, receive
+                )
+
+        provider = HerdrPresentationProvider(
+            adapter=self.adapter,
+            listener_factory=lambda: StopAfterEventListener(
+                socket_path=self.socket_path, environ={}
+            ),
         )
-        self._report_agent(pane_id, "fixture-sub-a", "working")
+        updates = []
+        errors_again = []
+        recovered_panes = []
+
+        def update(item):
+            updates.append(item)
+            if item.freshness == "stale":
+                self._start_server()
+                recovered = self.adapter.open_workspace(
+                    cwd=str(root), label="forma-p3t13-recovered"
+                )
+                self._report_agent(
+                    recovered.root_pane_id, "fixture-sub-recovered", "idle"
+                )
+                recovered_panes.append(recovered.root_pane_id)
+
+        def run_provider():
+            try:
+                provider.run_reconnecting(update, maximum_reconnects=1)
+            except Exception as exc:
+                errors_again.append(exc)
+
+        thread_again = threading.Thread(target=run_provider)
+        thread_again.start()
+        deadline = time.monotonic() + 5.0
+        while len(updates) < 1 and time.monotonic() < deadline:
+            time.sleep(0.05)
+        self.assertEqual(updates[0].freshness, "fresh")
+        time.sleep(0.5)
+
+        # Kill the server-side socket owner, not the listener itself. The
+        # provider must invalidate its projection before its callback restarts
+        # the same named Herdr session.
+        self.server.terminate()
+        self.server.wait(timeout=5)
+        deadline = time.monotonic() + 10.0
+        while len(updates) < 3 and time.monotonic() < deadline:
+            time.sleep(0.05)
+        self.assertEqual(updates[1].freshness, "stale")
+        self.assertEqual(updates[1].agents[0].state, "unknown")
+        self.assertEqual(updates[2].freshness, "fresh")
+        self.assertEqual(updates[2].agents[0].state, "idle")
+        self.assertEqual(updates[2].agents[0].pane_id, recovered_panes[0])
+        self.assertNotEqual(recovered_panes[0], pane_id)
+
+        time.sleep(0.5)
+        self._report_agent(
+            recovered_panes[0], "fixture-sub-recovered", "working"
+        )
         thread_again.join(timeout=10.0)
         self.assertFalse(thread_again.is_alive())
         self.assertEqual(errors_again, [])
-        self.assertEqual(len(received_again), 1)
-        self.assertEqual(received_again[0]["data"]["agent_status"], "working")
+        self.assertEqual(updates[-1].freshness, "fresh")
+        self.assertEqual(
+            updates[-1].agents[0].state,
+            "working",
+            msg=repr(raw_reconnected_events),
+        )
 
 
 if __name__ == "__main__":

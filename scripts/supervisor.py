@@ -59,6 +59,8 @@ from forma_ai.task_orchestrator import (
     MAXIMUM_UNIFIED_TASK_BYTES, local_task_from_unified, parse_unified_task,
     plan_unified_task,
 )
+from forma_ai.herdr_adapter import HerdrAdapter
+from forma_ai.herdr_transport import HerdrSocketTransport
 
 
 SCHEMA_VERSION = 1
@@ -189,6 +191,8 @@ def parser() -> argparse.ArgumentParser:
         "--local-profile-id", default="qwen3-0.6b-4bit-apple-silicon-alpha",
     )
     task_submit.add_argument("--cloud-catalog", type=Path, default=DEFAULT_CLOUD_PROVIDERS)
+    herdr_snapshot = commands.add_parser("herdr-snapshot")
+    herdr_snapshot.add_argument("--socket-path", type=Path, required=True)
     return result
 
 
@@ -201,6 +205,28 @@ def validate_request_id(value: str) -> str:
 
 def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, Any]:
     request_id = validate_request_id(args.request_id)
+    if args.command == "herdr-snapshot":
+        if not args.socket_path.is_absolute():
+            raise ValueError("Herdr socket path must be absolute")
+        transport = HerdrSocketTransport(
+            socket_path=str(args.socket_path), environ={}
+        )
+        snapshot = HerdrAdapter(
+            request=transport, probe=transport.probe
+        ).snapshot()
+        return envelope(
+            command=args.command,
+            request_id=request_id,
+            status="ok",
+            payload={
+                "schema_version": 1,
+                "freshness": "fresh",
+                "reason": None,
+                "version": snapshot.version,
+                "protocol": snapshot.protocol,
+                "agents": [asdict(item) for item in snapshot.agents],
+            },
+        )
     if args.command == "preflight":
         if not args.profiles.is_absolute() or not args.check_path.is_absolute():
             raise ValueError("preflight paths must be absolute")

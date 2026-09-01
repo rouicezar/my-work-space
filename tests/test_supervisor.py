@@ -24,6 +24,7 @@ from forma_ai.deepseek_adapter import DeepSeekResult, DeepSeekUsage
 from forma_ai.local_tasks import LocalTaskError, LocalTaskResult
 from forma_ai.cloud_preferences import CloudPreferenceStore
 from forma_ai.system_resources import MemoryEvidence
+from forma_ai.herdr_adapter import HerdrSessionAgent, HerdrSessionSnapshot
 from forma_ai.supervisor import (
     Supervisor,
     SupervisorFeatures,
@@ -35,6 +36,28 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class SupervisorProtocolTests(unittest.TestCase):
+    def test_herdr_snapshot_envelope_preserves_authoritative_revision(self):
+        expected = HerdrSessionSnapshot(
+            version="0.8.2", protocol=20, workspaces=(), tabs=(), panes=(),
+            agents=(HerdrSessionAgent(
+                terminal_id="terminal-1", agent_status="working",
+                workspace_id="workspace-1", tab_id="tab-1", pane_id="pane-1",
+                focused=True, revision=9,
+            ),), layouts=(),
+        )
+        request_id = str(uuid.uuid4())
+        args = supervisor.parser().parse_args([
+            "--request-id", request_id, "herdr-snapshot",
+            "--socket-path", "/tmp/forma-herdr.sock",
+        ])
+        with patch.object(supervisor.HerdrAdapter, "snapshot", return_value=expected):
+            response = supervisor.run(args)
+
+        self.assertEqual(response["command"], "herdr-snapshot")
+        self.assertEqual(response["payload"]["freshness"], "fresh")
+        self.assertEqual(response["payload"]["agents"][0]["pane_id"], "pane-1")
+        self.assertEqual(response["payload"]["agents"][0]["revision"], 9)
+
     def task_submit_args(self, root: Path, cloud_catalog: Path, request_id: str):
         return supervisor.parser().parse_args([
             "--request-id", request_id, "task-submit", "--root", str(root),

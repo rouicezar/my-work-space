@@ -295,6 +295,88 @@ public struct RuntimeRecordPayload: Decodable, Sendable {
     }
 }
 
+public struct HerdrAgentPayload: Decodable, Sendable, Equatable {
+    public let terminalID: String
+    public let agentStatus: String
+    public let workspaceID: String
+    public let tabID: String
+    public let paneID: String
+    public let focused: Bool
+    public let revision: Int
+
+    enum CodingKeys: String, CodingKey {
+        case terminalID = "terminal_id"
+        case agentStatus = "agent_status"
+        case workspaceID = "workspace_id"
+        case tabID = "tab_id"
+        case paneID = "pane_id"
+        case focused, revision
+    }
+}
+
+public struct HerdrSnapshotPayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let freshness: String
+    public let reason: String?
+    public let version: String
+    public let `protocol`: Int
+    public let agents: [HerdrAgentPayload]
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case freshness, reason, version, `protocol`, agents
+    }
+}
+
+public struct RuntimePresentedAgent: Sendable, Equatable {
+    public let paneID: String
+    public let terminalID: String
+    public let state: String
+    public let revision: Int
+}
+
+public struct RuntimePresentationState: Sendable, Equatable {
+    public let freshness: String
+    public let reason: String?
+    public let agents: [RuntimePresentedAgent]
+}
+
+public struct RuntimePresentationProvider: Sendable {
+    public private(set) var state = RuntimePresentationState(
+        freshness: "stale", reason: "not_connected", agents: []
+    )
+
+    public init() {}
+
+    public mutating func apply(snapshot: HerdrSnapshotPayload) throws {
+        guard snapshot.schemaVersion == 1, snapshot.protocol == 20,
+              snapshot.freshness == "fresh" else {
+            throw SupervisorProtocolError.invalidResponse("invalid Herdr snapshot")
+        }
+        state = RuntimePresentationState(
+            freshness: "fresh",
+            reason: nil,
+            agents: snapshot.agents
+                .map { RuntimePresentedAgent(
+                    paneID: $0.paneID, terminalID: $0.terminalID,
+                    state: $0.agentStatus, revision: $0.revision
+                ) }
+                .sorted { $0.paneID < $1.paneID }
+        )
+    }
+
+    public mutating func markDisconnected(reason: String) {
+        state = RuntimePresentationState(
+            freshness: "stale",
+            reason: reason,
+            agents: state.agents.map { RuntimePresentedAgent(
+                paneID: $0.paneID, terminalID: $0.terminalID,
+                state: "unknown", revision: $0.revision
+            ) }
+        )
+    }
+}
+
 public struct SampleTaskPayload: Decodable, Sendable {
     public let schemaVersion: Int
     public let correlationID: String
@@ -786,6 +868,17 @@ public struct SupervisorClient: Sendable {
     public func runtimeStatus(rootURL: URL, requestID: UUID = UUID()) throws -> RuntimeStatusPayload {
         try request(
             command: "runtime-status", arguments: ["--root", rootURL.path], requestID: requestID
+        )
+    }
+
+    public func herdrSnapshot(
+        socketURL: URL,
+        requestID: UUID = UUID()
+    ) throws -> HerdrSnapshotPayload {
+        try request(
+            command: "herdr-snapshot",
+            arguments: ["--socket-path", socketURL.path],
+            requestID: requestID
         )
     }
 

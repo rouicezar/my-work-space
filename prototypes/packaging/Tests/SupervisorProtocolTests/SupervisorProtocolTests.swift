@@ -24,6 +24,35 @@ import RuntimeSecurity
     #expect(payload.selectedProfile?.id == "apple-silicon-16gb")
 }
 
+@Test func herdrSnapshotFeedsRuntimeProviderAndDisconnectFailsClosed() throws {
+    let temporary = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(at: temporary, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: temporary) }
+    let executable = temporary.appendingPathComponent("fixture-supervisor")
+    let response = #"{"schema_version":1,"command":"herdr-snapshot","request_id":"00000000-0000-0000-0000-000000000001","status":"ok","payload":{"schema_version":1,"freshness":"fresh","reason":null,"version":"0.8.2","protocol":20,"agents":[{"terminal_id":"terminal-1","agent_status":"working","workspace_id":"workspace-1","tab_id":"tab-1","pane_id":"pane-1","focused":true,"revision":9}]},"error":null,"emitted_at":"2026-09-02T00:00:00+00:00"}"#
+    try "#!/bin/sh\nprintf '%s' '\(response)'\n".write(
+        to: executable, atomically: true, encoding: .utf8
+    )
+    try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
+    let payload = try SupervisorClient(executableURL: executable).herdrSnapshot(
+        socketURL: URL(fileURLWithPath: "/tmp/herdr.sock"),
+        requestID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+    )
+    var provider = RuntimePresentationProvider()
+    try provider.apply(snapshot: payload)
+    #expect(provider.state.freshness == "fresh")
+    #expect(provider.state.agents == [
+        RuntimePresentedAgent(paneID: "pane-1", terminalID: "terminal-1", state: "working", revision: 9)
+    ])
+
+    provider.markDisconnected(reason: "socket_lost")
+    #expect(provider.state.freshness == "stale")
+    #expect(provider.state.reason == "socket_lost")
+    #expect(provider.state.agents[0].state == "unknown")
+    #expect(provider.state.agents[0].revision == 9)
+}
+
 @Test func rejectsMismatchedRequestID() throws {
     let temporary = FileManager.default.temporaryDirectory
         .appendingPathComponent(UUID().uuidString, isDirectory: true)
