@@ -11,7 +11,7 @@ Localization evidence: every new title, lifecycle label, reason, timeline entry,
 Walkthrough evidence: normal-speed window review opened History, inspected multiple lifecycle examples, switched live to English without selection reset, and verified recovery controls are labeled as decision Preview only; visual review caught and removed the upstream name before final verification
 Visual evidence: exact-window screenshots `evidence/ui/product-preview-history-recovery-zh-2026-09-01.png` and `evidence/ui/product-preview-history-recovery-en-2026-09-01.png` verify the bilingual list/detail/recovery shape and persistent synthetic-data disclosure
 Files changed: lifecycle presentation contract/test, daily Preview navigation/supervision integration, new History/recovery SwiftUI and shared bilingual copy, two screenshots, both English controls, and both mandatory Chinese mirrors
-Commit and push: implementation/evidence commit pending; exact hash will be recorded in the synchronization commit
+Commit and push: implementation/evidence commit `5a06fea` (`feat: add bilingual history recovery preview`) pushed to `origin/main`; this exact closeout metadata follows in the synchronization commit
 Evidence boundary: all seven tasks, agents, artifacts, checkpoints, approvals, and recovery decisions are deterministic in-memory presentation; no persisted history is read and no session is resumed, retried, cancelled, reconciled, or terminated
 Blocked items: none
 Next exact action: claim P4-T14 and build bilingual governed-memory review surfaces from Semantica-derived fixtures without creating another memory authority
@@ -890,6 +890,7 @@ The product is a local-first, multi-agent Mac AI workbench.
 ## Current Worktree Fact
 
 After P4-T12C implementation, `main` and `origin/main` contain verified commit `c003459`; the remaining closeout-only control update is owned by the current agent. There are no uncommitted paths assigned to another owner.
+After P4-T13 implementation, `main` and `origin/main` contain verified commit `5a06fea`; the remaining closeout-only control update is owned by the current agent. There are no uncommitted paths assigned to another owner.
 
 ## Historical Interrupted Paths
 
