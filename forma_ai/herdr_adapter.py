@@ -8,11 +8,17 @@ from shutil import which
 from typing import Callable
 
 from .adapter_contract import AdapterIdentity, HealthEnvelope
+from .herdr_transport import (
+    HerdrProtocolError,
+    HerdrTransportError,
+    validate_pong,
+)
 
 
 ExecutableFinder = Callable[[str], str | None]
 Clock = Callable[[], str]
 Request = Callable[[str, dict[str, object]], dict[str, object]]
+Probe = Callable[[], dict[str, object]]
 
 
 def _utc_now() -> str:
@@ -55,10 +61,12 @@ class HerdrAdapter:
         executable_finder: ExecutableFinder = which,
         clock: Clock = _utc_now,
         request: Request | None = None,
+        probe: Probe | None = None,
     ) -> None:
         self._executable_finder = executable_finder
         self._clock = clock
         self._request = request
+        self._probe = probe
         self._task_ids_by_run_id: dict[str, str] = {}
         self._pane_ids_by_run_id: dict[str, str] = {}
         self._tasks_by_run_id: dict[str, HerdrTask] = {}
@@ -74,22 +82,59 @@ class HerdrAdapter:
             upstream_id="herdr",
             upstream_version="0.8.2",
         )
-        health = HealthEnvelope(
-            schema_version=1,
-            status="unknown" if installed else "unavailable",
-            reachable=False,
-            ready=False,
-            proof="binary_discovered_only" if installed else "binary_not_found",
-            checked_at=self._clock(),
-            reason_code=(
-                "HERDR_HEALTH_NOT_PROBED" if installed else "HERDR_BINARY_NOT_FOUND"
-            ),
-        )
+        if self._probe is None:
+            health = HealthEnvelope(
+                schema_version=1,
+                status="unknown" if installed else "unavailable",
+                reachable=False,
+                ready=False,
+                proof="binary_discovered_only" if installed else "binary_not_found",
+                checked_at=self._clock(),
+                reason_code=(
+                    "HERDR_HEALTH_NOT_PROBED" if installed else "HERDR_BINARY_NOT_FOUND"
+                ),
+            )
+        else:
+            health = self._probe_health()
         return HerdrAvailability(
             identity=identity,
             installed=installed,
             executable_path=executable_path,
             health=health,
+        )
+
+    def _probe_health(self) -> HealthEnvelope:
+        try:
+            pong = self._probe()
+            validate_pong(pong)
+        except HerdrProtocolError:
+            return HealthEnvelope(
+                schema_version=1,
+                status="incompatible",
+                reachable=True,
+                ready=False,
+                proof="protocol_mismatch",
+                checked_at=self._clock(),
+                reason_code="HERDR_PROTOCOL_INCOMPATIBLE",
+            )
+        except (HerdrTransportError, OSError):
+            return HealthEnvelope(
+                schema_version=1,
+                status="unreachable",
+                reachable=False,
+                ready=False,
+                proof="socket_unreachable",
+                checked_at=self._clock(),
+                reason_code="HERDR_SOCKET_UNREACHABLE",
+            )
+        return HealthEnvelope(
+            schema_version=1,
+            status="ready",
+            reachable=True,
+            ready=True,
+            proof="ping_pong_verified",
+            checked_at=self._clock(),
+            reason_code="",
         )
 
     def spawn_task(

@@ -2,7 +2,7 @@
 
 Verified: 2026-08-31 Asia/Shanghai
 
-This is a pinned upstream capability map, not runtime acceptance. The official artifact was downloaded, digest-verified, and executed for version/protocol/schema checks on 2026-09-01 (P3-T10); no socket request, event subscription, or agent integration has run yet (P3-T11+). Every capability below is sourced from the official v0.8.2 release, pinned source, bundled schema, or versioned documentation and still requires product adapter tests.
+This is a pinned upstream capability map, not runtime acceptance. The official artifact was downloaded, digest-verified, and executed for version/protocol/schema checks on 2026-09-01 (P3-T10); the official socket transport has since run real `ping` and `session.snapshot` requests in isolated test sessions with a fail-closed protocol gate (2026-09-01, P3-T11). No event subscription, agent integration, cancellation, or recovery flow has run yet (P3-T12+). Every capability below is sourced from the official v0.8.2 release, pinned source, bundled schema, or versioned documentation and still requires product adapter tests.
 
 ## Immutable evidence snapshot
 
@@ -86,12 +86,14 @@ These paths are upstream entry points, not permission to fork them immediately. 
 ## Open validation gaps
 
 - CLOSED 2026-09-01 (P3-T10): the official `herdr-macos-aarch64` release asset was downloaded through the product's `ResumableDownloader` (resume path exercised against real network interruptions) and digest/size-verified against the pinned expectation; version `0.8.2`, protocol `20`, and the bundled schema were verified from the official binary itself. Evidence: `evidence/upstream/herdr-v0.8.2-artifact-verification-2026-09-01.md`.
-- REMAINING: no socket request, event subscription, or agent integration has run in Forma AI yet; the transport binding is P3-T11.
+- CLOSED 2026-09-01 (P3-T11): the official socket transport binding has run real requests in Forma AI against the verified binary — live `ping` (pong: version 0.8.2, protocol 20) and `session.snapshot` in isolated named test sessions, plus a fail-closed protocol gate, envelope/error/event line handling, and socket-path resolution, all under unit and live tests. Runtime state stays with Herdr; the product owns only the thin binding. Evidence: `evidence/upstream/herdr-v0.8.2-socket-transport-verification-2026-09-01.md`.
+- REMAINING: no event subscription, real agent integration, cancellation, or recovery flow has run in Forma AI yet; that is P3-T12+ scope.
 - Cancellation has no single high-level `agent.cancel` method in the reviewed control map; Forma AI must define and test a safe interrupt/termination policy using the available pane/process controls.
 - Resume support depends on the installed official integration version and the external agent's native session behavior.
 - Live handoff remains experimental and is not initial acceptance evidence.
 - Remote operation, updater ownership, plugin execution, and pane-history retention remain separately gated.
 - Schema discrepancy noted 2026-09-01 (P3-T10): the control map above lists `pane.run`, but the official v0.8.2 schema has no such method; the documented path is `pane.split` (creates a pane with a command) plus `pane.send_text`/`pane.send_input` and `agent.start`. P3-T12 must use the schema-documented methods.
+- Schema discrepancy noted 2026-09-01 (P3-T11): the live v0.8.2 server accepts `pane.graphics.stream` (seen in a server error message listing accepted methods), but the bundled schema's 91-method request `oneOf` does not document it. The runtime method surface is therefore at least one method larger than the bundled schema; Forma AI must keep using only schema-documented methods and re-check the surface on every pinned-version bump.
 
 ## Primary sources
 

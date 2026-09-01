@@ -1,6 +1,7 @@
 import unittest
 
 from forma_ai.herdr_adapter import HerdrAdapter
+from forma_ai.herdr_transport import HerdrProtocolError, HerdrTransportError
 
 
 class HerdrAdapterAvailabilityTests(unittest.TestCase):
@@ -245,6 +246,85 @@ class HerdrAdapterTaskTests(unittest.TestCase):
             "revision": revision,
             "agent_session": session_ref,
         }
+
+
+class HerdrAdapterProbeTests(unittest.TestCase):
+    def _adapter(self, probe):
+        return HerdrAdapter(
+            executable_finder=lambda _name: "/fixture/bin/herdr",
+            clock=lambda: "2026-09-01T00:00:00Z",
+            probe=probe,
+        )
+
+    def test_ready_probe_reports_reachable_and_ready(self):
+        adapter = self._adapter(
+            lambda: {"type": "pong", "version": "0.8.2", "protocol": 20}
+        )
+
+        availability = adapter.availability()
+
+        self.assertTrue(availability.installed)
+        self.assertEqual(availability.health.status, "ready")
+        self.assertTrue(availability.health.reachable)
+        self.assertTrue(availability.health.ready)
+        self.assertEqual(availability.health.proof, "ping_pong_verified")
+        self.assertEqual(availability.health.reason_code, "")
+        self.assertEqual(availability.health.checked_at, "2026-09-01T00:00:00Z")
+
+    def test_protocol_incompatible_probe_fails_closed(self):
+        def probe():
+            raise HerdrProtocolError("Herdr server protocol 19 is not supported")
+
+        health = self._adapter(probe).availability().health
+
+        self.assertEqual(health.status, "incompatible")
+        self.assertTrue(health.reachable)
+        self.assertFalse(health.ready)
+        self.assertEqual(health.proof, "protocol_mismatch")
+        self.assertEqual(health.reason_code, "HERDR_PROTOCOL_INCOMPATIBLE")
+
+    def test_unreachable_probe_fails_closed(self):
+        def probe():
+            raise HerdrTransportError("connection refused")
+
+        health = self._adapter(probe).availability().health
+
+        self.assertEqual(health.status, "unreachable")
+        self.assertFalse(health.reachable)
+        self.assertFalse(health.ready)
+        self.assertEqual(health.proof, "socket_unreachable")
+        self.assertEqual(health.reason_code, "HERDR_SOCKET_UNREACHABLE")
+
+    def test_os_error_from_probe_fails_closed_as_unreachable(self):
+        def probe():
+            raise FileNotFoundError("no such file or directory")
+
+        health = self._adapter(probe).availability().health
+
+        self.assertEqual(health.status, "unreachable")
+        self.assertEqual(health.reason_code, "HERDR_SOCKET_UNREACHABLE")
+
+    def test_non_pong_payload_fails_closed_as_incompatible(self):
+        adapter = self._adapter(lambda: {"type": "unexpected"})
+
+        health = adapter.availability().health
+
+        self.assertEqual(health.status, "incompatible")
+        self.assertEqual(health.proof, "protocol_mismatch")
+        self.assertEqual(health.reason_code, "HERDR_PROTOCOL_INCOMPATIBLE")
+
+    def test_missing_binary_with_live_probe_reports_probe_health(self):
+        adapter = HerdrAdapter(
+            executable_finder=lambda _name: None,
+            clock=lambda: "2026-09-01T00:00:00Z",
+            probe=lambda: {"type": "pong", "version": "0.8.2", "protocol": 20},
+        )
+
+        availability = adapter.availability()
+
+        self.assertFalse(availability.installed)
+        self.assertEqual(availability.health.status, "ready")
+        self.assertTrue(availability.health.reachable)
 
 
 if __name__ == "__main__":
