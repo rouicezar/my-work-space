@@ -7,7 +7,17 @@ import RuntimeSecurity
 struct FormaAIPrototypeApp: App {
     var body: some Scene {
         WindowGroup("Forma AI") {
-            ManifestOverview()
+            Group {
+#if DEBUG
+                if CommandLine.arguments.contains(PreviewWorkspaceSurfaceContract.productDefault.developmentLaunchArgument) {
+                    ProductPreviewWorkspace()
+                } else {
+                    ManifestOverview()
+                }
+#else
+                ManifestOverview()
+#endif
+            }
                 .frame(
                     minWidth: 900,
                     idealWidth: 1120,

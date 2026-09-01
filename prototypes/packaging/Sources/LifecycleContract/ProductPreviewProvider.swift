@@ -35,6 +35,42 @@ public enum PreviewInteraction: String, Sendable, Equatable {
     case showNextPreviewState
 }
 
+public enum PreviewDisclosurePlacement: Sendable, Equatable {
+    case persistentTopBanner
+}
+
+public enum PreviewWorkspaceSection: Sendable, Equatable {
+    case goalAndRoute
+    case executionRail
+    case parallelAgents
+    case approvalScope
+    case artifactsAndValidation
+    case resultAndUnresolvedEvidence
+}
+
+public struct PreviewWorkspaceSurfaceContract: Sendable {
+    public let developmentLaunchArgument: String
+    public let productionDefaultsToRuntime: Bool
+    public let disclosurePlacement: PreviewDisclosurePlacement
+    public let sections: [PreviewWorkspaceSection]
+    public let runtimeActionsAllowed: Bool
+
+    public static let productDefault = PreviewWorkspaceSurfaceContract(
+        developmentLaunchArgument: "--product-preview",
+        productionDefaultsToRuntime: true,
+        disclosurePlacement: .persistentTopBanner,
+        sections: [
+            .goalAndRoute,
+            .executionRail,
+            .parallelAgents,
+            .approvalScope,
+            .artifactsAndValidation,
+            .resultAndUnresolvedEvidence,
+        ],
+        runtimeActionsAllowed: false
+    )
+}
+
 public struct PreviewAgent: Identifiable, Sendable, Equatable {
     public let id: String
     public let role: String

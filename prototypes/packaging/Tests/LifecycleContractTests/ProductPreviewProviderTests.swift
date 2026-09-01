@@ -33,3 +33,20 @@ import Testing
     #expect(cloud?.task?.approvals.first?.allowedInteraction == .showNextPreviewState)
     #expect(ProductPreviewProvider.isRuntimeFallbackAllowed == false)
 }
+
+@Test func finalTaskWorkspaceMakesTheWholeExecutionStoryVisible() {
+    let surface = PreviewWorkspaceSurfaceContract.productDefault
+
+    #expect(surface.developmentLaunchArgument == "--product-preview")
+    #expect(surface.productionDefaultsToRuntime == true)
+    #expect(surface.disclosurePlacement == .persistentTopBanner)
+    #expect(surface.sections == [
+        .goalAndRoute,
+        .executionRail,
+        .parallelAgents,
+        .approvalScope,
+        .artifactsAndValidation,
+        .resultAndUnresolvedEvidence,
+    ])
+    #expect(surface.runtimeActionsAllowed == false)
+}

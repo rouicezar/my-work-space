@@ -1,5 +1,36 @@
 # Forma AI Task Handoff
 
+## 2026-09-01 - P4-T12 - exit
+
+Executor: Codex root agent
+Scope: deliver the first visible final-shape Product Preview task execution workspace
+Actions: added a six-section presentation contract and a dedicated native SwiftUI surface with a persistent accessible Preview disclosure, deterministic scenario picker, goal/route identity, five-step execution rail, adaptive parallel-agent cards, scoped approval explanation, artifact validation, and explicit result/unresolved-evidence states; production still initializes `ManifestOverview`
+Red/green evidence: the target test first failed because `PreviewWorkspaceSurfaceContract` was absent; after implementation the filtered test passed and the full Swift package passed 38 tests with 2 real-Keychain tests skipped
+Isolation evidence: source scan found no submit/approve/reject, SupervisorClient, RuntimeSecurity, Keychain, URLSession, FileManager, Process, adapter, or upstream command call in `ProductPreviewWorkspace.swift`; Preview is selected only inside `#if DEBUG` through explicit `--product-preview`
+Visual evidence: raw `swift run` was correctly rejected because macOS classified it background-only and screenshots showed another app; the same DEBUG binary was then placed in a temporary signed app bundle, explicitly launched with Preview, and captured window-only at `evidence/ui/product-preview-task-thread-2026-09-01.png`; manual review confirmed the disclosure, route, execution rail, three distinct Agent states, approval scope, empty artifact truth, and no false final result are readable in one window
+Files changed: `ProductPreviewWorkspace.swift`, `FormaAIApp.swift`, `ProductPreviewProvider.swift`, `ProductPreviewProviderTests.swift`, window-only screenshot evidence, both English control documents, and both mandatory Chinese mirrors
+Commit and push: included in the following verified P4-T12 commit and pushed to `origin/main`
+Evidence boundary: screenshot and tests prove presentation, compilation, isolation, and visible state distinction only; they do not prove real Herdr execution, oMLX/cloud inference, Semantica evidence, holaOS adaptation, or final cross-state/accessibility acceptance
+Design influence: the frontend-design skill produced a refined industrial native workbench with a calm execution rail, dense evidence panels, restrained material depth, and symbol-plus-text states; macOS conventions, accessibility, and resize behavior took precedence over web font guidance
+Blocked items: none
+Next exact action: claim P4-T13 and build final History and recovery surfaces from the read-only presentation authority
+Secret/external-write status: no credentials, cloud calls, downloads, upstream runtime execution, or destructive actions; temporary local app launch was stopped after window capture
+
+## 2026-09-01 - P4-T12 - takeover
+
+Executor: Codex root agent
+Starting git state: `main` clean and synchronized with `origin/main` at `f8c3905`
+Scope: render the final task workspace and multi-agent execution thread from the isolated read-only preview presentation; include goal, route, agent state, approval scope, artifacts, validation, result, and unresolved evidence
+Upstream search result: Herdr already owns agent/task/pane state and artifacts; oMLX/cloud providers own inference results; Semantica owns governed evidence; holaOS owns reusable workflow/tool capability candidates; none owns Forma AI's native task-thread presentation
+Reusable entry points: render only the upstream-shaped presentation fields already frozen in `ProductPreviewProvider`; no lifecycle, inference, memory, or workflow behavior is implemented in SwiftUI
+License obligation: use only product-owned native controls and symbols; copy no upstream UI, source, assets, branding, or trademark
+Integration decision: add a dedicated preview-only SwiftUI surface selected only by an explicit `--product-preview` development argument; production initialization remains the existing runtime workbench and never falls back to preview
+Design direction: refined industrial native workbench with a calm execution rail, dense but readable evidence panels, state conveyed by symbol plus text, and restrained material depth; macOS accessibility and resizing take precedence over web-specific font guidance
+Planned verification: red visible-structure contract test; filtered/full Swift tests; source scans for persistent disclosure, explicit preview argument, production default, all required sections, and no preview-triggered command calls; build and foreground screenshot review; `git diff --check`
+Commit and push: pending
+Next exact action: add the P4-T12 visible-structure red test and observe the expected missing contract
+Secret/external-write status: no credentials, cloud calls, downloads, upstream runtime execution, or destructive actions; repository UI/tests, local build/launch screenshot, and mandatory Chinese mirror synchronization only
+
 ## 2026-09-01 - P4-T11 - exit
 
 Executor: Codex root agent
@@ -679,11 +710,11 @@ Secret/external-write status: no secrets; mocks only
 
 ## Current Baton
 
-Updated: 2026-08-31 Asia/Shanghai
+Updated: 2026-09-01 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P4-T07A
-State: P0-T10 verified; P4-T07A pending
-Next required action: verify the separately installed holaOS non-visual adapter boundary without bundling uncleared UI/assets.
+Master plan task: P4-T13
+State: P4-T12 verified; P4-T13 pending
+Next required action: claim P4-T13 and build final History and recovery surfaces without inventing runtime authority.
 
 ## Product Goal Snapshot
 
