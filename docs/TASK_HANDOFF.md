@@ -9,7 +9,7 @@ Red/green evidence: the target test first failed because the language-selection 
 Isolation/copy evidence: both language markers and the no-separate-upstream-deployment promise are present; first-run source contains no oMLX, Herdr, Semantica, holaOS, SupervisorClient, URLSession, FileManager, Process, or Keychain dependency; production remains `ManifestOverview` outside explicit DEBUG Preview
 Visual evidence: window-only screenshots `evidence/ui/product-preview-language-choice-2026-09-01.png`, `evidence/ui/product-preview-first-run-zh-2026-09-01.png`, and `evidence/ui/product-preview-first-run-en-2026-09-01.png` verify the choice page and both localized onboarding surfaces
 Files changed: first-run SwiftUI, lifecycle contract/test, three screenshot evidence files, both English controls, and both mandatory Chinese mirrors
-Commit and push: pending the following verified implementation commit; closeout metadata will follow if needed
+Commit and push: implementation/evidence commit `3b57884` (`feat: localize first-run preview`) pushed to `origin/main`; this exact closeout metadata follows in the synchronization commit
 Evidence boundary: selection is intentionally ephemeral in this read-only Preview; persisted first-run completion and later Settings language changes remain product-shell/runtime work
 Blocked items: none
 Next exact action: claim P4-T12B and build the final daily shell/New Task workspace
@@ -791,7 +791,7 @@ The product is a local-first, multi-agent Mac AI workbench.
 
 ## Current Worktree Fact
 
-At the P0-T10 takeover, `git status -sb` reported `main` clean and synchronized with `origin/main` at `709fee0`. Remote refresh found no additional branch to merge. The detached worktree at `87f067e` is already an ancestor of `main` and is not current unmerged work. Repair commit `9454cdd` is the latest verified implementation/documentation change before closeout synchronization. There are no currently uncommitted paths assigned to another owner.
+After P4-T12A-C1 implementation, `main` and `origin/main` contain verified commit `3b57884`; the remaining closeout-only control update is owned by the current agent. There are no uncommitted paths assigned to another owner.
 
 ## Historical Interrupted Paths
 
