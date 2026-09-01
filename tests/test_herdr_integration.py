@@ -39,6 +39,8 @@ def _find_herdr_binary():
 class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
     def setUp(self):
         self.binary = _find_herdr_binary()
+        self.fixture_bin = Path(__file__).parent / "fixtures" / "herdr_agent_bin"
+        self.temp_root = tempfile.TemporaryDirectory(prefix="forma-p3t12-test-")
         self.session_name = f"forma-p3t12-test-{uuid.uuid4().hex[:8]}"
         self.socket_path = os.path.join(
             os.path.expanduser("~"),
@@ -50,10 +52,16 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
         )
         self.server = None
         try:
+            server_env = os.environ.copy()
+            server_env["SHELL"] = "/bin/bash"
+            server_env["PATH"] = (
+                f"{self.fixture_bin}{os.pathsep}/usr/bin{os.pathsep}/bin"
+            )
             self.server = subprocess.Popen(
                 [self.binary, "--session", self.session_name, "server"],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
+                env=server_env,
             )
             deadline = time.monotonic() + 15.0
             while not os.path.exists(self.socket_path):
@@ -94,6 +102,8 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
             except subprocess.TimeoutExpired:
                 self.server.kill()
                 self.server.wait(timeout=5)
+        if hasattr(self, "temp_root"):
+            self.temp_root.cleanup()
 
     def _send_text(self, pane_id, text):
         response = self.transport(
@@ -132,73 +142,86 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
         )
         self.assertEqual(response["type"], "ok")
 
-    def test_two_fixture_agents_run_in_parallel_without_leakage(self):
-        root = Path(tempfile.mkdtemp(prefix="forma-p3t12-test-"))
-        dir_a = root / "a"
-        dir_b = root / "b"
+    def test_two_agents_are_launched_and_detected_by_agent_start(self):
+        root = Path(self.temp_root.name)
+        dir_a = root / "real-a"
+        dir_b = root / "real-b"
         dir_a.mkdir()
         dir_b.mkdir()
-
-        workspace = self.adapter.open_workspace(cwd=str(dir_a), label="forma-p3t12")
-        pane_a_id = workspace.root_pane_id
+        fixture_home = root / "fixture-home"
+        fixture_home.mkdir()
+        fixture_path = f"{self.fixture_bin}:/usr/bin:/bin"
+        (fixture_home / ".bash_profile").write_text(
+            f"export PATH={fixture_path!r}\n", encoding="utf-8"
+        )
+        fixture_env = {"HOME": str(fixture_home), "PATH": fixture_path}
+        workspace = self.adapter.open_workspace(
+            cwd=str(dir_a), label="forma-real", env=fixture_env
+        )
         pane_b = self.adapter.open_pane(
             direction="right",
-            target_pane_id=pane_a_id,
+            target_pane_id=workspace.root_pane_id,
             cwd=str(dir_b),
+            env=fixture_env,
         )
-
-        self.assertNotEqual(pane_b.pane_id, pane_a_id)
-        self.assertEqual(pane_b.workspace_id, workspace.workspace_id)
-
-        self._send_text(pane_a_id, 'echo "A-READY-$(date +%s)"\n')
-        self._send_text(pane_b.pane_id, 'echo "B-READY-$(date +%s)"\n')
-        self._wait_marker(pane_a_id, "A-READY-[0-9]+")
-        self._wait_marker(pane_b.pane_id, "B-READY-[0-9]+")
-
-        task_a = self.adapter.spawn_reported_task(
-            task_id="fixture-a",
-            correlation_id="corr-a",
-            agent_name="fixture-agent-a",
-            pane_id=pane_a_id,
-            command=(
-                "date +%s > a_start.txt; sleep 8; "
-                'echo A-LEAK > a_leak.txt; echo "A-FINISHED-$(date +%s)"\n'
-            ),
+        self._send_text(
+            workspace.root_pane_id, 'echo "REAL-A-SHELL-READY-$(date +%s)"\n'
         )
-        task_b = self.adapter.spawn_reported_task(
-            task_id="fixture-b",
-            correlation_id="corr-b",
-            agent_name="fixture-agent-b",
+        self._send_text(
+            pane_b.pane_id, 'echo "REAL-B-SHELL-READY-$(date +%s)"\n'
+        )
+        self._wait_marker(workspace.root_pane_id, "REAL-A-SHELL-READY-[0-9]+")
+        self._wait_marker(pane_b.pane_id, "REAL-B-SHELL-READY-[0-9]+")
+
+        try:
+            task_a = self.adapter.spawn_task(
+                task_id="real-a",
+                correlation_id="corr-real-a",
+                agent_name="fixture-real-a",
+                agent_kind="codex",
+                pane_id=workspace.root_pane_id,
+                startup_timeout_ms=5_000,
+            )
+        except Exception as exc:
+            raise AssertionError(self._read_pane(workspace.root_pane_id)) from exc
+        task_b = self.adapter.spawn_task(
+            task_id="real-b",
+            correlation_id="corr-real-b",
+            agent_name="fixture-real-b",
+            agent_kind="codex",
             pane_id=pane_b.pane_id,
-            command=(
-                "date +%s > b_start.txt; sleep 2.5; "
-                'date +%s > b_end.txt; echo "B-DONE-$(date +%s)"\n'
-            ),
         )
 
         self.assertNotEqual(task_a.run_id, task_b.run_id)
         self.assertNotEqual(task_a.pane_id, task_b.pane_id)
+        raw_a = self.transport("agent.get", {"target": task_a.pane_id})["agent"]
+        raw_b = self.transport("agent.get", {"target": task_b.pane_id})["agent"]
+        self.assertEqual(raw_a.get("agent"), "codex", raw_a)
+        self.assertEqual(raw_b.get("agent"), "codex", raw_b)
+        self.assertEqual(raw_a["name"], "fixture-real-a")
+        self.assertEqual(raw_b["name"], "fixture-real-b")
+        self.assertTrue(raw_a["interactive_ready"])
+        self.assertTrue(raw_b["interactive_ready"])
+        self.assertFalse(raw_a.get("launch_pending", False))
+        self.assertFalse(raw_b.get("launch_pending", False))
+        self.assertNotEqual(raw_a["terminal_id"], raw_b["terminal_id"])
 
+        self._send_text(task_a.pane_id, "fixture-a\n")
+        self._send_text(task_b.pane_id, "fixture-b\n")
+        self._wait_marker(task_b.pane_id, "FIXTURE-B-DONE-[0-9]+")
         running_a = self.adapter.task_status(task_a.run_id)
-        self.assertEqual(running_a.state, "running")
-
-        self._wait_marker(pane_b.pane_id, "B-DONE-[0-9]+")
-        self._report_agent(pane_b.pane_id, "fixture-agent-b", "idle")
-
         cancel = self.adapter.cancel_task(
             run_id=task_a.run_id,
-            correlation_id="corr-cancel-a",
+            correlation_id="corr-cancel-real-a",
             expected_revision=running_a.revision,
         )
         self.assertEqual(cancel.action, "graceful_interrupt")
-        self._send_text(pane_a_id, 'echo "A-BACK-$(date +%s)"\n')
-        self._wait_marker(pane_a_id, "A-BACK-[0-9]+")
-        self._report_agent(pane_a_id, "fixture-agent-a", "idle")
+        self._send_text(task_a.pane_id, 'echo "REAL-A-BACK-$(date +%s)"\n')
+        self._wait_marker(task_a.pane_id, "REAL-A-BACK-[0-9]+")
 
         a_start = int((dir_a / "a_start.txt").read_text().strip())
         b_end = int((dir_b / "b_end.txt").read_text().strip())
         self.assertLess(b_end - a_start, 8)
-
         self.assertFalse((dir_a / "a_leak.txt").exists())
         self.assertEqual(
             sorted(path.name for path in dir_a.iterdir()), ["a_start.txt"]
@@ -207,26 +230,10 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
             sorted(path.name for path in dir_b.iterdir()),
             ["b_end.txt", "b_start.txt"],
         )
-
-        text_a = self._read_pane(pane_a_id)
-        text_b = self._read_pane(pane_b.pane_id)
-        self.assertRegex(text_a, "A-BACK-[0-9]+")
-        self.assertNotRegex(text_a, "A-FINISHED-[0-9]+")
-        self.assertNotIn("B-DONE", text_a)
-        self.assertRegex(text_b, "B-DONE-[0-9]+")
-        self.assertNotIn("A-READY", text_b)
-        self.assertNotIn("A-LEAK", text_b)
-
-        snapshot_response = self.transport("session.snapshot", {})
-        snapshot = snapshot_response["snapshot"]
-        agents = {agent["agent"]: agent for agent in snapshot["agents"]}
-        self.assertEqual(set(agents), {"fixture-agent-a", "fixture-agent-b"})
-        self.assertEqual(agents["fixture-agent-a"]["agent_status"], "idle")
-        self.assertEqual(agents["fixture-agent-b"]["agent_status"], "idle")
-        self.assertNotEqual(
-            agents["fixture-agent-a"]["pane_id"],
-            agents["fixture-agent-b"]["pane_id"],
-        )
+        text_a = self._read_pane(task_a.pane_id)
+        text_b = self._read_pane(task_b.pane_id)
+        self.assertNotIn("FIXTURE-B-DONE", text_a)
+        self.assertNotIn("FIXTURE-A-FINISHED", text_b)
 
 
 @unittest.skipUnless(
@@ -235,6 +242,7 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
 class HerdrEventSubscriptionIntegrationTests(unittest.TestCase):
     def setUp(self):
         self.binary = _find_herdr_binary()
+        self.temp_root = tempfile.TemporaryDirectory(prefix="forma-p3t13-test-")
         self.session_name = f"forma-p3t13-test-{uuid.uuid4().hex[:8]}"
         self.socket_path = os.path.join(
             os.path.expanduser("~"),
@@ -290,6 +298,8 @@ class HerdrEventSubscriptionIntegrationTests(unittest.TestCase):
             except subprocess.TimeoutExpired:
                 self.server.kill()
                 self.server.wait(timeout=5)
+        if hasattr(self, "temp_root"):
+            self.temp_root.cleanup()
 
     def _report_agent(self, pane_id, agent, state):
         response = self.transport(
@@ -323,7 +333,7 @@ class HerdrEventSubscriptionIntegrationTests(unittest.TestCase):
         return thread
 
     def test_live_transitions_subscription_and_reconnect_resubscribe(self):
-        root = Path(tempfile.mkdtemp(prefix="forma-p3t13-test-"))
+        root = Path(self.temp_root.name)
         workspace = self.adapter.open_workspace(cwd=str(root), label="forma-p3t13")
         pane_id = workspace.root_pane_id
         self._report_agent(pane_id, "fixture-sub-a", "working")

@@ -1,5 +1,37 @@
 # Forma AI Task Handoff
 
+## 2026-09-02 - P3-T12 acceptance correction - exit
+
+Executor: Codex root agent
+Scope: correct P3-T12 from a client-reported shell proof to two agents actually launched and detected through official Herdr `agent.start`
+Actions: withdrew the old real-agent and shell-cancel claims in the evidence/ledger; replaced the shell-only live test with a provider-free executable fixture reached through an isolated temporary HOME/PATH; added schema `timeout_ms`; made `spawn_task` reject malformed or still-pending launches and wait for Herdr-detected idle plus `agent.get` refresh; required distinct run/pane/terminal/name identities, `agent=codex`, `interactive_ready=true`, parallel completion, pane-exact graceful cancellation, no leak artifact, and no cross-pane output; converted both live test classes to `TemporaryDirectory`
+Red evidence: with no safe fixture, approval review correctly blocked any possible fallback to the real Codex CLI; after PATH isolation the live test showed socket `agent.start` returning `agent_started` with `launch_pending=true`, proving the adapter's false-running defect; the deterministic fixture then drove the new wait-and-refresh path green
+Verification: corrected live test passed in 10.13s; 49 Herdr transport/adapter/integration tests passed in 13.60s; full Python suite passed 291 tests with 1 expected opt-in Semantica skip in 17.74s; `git diff --check` clean; named-session residue empty
+Evidence: `evidence/upstream/herdr-v0.8.2-two-fixture-agent-isolation-verification-2026-09-01.md` correction section and corrected P3-T12 ledger entry
+Files changed: Herdr adapter; adapter/integration tests; provider-free executable fixture; evidence and Herdr ledger; both English controls and both mandatory Chinese mirrors
+Model-routing decision from user follow-up: prefer the already deployed Qwen3-0.6B-4bit through the verified local oMLX path when a real model is needed; adapt DeepSeek in P5, but every real cloud run still requires exact outgoing payload, privacy scope, model/token/cost estimate, and per-run explicit approval
+Commit and push: pending batch commit
+Blocked items: none for P3-T12; provider-native session resume remains P3-T15, and the fixture deliberately proves Herdr lifecycle without cloud execution
+Next exact action: commit/push this verified correction batch; after the executing-plans review checkpoint claim P3-T13 and add a forced socket-loss/stale-state/snapshot-reconciliation/resubscribe red test before Supervisor/Swift binding
+Secret/external-write status: no credentials, cloud calls, model calls, downloads, or production sessions; only disposable local Herdr test sessions
+
+## 2026-09-02 - P3-T12 acceptance correction - takeover
+
+Executor: Codex root agent
+Starting git state: `main` clean and synchronized with `origin/main` at `faf4811`
+Trigger: user approved the independent audit's correction order and asked Codex to take over continued execution until the product runs
+Scope: withdraw the overbroad P3-T12 real-agent acceptance, preserve its valid pane-isolation evidence, replace shell-dependent and leaking fixtures with deterministic self-cleaning fixtures, and prove two agents actually launched and detected through Herdr `agent.start`; P3-T13 committed work is preserved and temporarily returned to pending
+Current verification fact: P3-T12 passed in 4.79s; all 48 Herdr-module tests passed in 8.00s; full Python suite passed 290 tests with 1 expected opt-in Semantica skip in 11.98s; the prior 62-second zsh blocker is not currently reproducible and is no longer current-state truth
+Acceptance correction: `pane.send_text` plus client-owned `pane.report_agent` proves pane execution/isolation but cannot satisfy a real-agent gate; the P3-T13 test currently proves a normal second subscription after `stop()`, not forced socket-loss recovery or automatic reconciliation
+Upstream search result: official Herdr v0.8.2 `agent.start` is the existing upstream entry point and reports success only after a supported interactive agent is detected and ready in the target pane; no product-owned agent launcher will be created
+Reusable entry point: verified Herdr binary/socket transport, `HerdrAdapter.spawn_task` 1:1 over `agent.start`, unique named sessions, and repository-local fixture seams
+License obligation: Apache-2.0 external binary/socket reuse only; no upstream source, assets, names, or trademarks are copied
+Integration decision: P3-T12 stays the sole `in_progress` task; P3-T13 returns to `pending` without reverting commit `faf4811`; no cloud-backed Codex/Qoder/Claude session may be launched silently, so the correction must use a local deterministic supported-agent fixture or stop for explicit approval if Herdr cannot detect one without a real provider
+Planned verification: expected red real-agent acceptance test; deterministic shell/fixture readiness without user dotfiles; automatic temporary-directory and named-session cleanup on pass/failure; two `agent.start` results with distinct native agent/session identities; parallel work, cancellation and cross-pane isolation; focused Herdr tests; full Python suite; `git diff --check`; bilingual control parity
+Commit and push: pending
+Next exact action: write the failing acceptance contract that rejects `pane.report_agent`-only fixtures, then inspect Herdr's supported-agent detection seam for a provider-free local fixture
+Secret/external-write status: no credentials, cloud calls, downloads, or production sessions; local disposable Herdr sessions only
+
 ## 2026-09-01 - P3-T13 - takeover
 
 Executor: Qoder agent

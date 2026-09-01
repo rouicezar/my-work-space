@@ -4,7 +4,57 @@ Verified: 2026-09-01 Asia/Shanghai
 Task: P3-T12 (master plan `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md`)
 Machine: macOS 26.6.2 (Build 25G83), Apple Silicon arm64
 
-This is the P3-T12 runtime evidence: two real fixture agents ran in parallel through the official Herdr v0.8.2 binary in one isolated named session, on two distinct panes with distinct working directories, with verified parallel execution, working graceful cancel, and no input, state, artifact, or cross-pane output leakage. The product owns only three thin adapter methods over schema-documented Herdr methods; runtime state remains Herdr's. No product-owned runtime substitute or undocumented method was introduced.
+> **Acceptance correction, 2026-09-02:** the original evidence below used
+> `pane.report_agent` after launching shell commands and therefore proved pane
+> isolation, not two agents launched and detected by Herdr. Its real-agent and
+> shell-cancel conclusions are withdrawn. The corrected proof uses two
+> provider-free repository fixtures launched through `agent.start`; Herdr
+> reports `agent=codex`, `interactive_ready=true`, and
+> `launch_pending=false` for both before any work is sent. This correction
+> supersedes conflicting statements in the 2026-09-01 narrative.
+
+## Corrected live proof (2026-09-02)
+
+The test `test_two_agents_are_launched_and_detected_by_agent_start` now:
+
+1. Starts the verified Herdr v0.8.2 binary in a unique named session and gives
+   its panes an isolated temporary `HOME`, fixed `/bin/bash`, and a PATH that
+   contains only the repository fixture directory plus `/usr/bin:/bin`. It
+   cannot resolve the machine's real Codex, Claude, Qoder, or another provider.
+2. Creates two panes with distinct temporary cwd values and calls
+   `HerdrAdapter.spawn_task` twice. `spawn_task` now sends the schema-defined
+   `timeout_ms`; if socket `agent.start` returns `launch_pending=true`, it waits
+   on Herdr's current `pane_agent_status_changed=idle` state and refreshes with
+   `agent.get`. A pending or malformed result cannot be registered as a task.
+3. Requires two distinct task run IDs, pane IDs, terminal IDs, and names, with
+   both agents reported by Herdr as `codex`, `interactive_ready=true`, and not
+   launch-pending. The fixture produces only deterministic terminal behavior;
+   it has no network path, credential access, model call, or product runtime
+   authority.
+4. Sends concurrent fixture work. Agent B finishes during Agent A's eight-second
+   window. Revision-checked graceful cancellation targets A only; A's post-sleep
+   leak file is absent while B's start/end artifacts are complete. Pane output
+   contains no other-agent completion marker.
+5. Uses `TemporaryDirectory` for both P3-T12 and P3-T13 live fixtures, so pass
+   and failure paths remove test cwd artifacts. Named Herdr sessions remain
+   stopped/deleted in `tearDown`.
+
+Red evidence was substantive: before the correction, socket `agent.start`
+returned an `agent_started` envelope whose agent still had
+`launch_pending=true`; the adapter incorrectly accepted it as a running task.
+After the wait-and-refresh gate and deterministic fixture were added, the
+corrected live test passed in 10.13 seconds.
+
+Verification after correction:
+
+- Herdr transport/adapter/integration modules: **49 tests passed** in 13.60s.
+- Full Python suite: **291 tests passed, 1 expected opt-in Semantica test
+  skipped** in 17.74s.
+- No cloud provider or real coding-agent credential was used.
+
+The remaining 2026-09-01 sections are retained as historical evidence of the
+original pane-level proof. They must be read through the correction above and
+must not be cited as real-agent acceptance.
 
 ## Upstream search result and integration decision (upstream-first rule)
 
@@ -66,4 +116,4 @@ git diff --check                                         # clean
 - Event subscription (`session.subscribe` / event stream) and workbench presentation binding remain P3-T13.
 - Real wait/blocked/artifact-read surfaces beyond the fixture markers, and cancel of Herdr-native agents (vs. reported fixture agents), remain P3-T14.
 - Detach/reconnect and native resume in a live session remain P3-T15.
-- `agent.start` (Herdr-native agent launch) is not used here; fixture agents use the schema-documented `pane.report_agent` hook, which is the upstream-documented way for a client to report agent activity.
+- Provider-native Codex/Qwen/Claude session resume is not proved by the deterministic fixture; that remains P3-T15. P3-T12 now proves Herdr-native launch/detection and isolated lifecycle behavior without silently calling a provider.

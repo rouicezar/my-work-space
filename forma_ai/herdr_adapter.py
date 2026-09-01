@@ -212,13 +212,19 @@ class HerdrAdapter:
         )
 
     def open_workspace(
-        self, *, cwd: str | None = None, label: str | None = None
+        self,
+        *,
+        cwd: str | None = None,
+        label: str | None = None,
+        env: dict[str, str] | None = None,
     ) -> HerdrWorkspace:
         params: dict[str, object] = {}
         if cwd is not None:
             params["cwd"] = cwd
         if label is not None:
             params["label"] = label
+        if env is not None:
+            params["env"] = dict(env)
         response = self._send("workspace.create", params)
         if response["type"] != "workspace_created":
             raise ValueError("unexpected Herdr workspace.create response")
@@ -237,12 +243,15 @@ class HerdrAdapter:
         direction: str,
         target_pane_id: str | None = None,
         cwd: str | None = None,
+        env: dict[str, str] | None = None,
     ) -> HerdrPane:
         params: dict[str, object] = {"direction": direction}
         if target_pane_id is not None:
             params["target_pane_id"] = target_pane_id
         if cwd is not None:
             params["cwd"] = cwd
+        if env is not None:
+            params["env"] = dict(env)
         response = self._send("pane.split", params)
         if response["type"] != "pane_info":
             raise ValueError("unexpected Herdr pane.split response")
@@ -300,6 +309,7 @@ class HerdrAdapter:
         agent_name: str,
         agent_kind: str,
         pane_id: str,
+        startup_timeout_ms: int = 30_000,
     ) -> HerdrTask:
         response = self._send(
             "agent.start",
@@ -307,15 +317,39 @@ class HerdrAdapter:
                 "name": agent_name,
                 "kind": agent_kind,
                 "pane_id": pane_id,
+                "timeout_ms": startup_timeout_ms,
             },
         )
         if response["type"] != "agent_started":
             raise ValueError("unexpected Herdr agent.start response")
+        agent = response.get("agent")
+        if not isinstance(agent, dict):
+            raise ValueError("Herdr agent.start response is missing agent data")
+        if agent.get("launch_pending"):
+            detected = self._send(
+                "events.wait",
+                {
+                    "match_event": {
+                        "event": "pane_agent_status_changed",
+                        "pane_id": pane_id,
+                        "agent_status": "idle",
+                    },
+                    "timeout_ms": startup_timeout_ms,
+                },
+            )
+            if detected.get("type") != "wait_matched":
+                raise ValueError("unexpected Herdr agent detection wait response")
+            refreshed = self._send("agent.get", {"target": pane_id})
+            if refreshed.get("type") != "agent_info":
+                raise ValueError("unexpected Herdr agent.get response after detection")
+            agent = refreshed.get("agent")
+        if not isinstance(agent, dict) or agent.get("launch_pending"):
+            raise ValueError("Herdr agent.start did not detect a ready agent")
         run_id = f"herdr:{task_id}:{pane_id}"
         task = self._task_from_agent(
             task_id=task_id,
             run_id=run_id,
-            agent=response["agent"],
+            agent=agent,
         )
         self._task_ids_by_run_id[task.run_id] = task.task_id
         self._pane_ids_by_run_id[task.run_id] = task.pane_id

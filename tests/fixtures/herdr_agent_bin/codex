@@ -1,0 +1,25 @@
+#!/bin/bash
+set -u
+
+printf '\033]0;Codex\007'
+printf 'OpenAI Codex\n› Ask Codex to do anything\n'
+while IFS= read -r line; do
+    if [[ "$line" == "exit" ]]; then
+        exit 0
+    fi
+    printf '• Working (esc to interrupt)\n'
+    if [[ "$line" == "fixture-a" ]]; then
+        date +%s > a_start.txt
+        sleep 8
+        printf 'leak\n' > a_leak.txt
+        printf 'FIXTURE-A-FINISHED-%s\n' "$(date +%s)"
+    elif [[ "$line" == "fixture-b" ]]; then
+        date +%s > b_start.txt
+        sleep 2
+        date +%s > b_end.txt
+        printf 'FIXTURE-B-DONE-%s\n' "$(date +%s)"
+    else
+        printf 'FIXTURE-DONE:%s\n' "$line"
+    fi
+    printf '› Ask Codex to do anything\n'
+done

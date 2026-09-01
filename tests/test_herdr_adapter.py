@@ -46,6 +46,88 @@ class HerdrAdapterAvailabilityTests(unittest.TestCase):
 
 
 class HerdrAdapterTaskTests(unittest.TestCase):
+    def test_spawn_waits_for_detected_idle_agent_when_launch_is_pending(self):
+        calls = []
+
+        def request(method, params):
+            calls.append((method, params))
+            if method == "agent.start":
+                return {
+                    "type": "agent_started",
+                    "agent": {
+                        "terminal_id": "terminal-001",
+                        "agent_status": "unknown",
+                        "workspace_id": "workspace-001",
+                        "tab_id": "tab-001",
+                        "pane_id": "pane-001",
+                        "focused": False,
+                        "revision": 0,
+                        "launch_pending": True,
+                    },
+                }
+            if method == "events.wait":
+                return {
+                    "type": "wait_matched",
+                    "event": {
+                        "event": "pane_agent_status_changed",
+                        "data": {"pane_id": "pane-001", "agent_status": "idle"},
+                    },
+                }
+            if method == "agent.get":
+                return {
+                    "type": "agent_info",
+                    "agent": {
+                        "terminal_id": "terminal-001",
+                        "agent_status": "idle",
+                        "workspace_id": "workspace-001",
+                        "tab_id": "tab-001",
+                        "pane_id": "pane-001",
+                        "focused": False,
+                        "revision": 1,
+                        "interactive_ready": True,
+                    },
+                }
+            raise AssertionError(method)
+
+        adapter = HerdrAdapter(request=request)
+        task = adapter.spawn_task(
+            task_id="task-001",
+            correlation_id="corr-001",
+            agent_name="fixture-agent",
+            agent_kind="codex",
+            pane_id="pane-001",
+            startup_timeout_ms=5000,
+        )
+
+        self.assertEqual(task.state, "running")
+        self.assertEqual(task.revision, 1)
+        self.assertEqual(
+            calls,
+            [
+                (
+                    "agent.start",
+                    {
+                        "name": "fixture-agent",
+                        "kind": "codex",
+                        "pane_id": "pane-001",
+                        "timeout_ms": 5000,
+                    },
+                ),
+                (
+                    "events.wait",
+                    {
+                        "match_event": {
+                            "event": "pane_agent_status_changed",
+                            "pane_id": "pane-001",
+                            "agent_status": "idle",
+                        },
+                        "timeout_ms": 5000,
+                    },
+                ),
+                ("agent.get", {"target": "pane-001"}),
+            ],
+        )
+
     def test_two_mock_tasks_have_stable_ids_and_observable_states(self):
         calls = []
         start_responses = iter(
@@ -134,7 +216,12 @@ class HerdrAdapterTaskTests(unittest.TestCase):
         )
         self.assertEqual(
             calls[0][1],
-            {"name": "forma-task-001", "kind": "codex", "pane_id": "pane-001"},
+            {
+                "name": "forma-task-001",
+                "kind": "codex",
+                "pane_id": "pane-001",
+                "timeout_ms": 30000,
+            },
         )
         self.assertEqual(calls[2][1], {"target": "pane-001"})
 
