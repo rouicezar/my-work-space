@@ -11,7 +11,7 @@ Localization evidence: every new stage, explanation, Agent role/state, approval 
 Walkthrough evidence: accessibility-driven normal-speed traversal entered a synthetic goal and visited route review → plan → parallel work → approval → validation → result; the Approval inspection found and corrected a destination/effect semantic mismatch before closeout
 Visual evidence: exact-window screenshots `evidence/ui/product-preview-compose-to-result-zh-2026-09-01.png`, `evidence/ui/product-preview-compose-to-result-en-2026-09-01.png`, and `evidence/ui/product-preview-compose-approval-en-2026-09-01.png` verify bilingual final state and the special approval boundary; one wrong-window capture was immediately overwritten and not retained as evidence
 Files changed: lifecycle transition contract/test, daily Preview integration, new execution-journey SwiftUI, shared bilingual copy, three screenshots, both English controls, and both mandatory Chinese mirrors
-Commit and push: pending the following verified implementation commit; exact commit evidence will be synchronized after push
+Commit and push: implementation/evidence commit `c003459` (`feat: connect bilingual task journey preview`) pushed to `origin/main`; this exact closeout metadata follows in the synchronization commit
 Evidence boundary: all agents, artifacts, validations, approval effects, and results are deterministic synthetic presentation; no Herdr session, model inference, memory operation, workflow/tool call, cloud transmission, external write, or task history is created
 Design influence: frontend-design preserved the task-to-supervision split and made the seven-stage rail the memorable orientation device; visual inspection, not tests alone, caught and corrected the approval semantics
 Blocked items: none
@@ -857,7 +857,7 @@ The product is a local-first, multi-agent Mac AI workbench.
 
 ## Current Worktree Fact
 
-After P4-T12B implementation, `main` and `origin/main` contain verified commit `b672316`; the remaining closeout-only control update is owned by the current agent. There are no uncommitted paths assigned to another owner.
+After P4-T12C implementation, `main` and `origin/main` contain verified commit `c003459`; the remaining closeout-only control update is owned by the current agent. There are no uncommitted paths assigned to another owner.
 
 ## Historical Interrupted Paths
 
