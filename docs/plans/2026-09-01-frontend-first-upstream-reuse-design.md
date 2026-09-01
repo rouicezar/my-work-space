@@ -48,6 +48,8 @@ Approvals, memory review, and agent management are full surfaces inside the rele
 
 The visual direction is a restrained native macOS workbench: clear hierarchy, strong state language, compact operational metadata, accessible keyboard navigation, and no decorative dashboard metrics. The memorable element is the transparent execution thread: user goal → route → agents → approvals → artifacts → verified result.
 
+Every user-visible frontend surface is bilingual and switchable. Simplified Chinese and English copy must come from a shared localization authority rather than page-local string branching. A frontend slice cannot close until both languages have been reviewed in a running window; mixed-language or partially translated states fail acceptance. Preview language changes may remain ephemeral, while release-mode persistence belongs to General settings and onboarding state.
+
 ## 4. Preview contract
 
 Create a versioned `ProductPreviewScenario` contract with deterministic scenarios:

@@ -71,3 +71,24 @@ import Testing
     #expect(firstRun.languageSelection == .requiredBeforeOnboarding)
     #expect(firstRun.supportedLanguages == [.simplifiedChinese, .english])
 }
+
+@Test func dailyWorkbenchShowsTheBilingualPreTaskProductShape() {
+    let surface = DailyWorkbenchSurfaceContract.productDefault
+
+    #expect(surface.developmentLaunchArgument == "--daily-workbench-preview")
+    #expect(surface.productionDefaultsToRuntime == true)
+    #expect(surface.sections == [
+        .primaryNavigation,
+        .recentTasks,
+        .newTaskComposer,
+        .routeAndPrivacy,
+        .contextAttachments,
+        .supervisionRail,
+    ])
+    #expect(surface.supportedLanguages == [.simplifiedChinese, .english])
+    #expect(surface.languageSwitchIsVisible == true)
+    #expect(surface.supervisionRailIsCollapsible == true)
+    #expect(surface.runtimeActionsAllowed == false)
+    #expect(surface.readsAttachmentContents == false)
+    #expect(surface.persistsPreviewHistory == false)
+}

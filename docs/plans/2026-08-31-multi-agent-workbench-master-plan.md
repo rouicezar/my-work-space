@@ -21,6 +21,7 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 - Only one task may be `in_progress` at a time unless the user explicitly starts parallel agent work.
 - A task is not complete until this tracker and `docs/TASK_HANDOFF.md` are both updated.
 - Progress is evidence-based. Do not mark `verified` from visual inspection, intent, or a passing health endpoint alone.
+- Every user-visible frontend surface must provide complete Simplified Chinese and English copy through a shared localization authority, expose an in-product language switch, and pass separate Chinese and English window review. Mixed-language, partially translated, or non-switchable UI is a completion blocker.
 - Any change to product goal, upstream reuse policy, memory authority, or cloud credential behavior requires explicit user approval.
 - If another agent takes over, it must claim a task ID here and write a handoff entry before and after its work.
 - The mandatory Chinese mirrors are stored in the user-approved MyNote `00_资源库/11_项目开发/Forma AI` folder. This English tracker remains authoritative, but every task takeover and closeout must synchronize task ID, status, evidence, commit/push state, blocker, and next action to the Chinese progress and handoff mirrors. Any mismatch blocks new product work until repaired.
@@ -30,9 +31,9 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-09-01 Asia/Shanghai
 Current phase: P4 independent workbench product experience
-Current task: P4-T12B
+Current task: P4-T12C
 Current status: pending
-Next action: claim P4-T12B and build the final daily product shell and New Task workspace.
+Next action: claim P4-T12C and connect deterministic bilingual compose-to-execution Preview states without submitting a task.
 
 Current Git fact at P0-T10 takeover:
 
@@ -239,7 +240,7 @@ P2 completion never waives these gates and must not be cited as evidence that an
 | P4-T12 | verified | Build the final task workspace and multi-agent execution thread | SwiftUI app and presentation fixtures | Swift tests plus foreground screenshot review | Goal, route, agents, approvals, artifacts, validation, and result are understandable |
 | P4-T12A | verified | Build the final first-run assistant | SwiftUI app, lifecycle presentation contract, tests, screenshot | First-run contract, full Swift tests, forbidden upstream/manual-deployment wording scan, window review | User understands the product, privacy, automatic local-AI preparation, optional cloud, permissions, and first action without deploying upstream projects |
 | P4-T12A-C1 | verified | Add first-open Simplified Chinese and English selection and complete first-run localization | First-run contract, SwiftUI, tests, screenshots | Language contract, full Swift tests, both-language window review | Explicit language selection plus separate Chinese and English window evidence; 39 Swift tests passed with 2 real-Keychain skips |
-| P4-T12B | pending | Build the final daily product shell and New Task workspace | SwiftUI app, presentation contract, tests, screenshot | Shell/navigation/composer tests and window review | User can see how Forma AI is used every day before a task starts |
+| P4-T12B | verified | Build the final bilingual daily product shell and New Task workspace | SwiftUI app, presentation/localization contract, tests, screenshots | Shell/navigation/composer/language tests and Chinese/English window review | Explicit language switch, compact/regular window evidence, collapsible supervision rail; 40 Swift tests passed with 2 real-Keychain skips |
 | P4-T12C | pending | Connect deterministic compose-to-execution Preview states | SwiftUI preview navigation and tests | Transition contract, no-command scan, normal-speed walkthrough | User understands how input becomes a plan, parallel work, approval, validation, and result |
 | P4-T13 | pending | Build final History and recovery surfaces | SwiftUI app and fixtures | State/recovery UI tests | Interrupted, blocked, failed, partial, cancelled, and completed states are distinct |
 | P4-T14 | pending | Build governed-memory review surfaces | SwiftUI app and Semantica-derived fixtures | Candidate/conflict/correction/delete UI tests | Preview matches the Semantica authority boundary |

@@ -1,5 +1,38 @@
 # Forma AI Task Handoff
 
+## 2026-09-01 - P4-T12B - exit
+
+Executor: Codex root agent
+Scope: make the final daily shell and pre-task New Task workspace visible and manually testable in both supported languages
+Actions: added `DailyWorkbenchSurfaceContract`, a DEBUG-only `--daily-workbench-preview`, shared language-keyed `ProductCopy`, primary navigation, honestly labeled synthetic recent-task sample, outcome composer, inert context-entry explanation, local/cloud-proposal route summary, explicit privacy boundary, starter outcomes, and a collapsible supervision rail
+Red/green evidence: target test first failed because `DailyWorkbenchSurfaceContract` was absent; after implementation the target passed and the full Swift package passed 40 tests with 2 real-Keychain tests skipped
+Isolation evidence: daily Preview source has no SupervisorClient, RuntimeSecurity, Keychain, URLSession, FileManager, Process, socket, submit, approval, file-picker, or upstream-runtime dependency; production remains `ManifestOverview` outside explicit DEBUG arguments
+Localization evidence: all new visible copy except the product name is served by the shared language-keyed copy authority; the running Language menu switched the complete visible shell between Simplified Chinese and English
+Visual evidence: window-only screenshots `evidence/ui/product-preview-daily-shell-zh-compact-2026-09-01.png`, `evidence/ui/product-preview-daily-shell-zh-2026-09-01.png`, and `evidence/ui/product-preview-daily-shell-en-2026-09-01.png` verify compact/regular Chinese and regular English layouts; the supervision rail was also collapsed and its localized re-expand control verified through accessibility inspection
+Files changed: daily Preview/localization SwiftUI, app DEBUG routing, lifecycle contract/test, three screenshots, accepted frontend plans, both English controls, and both mandatory Chinese mirrors
+Commit and push: pending the following verified implementation commit; exact commit evidence will be synchronized after push
+Evidence boundary: Preview input is ephemeral; context does not open or read files; recent history is explicitly synthetic; task-plan submission is disabled; no Herdr, oMLX/cloud, Semantica, or holaOS runtime capability is proved
+Design influence: frontend-design kept a restrained native editorial workbench with the memorable task-to-supervision split, strong empty-state truth, and minimal operational chrome rather than a generic chat or decorative dashboard
+Blocked items: none
+Next exact action: claim P4-T12C and connect deterministic bilingual compose-to-execution Preview states without runtime submission
+Secret/external-write status: no credentials, cloud calls, downloads, attachment reads, persistence, runtime execution, or destructive product actions
+
+## 2026-09-01 - P4-T12B - takeover
+
+Executor: Codex root agent
+Starting git state: `main` clean and synchronized with `origin/main` at `a534888`
+Scope: build the final daily product shell and New Task workspace as a read-only DEBUG Preview; every user-visible frontend string must support Simplified Chinese and English switching
+Upstream search result: the daily native shell, language switching, task composition presentation, privacy explanation, context attachment affordance, and supervision-rail layout are Forma AI presentation responsibilities; Herdr still owns agent/runtime state, oMLX/cloud own inference truth, Semantica owns governed memory, and holaOS owns reusable workflow/tool capabilities
+Reusable entry points: existing `WorkbenchSurfaceContract`, `ProductPreviewProvider`, route vocabulary, model selection contract, and DEBUG preview boundary; future runtime binding remains separate command/provider code
+License obligation: no upstream UI, assets, copy, source, or branding will be copied; native SwiftUI controls and product-owned copy only
+Integration decision: add a dedicated `--daily-workbench-preview` surface with deterministic empty/recent-task presentation, a central outcome composer, local-first route/privacy summary, context attachment affordance, and collapsible supervision rail; controls remain navigation/presentation only and never submit, attach, read, or write data
+Localization decision: all new visible strings are served through one language-keyed copy authority; the surface exposes an explicit language switch, and both languages are required verification evidence
+Plan: accepted `docs/plans/2026-09-01-first-run-product-shell.md`, Task 2, extended by the user's project-wide bilingual-switchable frontend requirement
+Planned verification: expected red contract failure; filtered/full Swift tests; Chinese/English coverage; no-command/upstream-name/production-default scans; compact and regular window review in both languages; `git diff --check`
+Commit and push: pending
+Next exact action: add the failing bilingual daily-shell presentation contract test
+Secret/external-write status: no credentials, cloud calls, downloads, file attachment reads, persistence, runtime execution, or destructive actions
+
 ## 2026-09-01 - P4-T12A-C1 - exit
 
 Executor: Codex root agent
@@ -774,9 +807,9 @@ Secret/external-write status: no secrets; mocks only
 
 Updated: 2026-09-01 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P4-T12B
-State: P4-T12A-C1 verified; P4-T12B pending
-Next required action: claim P4-T12B and build the final daily shell/New Task workspace before History/recovery.
+Master plan task: P4-T12C
+State: P4-T12B verified; P4-T12C pending
+Next required action: claim P4-T12C and connect deterministic bilingual compose-to-execution Preview states before History/recovery.
 
 ## Product Goal Snapshot
 

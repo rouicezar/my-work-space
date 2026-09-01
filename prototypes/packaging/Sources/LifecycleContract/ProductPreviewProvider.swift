@@ -114,6 +114,46 @@ public struct FirstRunSurfaceContract: Sendable {
     )
 }
 
+public enum DailyWorkbenchSection: Sendable, Equatable {
+    case primaryNavigation
+    case recentTasks
+    case newTaskComposer
+    case routeAndPrivacy
+    case contextAttachments
+    case supervisionRail
+}
+
+public struct DailyWorkbenchSurfaceContract: Sendable {
+    public let developmentLaunchArgument: String
+    public let productionDefaultsToRuntime: Bool
+    public let sections: [DailyWorkbenchSection]
+    public let supportedLanguages: [ProductLanguage]
+    public let languageSwitchIsVisible: Bool
+    public let supervisionRailIsCollapsible: Bool
+    public let runtimeActionsAllowed: Bool
+    public let readsAttachmentContents: Bool
+    public let persistsPreviewHistory: Bool
+
+    public static let productDefault = DailyWorkbenchSurfaceContract(
+        developmentLaunchArgument: "--daily-workbench-preview",
+        productionDefaultsToRuntime: true,
+        sections: [
+            .primaryNavigation,
+            .recentTasks,
+            .newTaskComposer,
+            .routeAndPrivacy,
+            .contextAttachments,
+            .supervisionRail,
+        ],
+        supportedLanguages: [.simplifiedChinese, .english],
+        languageSwitchIsVisible: true,
+        supervisionRailIsCollapsible: true,
+        runtimeActionsAllowed: false,
+        readsAttachmentContents: false,
+        persistsPreviewHistory: false
+    )
+}
+
 public struct PreviewAgent: Identifiable, Sendable, Equatable {
     public let id: String
     public let role: String

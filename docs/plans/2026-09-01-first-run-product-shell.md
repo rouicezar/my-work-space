@@ -8,6 +8,8 @@
 
 **Tech Stack:** Swift 6.2, SwiftUI for macOS, Swift Testing, existing LifecycleContract and ProductPreviewProvider targets.
 
+**Localization gate:** Every user-visible surface created by this plan must support complete Simplified Chinese and English switching through shared product copy, with separate running-window evidence for both languages. Page-local partial translation is not acceptable.
+
 ---
 
 ### Task 1: P4-T12A First-Run Assistant
