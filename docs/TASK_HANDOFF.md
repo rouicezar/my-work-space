@@ -10,7 +10,7 @@ Verification: corrected live test passed in 10.13s; 49 Herdr transport/adapter/i
 Evidence: `evidence/upstream/herdr-v0.8.2-two-fixture-agent-isolation-verification-2026-09-01.md` correction section and corrected P3-T12 ledger entry
 Files changed: Herdr adapter; adapter/integration tests; provider-free executable fixture; evidence and Herdr ledger; both English controls and both mandatory Chinese mirrors
 Model-routing decision from user follow-up: prefer the already deployed Qwen3-0.6B-4bit through the verified local oMLX path when a real model is needed; adapt DeepSeek in P5, but every real cloud run still requires exact outgoing payload, privacy scope, model/token/cost estimate, and per-run explicit approval
-Commit and push: implementation/evidence commit `bc860f2` (`fix: prove real herdr fixture agents`) created; exact closeout metadata is recorded by the following synchronization commit; push pending
+Commit and push: implementation/evidence `bc860f2` (`fix: prove real herdr fixture agents`) and closeout synchronization `44e6f0a` (`docs: close herdr agent acceptance correction`) pushed to `origin/main`; this final push-state line follows in the terminal metadata sync
 Blocked items: none for P3-T12; provider-native session resume remains P3-T15, and the fixture deliberately proves Herdr lifecycle without cloud execution
 Next exact action: commit/push this verified correction batch; after the executing-plans review checkpoint claim P3-T13 and add a forced socket-loss/stale-state/snapshot-reconciliation/resubscribe red test before Supervisor/Swift binding
 Secret/external-write status: no credentials, cloud calls, model calls, downloads, or production sessions; only disposable local Herdr test sessions
