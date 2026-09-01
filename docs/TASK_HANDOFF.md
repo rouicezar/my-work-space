@@ -1,5 +1,34 @@
 # Forma AI Task Handoff
 
+## 2026-09-01 - P4-T11 - exit
+
+Executor: Codex root agent
+Scope: implement and verify the explicit read-only Product Preview presentation provider
+Actions: added immutable presentation value types and eight deterministic repository-defined scenarios; every scenario, task, agent, approval, and artifact identity is synthetic and preview-prefixed; the provider exposes lookup and data only, declares runtime fallback forbidden, and has no command surface
+Red/green evidence: the filtered test first failed because `ProductPreviewProvider` and `PreviewTaskState` were missing; after implementation, both targeted tests passed and the full Swift package passed 37 tests with 2 real-Keychain tests skipped
+Isolation evidence: the provider source imports no module and contains no Supervisor, RuntimeSecurity, Foundation networking/filesystem, Keychain, process, socket, adapter, persistence, or write dependency; `git diff --check` passed
+Files changed: `ProductPreviewProvider.swift`, `ProductPreviewProviderTests.swift`, both English control documents, and both mandatory Chinese mirrors
+Commit and push: included in the following verified P4-T11 commit and pushed to `origin/main`
+Evidence boundary: the provider is not yet connected to the visible SwiftUI workbench and proves no upstream runtime capability; P4-T12 owns the first final-shape execution surface
+Design influence: the frontend-design skill kept the model presentation-led and intentionally product-specific, while native macOS conventions and the accepted isolation contract overrode web-specific aesthetic guidance
+Blocked items: none
+Next exact action: claim P4-T12 and render the final task execution line from the read-only presentation model
+Secret/external-write status: no credentials, cloud calls, downloads, runtime execution, or destructive actions; repository code/tests and mandatory Chinese mirror synchronization only
+
+## 2026-09-01 - P4-T11 - takeover
+
+Executor: Codex root agent
+Starting git state: `main` clean and synchronized with `origin/main` at `fd41069`
+Scope: implement the explicit read-only Product Preview presentation provider and isolation tests; do not yet redesign the visible task-execution screen
+Upstream search result: Herdr, Semantica, oMLX, and holaOS own the runtime facts represented by preview scenarios, but none owns the native Swift presentation provider; the P4-T10 contract fixes that provider as product-owned and synthetic
+Reusable entry points: only the already-documented upstream-shaped identifiers, state vocabulary, capability names, and presentation fields are reused in this task; no upstream runtime API is invoked
+License obligation: no upstream source, frontend, asset, trademark, or bundled artifact is copied; existing release notice gates remain unchanged
+Integration decision: add an immutable in-memory `ProductPreviewProvider` with deterministic `preview-*` identities and a permanent isolation label; expose data only, with no command methods or dependencies on Supervisor, RuntimeSecurity, Foundation networking/filesystem APIs, Keychain, or adapters
+Planned verification: red test first; deterministic scenario/state coverage; source dependency/forbidden-call scan; filtered and full Swift tests; `git diff --check`
+Commit and push: pending
+Next exact action: write the P4-T11 isolation tests and observe the expected missing-provider failure
+Secret/external-write status: no credentials, cloud calls, downloads, runtime execution, or destructive actions; repository code/tests and mandatory Chinese mirror synchronization only
+
 ## 2026-09-01 - P4-T10 - exit
 
 Executor: Codex root agent

@@ -30,9 +30,9 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-08-31 Asia/Shanghai
 Current phase: P4 independent workbench product experience
-Current task: P4-T11
+Current task: P4-T12
 Current status: pending
-Next action: claim P4-T11 and implement the explicit read-only Product Preview provider with isolation tests before building the final task-execution screens.
+Next action: claim P4-T12 and build the final task execution, parallel-agent, approval, artifact, validation, and result surfaces on the read-only presentation contract.
 
 Current Git fact at P0-T10 takeover:
 
@@ -234,7 +234,7 @@ P2 completion never waives these gates and must not be cited as evidence that an
 | P4-T08 | pending | Capture foreground UI evidence | `evidence/ui/workbench-first-screen-YYYY-MM-DD.png` | Manual launch plus screenshot review | Screenshot proves first screen is workbench |
 | P4-T09 | pending | Commit workbench product experience slice | Swift files, tests, evidence if allowed | `git diff --check` then `git commit` | Commit created |
 | P4-T10 | verified | Audit the current frontend against the target-release guide and define the final presentation contract | Swift sources, bilingual guides, design plan, frontend gap matrix, presentation contract | Required screen/state/authority/preview-boundary scan plus Swift baseline | Every final user journey has a named surface and upstream authority before UI implementation |
-| P4-T11 | pending | Add an explicit read-only Product Preview provider | Swift presentation contract and tests | Preview isolation tests | Preview cannot call runtime, Keychain, network, or write paths |
+| P4-T11 | verified | Add an explicit read-only Product Preview provider | Swift presentation contract and tests | Preview isolation tests | Preview cannot call runtime, Keychain, network, or write paths |
 | P4-T12 | pending | Build the final task workspace and multi-agent execution thread | SwiftUI app and presentation fixtures | Swift tests plus foreground screenshot review | Goal, route, agents, approvals, artifacts, validation, and result are understandable |
 | P4-T13 | pending | Build final History and recovery surfaces | SwiftUI app and fixtures | State/recovery UI tests | Interrupted, blocked, failed, partial, cancelled, and completed states are distinct |
 | P4-T14 | pending | Build governed-memory review surfaces | SwiftUI app and Semantica-derived fixtures | Candidate/conflict/correction/delete UI tests | Preview matches the Semantica authority boundary |
@@ -336,3 +336,4 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 - 2026-08-31 - P4-T06 - Codex root agent - added a recovery visibility red contract for task-detail placement, blocked/failed/interrupted/unknown states, persisted verified-session resume, fresh snapshot/revision reconciliation, and separately approved force termination - filtered test failed exactly because `WorkbenchSurfaceContract` lacks `recovery`; dependent enum inference errors were consequential - committed/pushed in the paired handoff - next P4-T07
 - 2026-08-31 - P4-T06 correction - Codex root agent - implemented only the pure recovery visibility contract required to prevent a permanent compile-red blocker before P4-T07 - target recovery test passed and full Swift package passed 34 tests with 2 real-Keychain skips; no recovery UI, persistence, or lifecycle authority was invented - next P4-T07
 - 2026-08-31 - P4-T07 - Codex root agent - implemented and verified the contract-driven eight-section native macOS Settings information architecture and reachable surface; renamed primary navigation to Settings and routed already-existing cloud/model, runtime, and diagnostics controls by responsibility - target contract passed, full Swift package passed 35 tests with 2 real-Keychain skips, and source boundary inspection passed; this does not verify complete Agents, Memory, Permissions, or Data management, nor a first-run user flow - implementation `51fdfe2` pushed to `origin/main` - P4-T07A remains pending
+- 2026-09-01 - P4-T11 - Codex root agent - added a deterministic immutable Product Preview provider with eight scenarios, upstream-shaped presentation fields, permanent disclosure, preview-prefixed identities, no commands, and no automatic runtime fallback - expected missing-provider compile red observed; 2 targeted tests and full Swift package 37 tests passed with 2 real-Keychain skips; forbidden dependency scan and `git diff --check` passed - commit pending closeout - next P4-T12
