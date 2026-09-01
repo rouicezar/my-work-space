@@ -30,9 +30,9 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-08-31 Asia/Shanghai
 Current phase: P4 independent workbench product experience
-Current task: P4-T10
+Current task: P4-T11
 Current status: pending
-Next action: audit the current SwiftUI against the target-release guide and define the final presentation contract before changing product UI.
+Next action: claim P4-T11 and implement the explicit read-only Product Preview provider with isolation tests before building the final task-execution screens.
 
 Current Git fact at P0-T10 takeover:
 
@@ -233,7 +233,7 @@ P2 completion never waives these gates and must not be cited as evidence that an
 | P4-T07A | pending | Verify the separately installed holaOS non-visual adapter boundary | holaOS adapter, tests, and capability/reuse ledger | Targeted adapter conformance test plus upstream entry-point audit | Generic identity, health, and capability smoke test passes without bundling uncleared UI/assets |
 | P4-T08 | pending | Capture foreground UI evidence | `evidence/ui/workbench-first-screen-YYYY-MM-DD.png` | Manual launch plus screenshot review | Screenshot proves first screen is workbench |
 | P4-T09 | pending | Commit workbench product experience slice | Swift files, tests, evidence if allowed | `git diff --check` then `git commit` | Commit created |
-| P4-T10 | pending | Audit the current frontend against the target-release guide and define the final presentation contract | Swift sources, bilingual guides, design plan, tests | Contract red test plus screen/state gap matrix | Every final user journey has a named surface and upstream authority |
+| P4-T10 | verified | Audit the current frontend against the target-release guide and define the final presentation contract | Swift sources, bilingual guides, design plan, frontend gap matrix, presentation contract | Required screen/state/authority/preview-boundary scan plus Swift baseline | Every final user journey has a named surface and upstream authority before UI implementation |
 | P4-T11 | pending | Add an explicit read-only Product Preview provider | Swift presentation contract and tests | Preview isolation tests | Preview cannot call runtime, Keychain, network, or write paths |
 | P4-T12 | pending | Build the final task workspace and multi-agent execution thread | SwiftUI app and presentation fixtures | Swift tests plus foreground screenshot review | Goal, route, agents, approvals, artifacts, validation, and result are understandable |
 | P4-T13 | pending | Build final History and recovery surfaces | SwiftUI app and fixtures | State/recovery UI tests | Interrupted, blocked, failed, partial, cancelled, and completed states are distinct |

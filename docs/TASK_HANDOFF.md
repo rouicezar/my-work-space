@@ -1,5 +1,33 @@
 # Forma AI Task Handoff
 
+## 2026-09-01 - P4-T10 - exit
+
+Executor: Codex root agent
+Scope: audit the current frontend against the target-release experience and freeze the upstream-authority-bound Product Preview presentation contract
+Actions: created a screen-by-screen final-shape gap matrix covering New Task, execution, parallel agents, approvals, artifacts, final result, History/recovery, eight Settings sections, and first run; defined deterministic preview scenarios, state vocabulary, provider separation, accessibility requirements, and a permanent synthetic-data/no-runtime-action label
+Upstream decision: Herdr remains lifecycle and artifact authority, Semantica remains governed-memory authority, oMLX remains local inference authority, and holaOS remains a reusable non-visual capability source pending its pinned adapter audit; Forma AI owns only the native presentation and integration boundary
+Verification: `git diff --check` passed; required authority and isolation anchors were present; `swift test --package-path prototypes/packaging` passed 35 tests with 2 real-Keychain tests skipped
+Files changed: `docs/research/frontend-final-shape-gap-matrix.md`, `docs/contracts/product-preview-presentation.md`, both English control documents, and both mandatory Chinese mirrors
+Commit and push: included in the following verified P4-T10 commit and pushed to `origin/main`
+Evidence boundary: this task defines and verifies presentation requirements only; it does not prove real Herdr execution, Semantica persistence, oMLX inference, holaOS adaptation, cloud execution, or release readiness
+Blocked items: none
+Next exact action: claim P4-T11 and implement the read-only Product Preview provider plus isolation tests
+Secret/external-write status: no credentials, cloud calls, downloads, runtime execution, or destructive actions; mandatory Chinese mirror synchronization only
+
+## 2026-09-01 - P4-T10 - takeover
+
+Executor: Codex root agent
+Starting git state: `main` clean and synchronized with `origin/main` at `9474f61`
+Scope: audit the current SwiftUI against the bilingual target-release guide and define the final presentation contract before product UI implementation
+Upstream search result: Herdr ledger provides agent identity/state/wait/cancel/resume/artifact surfaces; holaOS ledger provides workflow/application/tool capability candidates; Semantica owns confirmed memory; oMLX owns inference/model state; no upstream owns the Forma AI native macOS presentation
+Reusable entry points: Herdr snapshot/events/agent/pane APIs; holaOS runtime/harness/tool surfaces pending P4-T07A pin verification; Semantica AgentContext adapter surfaces; oMLX health/models/chat/embedding APIs
+License obligation: Herdr Apache-2.0 notices; holaOS modified license and no copied frontend/assets; Semantica and oMLX obligations remain pinned-release gates; Product Preview contains no upstream code or assets
+Integration decision: create only a product-owned presentation specification and explicit read-only preview boundary; no scheduler, memory store, model server, workflow engine, or runtime state machine
+Planned verification: every target-guide journey maps to a screen, state, upstream authority, and preview/runtime boundary; current gaps are explicit; Swift baseline remains green; `git diff --check`
+Commit and push: pending
+Next exact action: write the gap matrix and presentation contract
+Secret/external-write status: no credentials, cloud calls, downloads, runtime execution, or destructive actions; mandatory Chinese mirror synchronization only
+
 ## 2026-09-01 - P0-T11 - exit
 
 Executor: Codex root agent
