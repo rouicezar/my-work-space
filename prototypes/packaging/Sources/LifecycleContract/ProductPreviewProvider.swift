@@ -71,6 +71,34 @@ public struct PreviewWorkspaceSurfaceContract: Sendable {
     )
 }
 
+public enum FirstRunStep: String, CaseIterable, Sendable, Equatable {
+    case welcome
+    case privacy
+    case prepareLocalAI
+    case recommendedModel
+    case macOSPermissions
+    case optionalCloud
+    case createFirstTask
+}
+
+public struct FirstRunSurfaceContract: Sendable {
+    public let developmentLaunchArgument: String
+    public let productionAppearsOnlyWhenOnboardingIsIncomplete: Bool
+    public let steps: [FirstRunStep]
+    public let localPreparationIsProductManaged: Bool
+    public let requiresManualTerminalSetup: Bool
+    public let exposesUpstreamProjectNamesToNovices: Bool
+
+    public static let productDefault = FirstRunSurfaceContract(
+        developmentLaunchArgument: "--first-run-preview",
+        productionAppearsOnlyWhenOnboardingIsIncomplete: true,
+        steps: FirstRunStep.allCases,
+        localPreparationIsProductManaged: true,
+        requiresManualTerminalSetup: false,
+        exposesUpstreamProjectNamesToNovices: false
+    )
+}
+
 public struct PreviewAgent: Identifiable, Sendable, Equatable {
     public let id: String
     public let role: String

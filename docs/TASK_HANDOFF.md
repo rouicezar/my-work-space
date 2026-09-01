@@ -1,5 +1,37 @@
 # Forma AI Task Handoff
 
+## 2026-09-01 - P4-T12A - exit
+
+Executor: Codex root agent
+Scope: make the final first-launch product shape visible without asking users to deploy upstream projects
+Actions: added the seven-step first-run contract and a DEBUG-only `--first-run-preview` native assistant covering welcome, privacy, product-managed local AI preparation, recommended model, progressive macOS permissions, optional cloud, and first task; the ordinary copy presents Forma AI as one managed product
+Red/green evidence: target test first failed because `FirstRunSurfaceContract` was absent; after implementation the target passed and the full Swift package passed 39 tests with 2 real-Keychain tests skipped
+Isolation/copy evidence: first-run source contains no upstream project name, manual deployment command, installer/download call, SupervisorClient, network/filesystem/process/Keychain dependency, or real permission request; production still defaults to `ManifestOverview` outside DEBUG preview arguments
+Visual evidence: window-only screenshot `evidence/ui/product-preview-first-run-2026-09-01.png` confirms the one-product promise, seven-step navigation, private-by-default/local-AI-managed/cloud-optional map, permanent Preview disclosure, and single Continue action are readable; the temporary signed app was stopped after review
+Files changed: first-run/product-shell plan, `FirstRunPreview.swift`, `FormaAIApp.swift`, lifecycle preview contract/tests, screenshot evidence, both English controls, and both mandatory Chinese mirrors
+Commit and push: included in the following verified P4-T12A commit and pushed to `origin/main`
+Evidence boundary: presentation and copy are verified; automatic component acquisition, model recommendation, permission requests, onboarding persistence, and transition into a real task remain later runtime/product-shell tasks
+Blocked items: none
+Next exact action: claim P4-T12B and build the final daily shell/New Task workspace
+Secret/external-write status: no credentials, cloud calls, downloads, installer execution, permission mutation, upstream runtime execution, or destructive actions
+
+## 2026-09-01 - P4-T12A - takeover
+
+Executor: Codex root agent
+Starting git state: `main` clean and synchronized with `origin/main` at `931cebb`
+Trigger: user correctly identified that the execution-state screenshot did not explain first launch, daily use, or whether upstream projects required manual deployment
+Scope: insert and execute the final first-run assistant before History/recovery work; P4-T12B and P4-T12C will then show the daily shell and the transition into execution
+Upstream search result: oMLX, Herdr, Semantica, and eligible holaOS capabilities remain managed implementation foundations; none owns Forma AI's first-run product explanation, privacy choice, macOS permission education, or novice navigation
+Reusable entry points: later runtime binding will consume product lifecycle health and model recommendations; this task renders only product-owned read-only presentation and does not implement installers, downloaders, health checks, or permission APIs
+License obligation: no upstream code/UI/assets/brands are copied; ordinary first-run copy must not present upstream project names or imply separate user deployment
+Integration decision: a DEBUG-only explicit `--first-run-preview` assistant uses product language: prepare local AI automatically, recommend a model, explain optional cloud, request only necessary macOS permissions, then create the first task; technical component names remain advanced-diagnostics-only
+Design direction: welcoming editorial-native setup with one clear promise, a compact preparation map, progressive disclosure, and a single obvious next action; it must feel like product orientation rather than an installer dashboard
+Plan: `docs/plans/2026-09-01-first-run-product-shell.md`; dedicated worktree intentionally skipped because project governance requires one authoritative checkout and synchronized external mirrors
+Planned verification: red first-run contract; filtered/full Swift tests; novice-copy and forbidden upstream/manual-deployment scan; explicit DEBUG argument and production-default scan; window-only screenshot review; `git diff --check`
+Commit and push: pending
+Next exact action: add the first-run contract red test
+Secret/external-write status: no credentials, cloud calls, downloads, installer execution, permissions mutation, upstream runtime execution, or destructive actions; repository UI/tests, local preview screenshot, and mandatory Chinese mirror synchronization only
+
 ## 2026-09-01 - P4-T12 - exit
 
 Executor: Codex root agent
@@ -712,9 +744,9 @@ Secret/external-write status: no secrets; mocks only
 
 Updated: 2026-09-01 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P4-T13
-State: P4-T12 verified; P4-T13 pending
-Next required action: claim P4-T13 and build final History and recovery surfaces without inventing runtime authority.
+Master plan task: P4-T12B
+State: P4-T12A verified; P4-T12B pending
+Next required action: claim P4-T12B and build the final daily shell/New Task workspace before History/recovery.
 
 ## Product Goal Snapshot
 

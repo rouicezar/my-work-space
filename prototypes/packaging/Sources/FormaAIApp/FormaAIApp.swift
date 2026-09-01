@@ -9,7 +9,9 @@ struct FormaAIPrototypeApp: App {
         WindowGroup("Forma AI") {
             Group {
 #if DEBUG
-                if CommandLine.arguments.contains(PreviewWorkspaceSurfaceContract.productDefault.developmentLaunchArgument) {
+                if CommandLine.arguments.contains(FirstRunSurfaceContract.productDefault.developmentLaunchArgument) {
+                    FirstRunPreview()
+                } else if CommandLine.arguments.contains(PreviewWorkspaceSurfaceContract.productDefault.developmentLaunchArgument) {
                     ProductPreviewWorkspace()
                 } else {
                     ManifestOverview()

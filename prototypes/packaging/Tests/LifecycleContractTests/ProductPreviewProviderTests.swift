@@ -50,3 +50,22 @@ import Testing
     ])
     #expect(surface.runtimeActionsAllowed == false)
 }
+
+@Test func firstRunExplainsOneManagedProductInsteadOfFourDeployments() {
+    let firstRun = FirstRunSurfaceContract.productDefault
+
+    #expect(firstRun.developmentLaunchArgument == "--first-run-preview")
+    #expect(firstRun.productionAppearsOnlyWhenOnboardingIsIncomplete == true)
+    #expect(firstRun.steps == [
+        .welcome,
+        .privacy,
+        .prepareLocalAI,
+        .recommendedModel,
+        .macOSPermissions,
+        .optionalCloud,
+        .createFirstTask,
+    ])
+    #expect(firstRun.localPreparationIsProductManaged == true)
+    #expect(firstRun.requiresManualTerminalSetup == false)
+    #expect(firstRun.exposesUpstreamProjectNamesToNovices == false)
+}

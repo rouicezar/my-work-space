@@ -30,9 +30,9 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-08-31 Asia/Shanghai
 Current phase: P4 independent workbench product experience
-Current task: P4-T13
+Current task: P4-T12B
 Current status: pending
-Next action: claim P4-T13 and build final History and recovery surfaces from deterministic interrupted, blocked, failed, partial, cancelled, and completed presentation states.
+Next action: claim P4-T12B and build the final daily product shell and New Task workspace before returning to History/recovery.
 
 Current Git fact at P0-T10 takeover:
 
@@ -236,6 +236,9 @@ P2 completion never waives these gates and must not be cited as evidence that an
 | P4-T10 | verified | Audit the current frontend against the target-release guide and define the final presentation contract | Swift sources, bilingual guides, design plan, frontend gap matrix, presentation contract | Required screen/state/authority/preview-boundary scan plus Swift baseline | Every final user journey has a named surface and upstream authority before UI implementation |
 | P4-T11 | verified | Add an explicit read-only Product Preview provider | Swift presentation contract and tests | Preview isolation tests | Preview cannot call runtime, Keychain, network, or write paths |
 | P4-T12 | verified | Build the final task workspace and multi-agent execution thread | SwiftUI app and presentation fixtures | Swift tests plus foreground screenshot review | Goal, route, agents, approvals, artifacts, validation, and result are understandable |
+| P4-T12A | verified | Build the final first-run assistant | SwiftUI app, lifecycle presentation contract, tests, screenshot | First-run contract, full Swift tests, forbidden upstream/manual-deployment wording scan, window review | User understands the product, privacy, automatic local-AI preparation, optional cloud, permissions, and first action without deploying upstream projects |
+| P4-T12B | pending | Build the final daily product shell and New Task workspace | SwiftUI app, presentation contract, tests, screenshot | Shell/navigation/composer tests and window review | User can see how Forma AI is used every day before a task starts |
+| P4-T12C | pending | Connect deterministic compose-to-execution Preview states | SwiftUI preview navigation and tests | Transition contract, no-command scan, normal-speed walkthrough | User understands how input becomes a plan, parallel work, approval, validation, and result |
 | P4-T13 | pending | Build final History and recovery surfaces | SwiftUI app and fixtures | State/recovery UI tests | Interrupted, blocked, failed, partial, cancelled, and completed states are distinct |
 | P4-T14 | pending | Build governed-memory review surfaces | SwiftUI app and Semantica-derived fixtures | Candidate/conflict/correction/delete UI tests | Preview matches the Semantica authority boundary |
 | P4-T15 | pending | Build Agents & Tools and Permissions management surfaces | SwiftUI app and capability-manifest fixtures | Scope and approval UI tests | Herdr/holaOS capabilities are presented without reimplementation |
