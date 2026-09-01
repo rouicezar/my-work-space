@@ -1,5 +1,34 @@
 # Forma AI Task Handoff
 
+## 2026-09-01 - P1-T09 - exit
+
+Executor: Qoder agent
+Scope: per-capability reuse audit of all product-owned runtime-like code in `forma_ai` (34 source files across the package root and `adapters/`), `scripts/supervisor.py`, `scripts/semantica_memory_runtime.py`, and the Swift runtime-path sources against the four upstream capability ledgers and the four P1 reuse decisions
+Actions: read every audited source file end to end; recorded a 41-row disposition matrix (memory chain M1-M10, orchestration O1-O8, inference I1-I3, cloud C1-C7, install/lifecycle L1-L9, adapter protocol A1-A4) in `docs/research/product-runtime-capability-audit-2026-09-01.md`, each row citing file/line evidence, upstream entry point, license, disposition, and owning downstream task; verified every quoted line citation against the sources; corrected two citation inaccuracies found during closeout review (module count 31 → 34; `RuntimeSecrets.swift` path `Sources/RuntimeSecrets/` → `Sources/RuntimeSecurity/`)
+Audit verdict: every audited capability is (a) a justified product-owned policy/orchestration/lifecycle/audit/UI/protocol responsibility, (b) already a thin adapter over an upstream entry point, or (c) carrying a scheduled reduction owned by an existing planned task; no capability requires removal outside planned work and no conclusion requires changing a plan goal, requirement, or audit gate; no holaOS code, assets, or names exist in any audited path
+Findings: F1 retrieval seam bypassing the Semantica retrieval surface (`adapters/semantica.py:46-54`, owned by P6-T01/T02); F2 Herdr correlation held in in-memory dicts plus binary-presence-only availability (`herdr_adapter.py:62-64`, `:66-93`, owned by P3-T10/T11/T13/T15); F3 actual cloud cost computed but never checked against the approved ceiling (`deepseek_adapter.py:133-174`, `cloud_approval.py:70-95`, owned by P5); F4 confirmed-content duplication in governed memory (owned by P6-T01/T02). All four map to existing tasks; no new task IDs were created
+Verification evidence: coverage check — the audit matrix inventories all 34 `forma_ai` source files plus both script entrypoints and the Swift runtime path (`SupervisorProtocol.swift`, `RuntimeSecurity/RuntimeSecrets.swift`, `LifecycleContract/ProductManifest.swift`); every row cites file/line evidence; `git diff --check` clean; full Python suite `python3 -m unittest discover tests -v` ran 242 tests, OK, 1 skipped (expected)
+Files changed: `docs/research/product-runtime-capability-audit-2026-09-01.md` (new), both English controls, and both mandatory Chinese mirrors (outside the repository)
+Commit and push: pending
+Blocked items: none
+Next exact action: claim P3-T10 — pin the Herdr artifact digest and bind the official socket transport per the user-approved relay priority; P4-T14 remains the default next frontend task
+Secret/external-write status: no credentials, cloud calls, downloads, or destructive actions; read-only code audit plus documentation edits
+
+## 2026-09-01 - P1-T09 - takeover
+
+Executor: Qoder agent
+Starting git state: `main` clean and synchronized with `origin/main` at `dcc1b7c`
+Trigger: user authorization on 2026-09-01 to execute the relay-priority recommendations; P1-T09 runs ahead of P4-T14 under the master plan's allowed execution order (audit gates may run before or inside the relevant frontend slice and must finish before adapter implementation). Plan goals, requirements, and audit logic are unchanged; P4-T14 remains pending as the default next frontend task.
+Scope: per-capability audit of all product-owned runtime-like code in `forma_ai` and `prototypes/packaging` Swift sources against the four upstream capability ledgers (`upstream-matrix.md`, `herdr-capability-ledger.md`, `holaos-capability-ledger.md`, `license-matrix.md`) and the four P1 reuse decisions in `docs/decisions.md`
+Upstream search result: completed at ledger level — Semantica `v0.6.7` owns confirmed memory/decision/provenance surfaces; Herdr `v0.8.2` owns multi-agent execution state; oMLX `v0.6.3` owns local inference and embeddings; holaOS capabilities are parity references pending pinned-source mapping. This task audits product code against those maps and records entry points, license obligations, and integration decisions per capability
+Reusable entry point: existing capability ledgers, reuse decisions, `forma_ai` module inventory, Swift protocol/app sources, and the repository test suites as verification evidence
+License obligation: audit only; no upstream source, assets, names, or trademarks are copied; audit conclusions must preserve the recorded license boundaries (holaOS external-install-only, Semantica/Herdr/oMLX bundle candidates with notices)
+Integration decision: every product-owned runtime-like capability must end the audit as (a) justified product-owned policy/orchestration/UI/lifecycle/audit responsibility, (b) a thin adapter over an upstream entry point, or (c) scheduled for removal or freeze inside existing downstream tasks (P3-T10+, P6-T01+, P4-T14+, P5, P7); no new runtime implementation is added by this audit task
+Planned verification: capability inventory covers every `forma_ai` module and Swift runtime-path source; each audit row cites file/line evidence, upstream entry point, license, decision, and owning task; `git diff --check`; both English controls and both Chinese mirrors updated in the same closeout
+Commit and push: pending
+Next exact action: inventory `forma_ai` modules and Swift runtime sources, then write the per-capability audit matrix
+Secret/external-write status: no credentials, cloud calls, downloads, or destructive actions; read-only code audit plus documentation edits
+
 ## 2026-09-01 - P4-T13 - exit
 
 Executor: Codex root agent

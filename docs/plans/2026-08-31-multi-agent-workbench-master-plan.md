@@ -30,10 +30,12 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 ## Current State
 
 Updated: 2026-09-01 Asia/Shanghai
-Current phase: P4 independent workbench product experience
-Current task: P4-T14
-Current status: pending
-Next action: claim P4-T14 and build bilingual governed-memory review surfaces from Semantica-derived presentation authority.
+Current phase: P1-T09 repository-wide reuse audit gate, executed ahead of P4-T14 under the plan's allowed execution order (audit gates may run before or inside the relevant frontend slice; user-approved priority reorder on 2026-09-01)
+Current task: P1-T09
+Current status: verified
+Next action: claim P3-T10 (pin the Herdr artifact and bind the official transport) as the user-approved relay priority; P4-T14 remains the default next frontend task and unchanged
+Audit verdict: every product-owned runtime-like capability is justified, already a thin adapter over an upstream entry point, or scheduled for reduction inside existing downstream tasks (P3-T10+, P5, P6-T01+); no plan goal, requirement, or audit gate change is required; per-capability matrix with file/line evidence: `docs/research/product-runtime-capability-audit-2026-09-01.md`
+Default next frontend task after the audit gate: P4-T14 (bilingual governed-memory review Preview), still pending and unchanged.
 
 Current Git fact at P0-T10 takeover:
 
@@ -176,7 +178,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | P1-T06 | verified | Reconcile license matrix with public open-source intent | `docs/research/license-matrix.md` | `rg -n "public|redistribution|holaOS" docs/research/license-matrix.md` | Public distribution constraints explicit |
 | P1-T07 | verified | Add a reuse decision record for each upstream | `docs/decisions.md` | `rg -n "Reuse decision" docs/decisions.md` | Four decisions recorded |
 | P1-T08 | verified | Commit upstream inventory docs | Research docs, `docs/decisions.md` | `git diff --check` then `git commit` | Commit includes only inventory docs |
-| P1-T09 | pending | Audit all product code against the four upstream capability maps before further runtime implementation | `forma_ai`, Swift sources, four capability ledgers, reuse decisions | Per-capability upstream entry point, license, and integration-decision scan | Every product-owned runtime-like capability is justified, reduced to a thin adapter/policy layer, or scheduled for removal |
+| P1-T09 | verified | Audit all product code against the four upstream capability maps before further runtime implementation | `forma_ai`, Swift sources, four capability ledgers, reuse decisions, `docs/research/product-runtime-capability-audit-2026-09-01.md` | Per-capability upstream entry point, license, and integration-decision scan | Every product-owned runtime-like capability is justified, reduced to a thin adapter/policy layer, or scheduled for removal — 41-row matrix recorded in `docs/research/product-runtime-capability-audit-2026-09-01.md`; findings F1-F4 all owned by existing tasks |
 
 ### P2: Adapter Protocol Contract
 
