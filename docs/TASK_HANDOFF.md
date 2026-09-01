@@ -1,5 +1,37 @@
 # Forma AI Task Handoff
 
+## 2026-09-01 - P4-T13 - exit
+
+Executor: Codex root agent
+Scope: final bilingual History list, task detail, lifecycle distinction, execution summary, recovery decision, and audit-boundary Preview
+Actions: added a fail-closed `HistoryRecoveryPreviewContract`; rendered interrupted, blocked, failed, partial, cancelled, completed, and unknown examples; connected History navigation and shared supervision projection; preserved selected task across live language switching; removed an upstream internal name found during window review
+Red/green evidence: the target test first failed because `HistoryRecoveryPreviewContract` was absent; after implementation it passed, and the final full Swift package passed 42 tests with 2 real-Keychain tests skipped
+Isolation evidence: the new surface contains no command client, RuntimeSecurity, Keychain, network, process, file picker, persistence, resume, retry, cancellation, or force-termination call; the immutable contract explicitly disables every runtime action and persisted-history read; production still defaults to `ManifestOverview`
+Localization evidence: every new title, lifecycle label, reason, timeline entry, recovery choice, truth boundary, and action comes from shared bilingual `ProductCopy`; switching Chinese to English retained History and the selected interrupted task
+Walkthrough evidence: normal-speed window review opened History, inspected multiple lifecycle examples, switched live to English without selection reset, and verified recovery controls are labeled as decision Preview only; visual review caught and removed the upstream name before final verification
+Visual evidence: exact-window screenshots `evidence/ui/product-preview-history-recovery-zh-2026-09-01.png` and `evidence/ui/product-preview-history-recovery-en-2026-09-01.png` verify the bilingual list/detail/recovery shape and persistent synthetic-data disclosure
+Files changed: lifecycle presentation contract/test, daily Preview navigation/supervision integration, new History/recovery SwiftUI and shared bilingual copy, two screenshots, both English controls, and both mandatory Chinese mirrors
+Commit and push: implementation/evidence commit pending; exact hash will be recorded in the synchronization commit
+Evidence boundary: all seven tasks, agents, artifacts, checkpoints, approvals, and recovery decisions are deterministic in-memory presentation; no persisted history is read and no session is resumed, retried, cancelled, reconciled, or terminated
+Blocked items: none
+Next exact action: claim P4-T14 and build bilingual governed-memory review surfaces from Semantica-derived fixtures without creating another memory authority
+Secret/external-write status: no credentials, cloud calls, downloads, attachment reads, history persistence, runtime recovery, approvals, or destructive actions
+
+## 2026-09-01 - P4-T13 - takeover
+
+Executor: Codex root agent
+Starting git state: `main` clean and synchronized with `origin/main` at `e3c7cc5`
+Scope: build the final bilingual History list, task detail, lifecycle distinction, and recovery-decision Preview without reading persisted history or invoking runtime recovery
+Upstream search result: Herdr remains authoritative for real session state, cancellation, resume, reconciliation, recovery, and handoff; Semantica remains authoritative for governed evidence; no upstream runtime behavior is duplicated in this task
+Reusable entry point: `DailyWorkbenchPreview`, shared `ProductCopy`, `ProductPreviewProvider`, and the existing persistent synthetic-data disclosure
+License obligation: no upstream source, UI, assets, names, or trademarks are copied; the work is limited to product-owned SwiftUI projection and deterministic fixtures
+Integration decision: define a presentation-only history/recovery contract; distinguish interrupted, blocked, failed, partial, cancelled, completed, and unknown states; allow controls to select only an ephemeral next Preview state; prohibit persistence, resume, retry, cancellation, and force termination
+Localization decision: every new title, lifecycle label, reason, timeline item, recovery choice, audit boundary, and action must come from shared Simplified Chinese/English copy and switch live without resetting the selected task
+Planned verification: expected red contract test; filtered and full Swift tests; runtime-command/persistence source scan; exact-window bilingual screenshots; normal-speed lifecycle and language-preservation walkthrough; `git diff --check`
+Commit and push: pending
+Next exact action: add the failing History/recovery presentation contract test
+Secret/external-write status: no credentials, cloud calls, downloads, attachment reads, persisted history, runtime recovery, approvals, or destructive actions
+
 ## 2026-09-01 - P4-T12C - exit
 
 Executor: Codex root agent
@@ -840,9 +872,9 @@ Secret/external-write status: no secrets; mocks only
 
 Updated: 2026-09-01 Asia/Shanghai
 Owner: Codex root agent
-Master plan task: P4-T13
-State: P4-T12C verified; P4-T13 pending
-Next required action: claim P4-T13 and build bilingual History and recovery Preview surfaces.
+Master plan task: P4-T14
+State: P4-T13 verified; P4-T14 pending
+Next required action: claim P4-T14 and build bilingual governed-memory review Preview surfaces.
 
 ## Product Goal Snapshot
 

@@ -9,6 +9,8 @@ struct DailyWorkbenchPreview: View {
     @State private var supervisionExpanded = true
     @State private var contextPreviewPresented = false
     @State private var transitionStage: PreviewTransitionStage = .compose
+    @State private var destination: PreviewDestination = .newTask
+    @State private var historySelection: HistoryPreviewTaskState = .interrupted
 
     var body: some View {
         let copy = ProductCopy(language: language)
@@ -37,7 +39,9 @@ struct DailyWorkbenchPreview: View {
 
     @ViewBuilder
     private func mainContent(_ copy: ProductCopy) -> some View {
-        if transitionStage == .compose {
+        if destination == .history {
+            HistoryRecoveryPreview(language: language, selection: $historySelection)
+        } else if transitionStage == .compose {
             composer(copy)
         } else {
             ExecutionJourneyPreview(
@@ -84,9 +88,9 @@ struct DailyWorkbenchPreview: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                navigationRow(copy[.newTask], "square.and.pencil", selected: true)
-                navigationRow(copy[.history], "clock.arrow.circlepath", selected: false)
-                navigationRow(copy[.settings], "gearshape", selected: false)
+                navigationRow(copy[.newTask], "square.and.pencil", destination: .newTask)
+                navigationRow(copy[.history], "clock.arrow.circlepath", destination: .history)
+                navigationRow(copy[.settings], "gearshape", destination: nil)
             }
 
             VStack(alignment: .leading, spacing: 10) {
@@ -111,15 +115,23 @@ struct DailyWorkbenchPreview: View {
         .padding(22).frame(width: 230).background(.thinMaterial)
     }
 
-    private func navigationRow(_ title: String, _ symbol: String, selected: Bool) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: symbol).frame(width: 18)
-            Text(title).font(.callout.weight(selected ? .semibold : .regular))
-            Spacer()
+    private func navigationRow(_ title: String, _ symbol: String, destination target: PreviewDestination?) -> some View {
+        let selected = target == destination
+        return Button {
+            if let target { destination = target }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: symbol).frame(width: 18)
+                Text(title).font(.callout.weight(selected ? .semibold : .regular))
+                Spacer()
+            }
+            .contentShape(Rectangle())
         }
         .padding(.horizontal, 11).padding(.vertical, 9)
         .foregroundStyle(selected ? Color.white : Color.primary)
         .background(selected ? Color.blue : Color.clear, in: RoundedRectangle(cornerRadius: 10))
+        .buttonStyle(.plain)
+        .disabled(target == nil)
     }
 
     private func composer(_ copy: ProductCopy) -> some View {
@@ -245,10 +257,10 @@ struct DailyWorkbenchPreview: View {
                 .buttonStyle(.plain).help(copy[.collapseSupervision])
             }
             VStack(alignment: .leading, spacing: 8) {
-                Image(systemName: transitionStage == .compose ? "pause.circle" : "play.circle.fill")
-                    .font(.title).foregroundStyle(transitionStage == .compose ? Color.secondary : Color.blue)
-                Text(transitionStage == .compose ? copy[.noActiveTask] : copy.stageTitle(transitionStage)).font(.headline)
-                Text(transitionStage == .compose ? copy[.supervisionExplanation] : copy[.previewStateNotice])
+                Image(systemName: destination == .history ? "clock.arrow.circlepath" : (transitionStage == .compose ? "pause.circle" : "play.circle.fill"))
+                    .font(.title).foregroundStyle(destination == .history || transitionStage != .compose ? Color.blue : Color.secondary)
+                Text(destination == .history ? copy.stateTitle(historySelection) : (transitionStage == .compose ? copy[.noActiveTask] : copy.stageTitle(transitionStage))).font(.headline)
+                Text(destination == .history ? copy[.truthBoundaryBody] : (transitionStage == .compose ? copy[.supervisionExplanation] : copy[.previewStateNotice]))
                     .font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -256,12 +268,12 @@ struct DailyWorkbenchPreview: View {
             Divider()
             statusRow(
                 copy[.agentStatus],
-                transitionStage == .compose ? copy[.waitingForTask] : copy.stageTitle(transitionStage),
+                destination == .history ? copy.agentSummary(historySelection) : (transitionStage == .compose ? copy[.waitingForTask] : copy.stageTitle(transitionStage)),
                 "person.2"
             )
             statusRow(
                 copy[.evidenceStatus],
-                transitionStage == .validation || transitionStage == .result ? copy[.valid] : copy[.nothingProduced],
+                destination == .history ? copy.lastVerified(historySelection) : (transitionStage == .validation || transitionStage == .result ? copy[.valid] : copy[.nothingProduced]),
                 "checkmark.seal"
             )
             Spacer()
@@ -289,4 +301,9 @@ struct DailyWorkbenchPreview: View {
 private enum PreviewComposerRoute: Hashable {
     case localFirst
     case cloudProposal
+}
+
+private enum PreviewDestination: Hashable {
+    case newTask
+    case history
 }

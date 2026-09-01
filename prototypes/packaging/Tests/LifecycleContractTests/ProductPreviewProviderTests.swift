@@ -112,3 +112,33 @@ import Testing
     #expect(transition.performsApproval == false)
     #expect(transition.persistsState == false)
 }
+
+@Test func historyRecoveryPreviewDistinguishesLifecycleTruthWithoutPerformingRecovery() {
+    let history = HistoryRecoveryPreviewContract.productDefault
+
+    #expect(history.states == [
+        .interrupted,
+        .blocked,
+        .failed,
+        .partial,
+        .cancelled,
+        .completed,
+        .unknown,
+    ])
+    #expect(history.sections == [
+        .taskList,
+        .taskDetail,
+        .executionSummary,
+        .recoveryDecision,
+        .auditBoundary,
+    ])
+    #expect(history.supportedLanguages == [.simplifiedChinese, .english])
+    #expect(history.allowedInteraction == .showNextPreviewState)
+    #expect(history.languageSwitchPreservesSelection == true)
+    #expect(history.readsPersistedHistory == false)
+    #expect(history.runtimeActionsAllowed == false)
+    #expect(history.performsResume == false)
+    #expect(history.performsRetry == false)
+    #expect(history.performsCancellation == false)
+    #expect(history.performsForceTermination == false)
+}

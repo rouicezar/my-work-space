@@ -186,6 +186,60 @@ public struct ComposeToExecutionPreviewContract: Sendable {
     )
 }
 
+public enum HistoryPreviewTaskState: String, CaseIterable, Sendable, Equatable, Identifiable {
+    case interrupted
+    case blocked
+    case failed
+    case partial
+    case cancelled
+    case completed
+    case unknown
+
+    public var id: String { rawValue }
+}
+
+public enum HistoryRecoverySection: Sendable, Equatable {
+    case taskList
+    case taskDetail
+    case executionSummary
+    case recoveryDecision
+    case auditBoundary
+}
+
+public struct HistoryRecoveryPreviewContract: Sendable {
+    public let states: [HistoryPreviewTaskState]
+    public let sections: [HistoryRecoverySection]
+    public let supportedLanguages: [ProductLanguage]
+    public let allowedInteraction: PreviewInteraction
+    public let languageSwitchPreservesSelection: Bool
+    public let readsPersistedHistory: Bool
+    public let runtimeActionsAllowed: Bool
+    public let performsResume: Bool
+    public let performsRetry: Bool
+    public let performsCancellation: Bool
+    public let performsForceTermination: Bool
+
+    public static let productDefault = HistoryRecoveryPreviewContract(
+        states: HistoryPreviewTaskState.allCases,
+        sections: [
+            .taskList,
+            .taskDetail,
+            .executionSummary,
+            .recoveryDecision,
+            .auditBoundary,
+        ],
+        supportedLanguages: [.simplifiedChinese, .english],
+        allowedInteraction: .showNextPreviewState,
+        languageSwitchPreservesSelection: true,
+        readsPersistedHistory: false,
+        runtimeActionsAllowed: false,
+        performsResume: false,
+        performsRetry: false,
+        performsCancellation: false,
+        performsForceTermination: false
+    )
+}
+
 public struct PreviewAgent: Identifiable, Sendable, Equatable {
     public let id: String
     public let role: String
