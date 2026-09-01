@@ -1,5 +1,19 @@
 # Forma AI Task Handoff
 
+## 2026-09-01 - P8-T05 - exit
+
+Executor: Codex root agent
+Scope: deliver equivalent Chinese and English target-final-release product introductions and user guides plus a novice-user acceptance script
+Actions: added two structurally equivalent 17-section guides covering product identity, users, complete capabilities, advantages, permanent boundaries, unsupported responsibilities, first launch, interface, task writing, approvals, multi-agent use, memory, privacy, recovery, lifecycle, FAQ, and a first-week path; added a ten-journey novice acceptance script; linked all documents from README
+Evidence boundary: each guide is explicitly labeled as documentation for the fully completed, release-accepted product; before release it defines target experience and acceptance rather than claiming the current development build implements every described capability
+Verification: both guides have matching 17-section structures; English guide has 2,758 words and Chinese guide 6,729 characters; target-release disclaimers and README links are present; `git diff --check` passed; Python suite passed 242 tests with 1 opt-in Semantica integration skip; Swift suite passed 35 tests with 2 real-Keychain skips
+Files changed: `README.md`, both guides, `docs/runbooks/novice-acceptance.md`, both English control documents, and both mandatory Chinese mirrors
+Commit and push: content commit `74bdba6 docs: add bilingual target release user guides`; closeout metadata follows in the synchronization commit and both will be pushed to `origin/main`
+Design influence: the copywriting skill shaped an outcome-first orientation, clear first action, objection handling, and durable trust boundaries without sales claims or invented proof
+Blocked items: actual novice-user execution remains a release acceptance gate; document completion is not user-test completion
+Next exact action: P4-T07A verifies the separately installed holaOS non-visual adapter boundary without bundling uncleared UI/assets
+Secret/external-write status: no credentials, cloud calls, downloads, or destructive actions; mandatory Chinese mirror synchronization only
+
 ## 2026-09-01 - P8-T05 - takeover
 
 Executor: Codex root agent

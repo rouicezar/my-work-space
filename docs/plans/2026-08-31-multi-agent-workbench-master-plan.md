@@ -30,9 +30,9 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-08-31 Asia/Shanghai
 Current phase: P4 independent workbench product experience
-Current task: P8-T05
-Current status: in_progress
-Next action: write equivalent Chinese and English target-release user guides plus a novice-user acceptance script, clearly labeled as post-completion documentation rather than current implementation evidence.
+Current task: P4-T07A
+Current status: pending
+Next action: verify the separately installed holaOS non-visual adapter boundary without bundling uncleared frontend code or assets.
 
 Current Git fact at P0-T10 takeover:
 
@@ -250,7 +250,7 @@ P2 completion never waives these gates and must not be cited as evidence that an
 | P8-T02 | pending | Add license notice collection task | `docs/distribution/notices.md` | `test -f docs/distribution/notices.md` | Notices started |
 | P8-T03 | pending | Add secrets scan command to release checklist | Release docs | Release command documented | Secrets gate explicit |
 | P8-T04 | pending | Add clean-install acceptance runbook | `docs/runbooks/clean-install.md` | `test -f docs/runbooks/clean-install.md` | Runbook exists |
-| P8-T05 | in_progress | Add bilingual target-release user guides and novice-user acceptance script | `docs/guides/forma-ai-user-guide.zh-CN.md`, `docs/guides/forma-ai-user-guide.en.md`, `docs/runbooks/novice-acceptance.md` | file, section-parity, future-state-label, link, and `git diff --check` checks | Both guides describe the completed product, first launch, use, advantages, permanent boundaries, and safe operation; acceptance script exists |
+| P8-T05 | verified | Add bilingual target-release user guides and novice-user acceptance script | `docs/guides/forma-ai-user-guide.zh-CN.md`, `docs/guides/forma-ai-user-guide.en.md`, `docs/runbooks/novice-acceptance.md` | file, section-parity, future-state-label, link, and `git diff --check` checks | Both guides describe the completed product, first launch, use, advantages, permanent boundaries, and safe operation; acceptance script exists |
 | P8-T06 | pending | Run final test suite | Repo | Python and Swift test commands | Tests pass |
 | P8-T07 | pending | Commit distribution hardening | Distribution docs and tests | `git diff --check` then `git commit` | Commit created |
 
