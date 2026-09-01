@@ -40,6 +40,7 @@ Current Git fact at P0-T10 takeover:
 - `main` was clean and synchronized with `origin/main` at `709fee0`; remote refresh found no additional branches to merge.
 - P0-T10 repair commit `9454cdd` corrected the README role and current Git baselines; closeout metadata follows in the synchronization commit.
 - P4-T12A-C1 implementation/evidence commit `3b57884` is pushed to `origin/main`; only the current closeout synchronization commit remains.
+- P4-T12B implementation/evidence commit `b672316` is pushed to `origin/main`; only the current closeout synchronization commit remains.
 
 Completed parallel task: P4-T04
 Parallel status: verified; the dedicated task produced no P4-T05 changes before primary takeover

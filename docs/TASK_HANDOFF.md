@@ -10,7 +10,7 @@ Isolation evidence: daily Preview source has no SupervisorClient, RuntimeSecurit
 Localization evidence: all new visible copy except the product name is served by the shared language-keyed copy authority; the running Language menu switched the complete visible shell between Simplified Chinese and English
 Visual evidence: window-only screenshots `evidence/ui/product-preview-daily-shell-zh-compact-2026-09-01.png`, `evidence/ui/product-preview-daily-shell-zh-2026-09-01.png`, and `evidence/ui/product-preview-daily-shell-en-2026-09-01.png` verify compact/regular Chinese and regular English layouts; the supervision rail was also collapsed and its localized re-expand control verified through accessibility inspection
 Files changed: daily Preview/localization SwiftUI, app DEBUG routing, lifecycle contract/test, three screenshots, accepted frontend plans, both English controls, and both mandatory Chinese mirrors
-Commit and push: pending the following verified implementation commit; exact commit evidence will be synchronized after push
+Commit and push: implementation/evidence commit `b672316` (`feat: build bilingual daily workbench preview`) pushed to `origin/main`; this exact closeout metadata follows in the synchronization commit
 Evidence boundary: Preview input is ephemeral; context does not open or read files; recent history is explicitly synthetic; task-plan submission is disabled; no Herdr, oMLX/cloud, Semantica, or holaOS runtime capability is proved
 Design influence: frontend-design kept a restrained native editorial workbench with the memorable task-to-supervision split, strong empty-state truth, and minimal operational chrome rather than a generic chat or decorative dashboard
 Blocked items: none
@@ -824,7 +824,7 @@ The product is a local-first, multi-agent Mac AI workbench.
 
 ## Current Worktree Fact
 
-After P4-T12A-C1 implementation, `main` and `origin/main` contain verified commit `3b57884`; the remaining closeout-only control update is owned by the current agent. There are no uncommitted paths assigned to another owner.
+After P4-T12B implementation, `main` and `origin/main` contain verified commit `b672316`; the remaining closeout-only control update is owned by the current agent. There are no uncommitted paths assigned to another owner.
 
 ## Historical Interrupted Paths
 
