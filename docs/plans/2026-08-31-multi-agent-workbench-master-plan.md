@@ -30,9 +30,9 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-08-31 Asia/Shanghai
 Current phase: P4 independent workbench product experience
-Current task: P4-T07A
+Current task: P4-T10
 Current status: pending
-Next action: verify the separately installed holaOS non-visual adapter boundary without bundling uncleared frontend code or assets.
+Next action: audit the current SwiftUI against the target-release guide and define the final presentation contract before changing product UI.
 
 Current Git fact at P0-T10 takeover:
 
@@ -80,6 +80,24 @@ Known evidence from the interrupted task:
 11. A local model must be able to discover and coordinate Codex, Claude, and other compatible AI tools through a vendor-neutral agent adapter contract.
 12. Settings must be a complete product surface: General, Models & Providers, Agents & Tools, Memory, Permissions & Approvals, Local Runtime, Data & Privacy, and Diagnostics & Recovery.
 13. No non-visual upstream capability may be reimplemented without a recorded upstream search and a license, compatibility, security, maintainability, or verified capability-gap reason.
+14. Frontend shape may lead implementation for early user testing, but preview data must be explicit, deterministic, read-only, and incapable of satisfying runtime acceptance.
+15. Every implementation task must record upstream search result, reusable entry point, license obligation, and integration decision before code changes.
+
+## Revised Execution Strategy
+
+The project now uses **frontend-shape-first, upstream-contract-bound vertical slices**. The final native workbench shape is made visible early through an explicitly synthetic preview provider. It is not a frontend-only waterfall: after each visible surface, the corresponding real upstream authority is connected before product-owned runtime logic expands.
+
+The controlling design is `docs/plans/2026-09-01-frontend-first-upstream-reuse-design.md`.
+
+Execution order:
+
+1. P4-T10 through P4-T17: final visible frontend and manual preview review.
+2. P1-T09 and P4-T07A: repository-wide reuse audit and pinned holaOS reuse decision; these gates may run before or inside the relevant frontend slice but must finish before adapter implementation.
+3. P3-T10 through P3-T17: real Herdr runtime and UI binding.
+4. P5: real oMLX and approval-gated cloud binding.
+5. P6: real Semantica reuse audit and governed-memory binding.
+6. P7: history/recovery projection over Herdr authority, never a competing runtime state store.
+7. P8: distribution, security, accessibility, and novice-user acceptance.
 
 ## Upstream Reuse Ledger
 
@@ -139,6 +157,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | P0-T08 | verified | Rename product globally to Forma AI and add an original macOS icon | tracked source, tests, docs, packaging, app assets, filenames | legacy-name absence scan, Python tests, Swift tests, app bundle inspection | Tracked product surface has no legacy name; 225 Python tests passed with 1 skipped; 30 Swift tests passed with 2 skipped; signed Forma AI app contains valid ICNS |
 | P0-T09 | verified | Create and govern synchronized Chinese mirrors of the execution tracker and handoff | `AGENTS.md`, both English control docs, user-approved MyNote Forma AI folder | existence, required-anchor, state-parity, and `git diff --check` checks | Two Chinese documents exist and every future task exit must synchronize both language sets |
 | P0-T10 | verified | Repair README product-role drift and stale current Git baselines | `README.md`, both English control docs, both Chinese mirrors | role-conflict scan, bilingual state parity, `git diff --check`, Python and Swift tests | README names the product-owned native workbench as default; current Git evidence is accurate; P4-T07A remains the next product task |
+| P0-T11 | verified | Rebase the execution plan on strict upstream reuse and frontend-shape-first vertical slices | Master plan, design, handoff, Chinese mirrors | task/status parity, reuse-gate scan, `git diff --check` | Real and mock evidence are separated; Herdr/Semantica state ownership is preserved; preview UI cannot become runtime evidence |
 
 ### P1: Upstream Capability and License Inventory
 
@@ -152,6 +171,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | P1-T06 | verified | Reconcile license matrix with public open-source intent | `docs/research/license-matrix.md` | `rg -n "public|redistribution|holaOS" docs/research/license-matrix.md` | Public distribution constraints explicit |
 | P1-T07 | verified | Add a reuse decision record for each upstream | `docs/decisions.md` | `rg -n "Reuse decision" docs/decisions.md` | Four decisions recorded |
 | P1-T08 | verified | Commit upstream inventory docs | Research docs, `docs/decisions.md` | `git diff --check` then `git commit` | Commit includes only inventory docs |
+| P1-T09 | pending | Audit all product code against the four upstream capability maps before further runtime implementation | `forma_ai`, Swift sources, four capability ledgers, reuse decisions | Per-capability upstream entry point, license, and integration-decision scan | Every product-owned runtime-like capability is justified, reduced to a thin adapter/policy layer, or scheduled for removal |
 
 ### P2: Adapter Protocol Contract
 
@@ -190,6 +210,14 @@ P2 completion never waives these gates and must not be cited as evidence that an
 | P3-T07 | verified | Wire supervisor to Herdr adapter behind feature flag | `forma_ai/supervisor.py` | `python -m unittest discover tests -v` | Existing tests pass |
 | P3-T08 | verified | Add UI task state fixture for parallel agents | `prototypes/packaging/Sources/FormaAIApp/FormaAIApp.swift` | `swift test --package-path prototypes/packaging` | Swift tests pass |
 | P3-T09 | verified | Commit Herdr core slice | Adapter, supervisor, tests, Swift fixture | `git diff --check` then `git commit` | Commit created |
+| P3-T10 | pending | Acquire and verify the pinned official Herdr artifact and protocol schema | installer/runtime evidence and Herdr ledger | Digest, version, protocol, schema, and license checks | Official Herdr is verified without a product-owned runtime substitute |
+| P3-T11 | pending | Bind the thin adapter to the official Herdr socket transport | Herdr adapter and transport tests | Real `ping`, `session.snapshot`, and compatible protocol response | Runtime truth comes from Herdr |
+| P3-T12 | pending | Run two real isolated fixture agents through Herdr | integration tests and evidence | Two distinct panes/runs with no input, state, artifact, or cancel leakage | Parallel execution is real |
+| P3-T13 | pending | Bind snapshot and event subscriptions to the workbench presentation provider | adapter, Swift protocol, UI | Reconnect/resubscribe test and live state transition evidence | UI cannot override Herdr semantic state |
+| P3-T14 | pending | Prove real wait, blocked, artifact-read, and graceful-cancel behavior | Herdr integration tests | Official surfaces return correctly mapped states and bounded artifacts | Lifecycle is upstream-backed |
+| P3-T15 | pending | Prove detach/reconnect and native or explicit fresh-run resume | recovery integration tests | Revision/session reconciliation passes and stale references fail closed | Resume is truthful |
+| P3-T16 | pending | Replace preview agent cards with real Herdr data in runtime mode | Swift app and protocol tests | Runtime mode contains no fixture fallback | User sees authoritative agents |
+| P3-T17 | pending | Close the real Herdr multi-agent phase | evidence, tests, bilingual controls | Full real integration suite and manual task review | P3 milestone becomes verified |
 
 ### P4: Independent Workbench Product Experience
 
@@ -205,6 +233,14 @@ P2 completion never waives these gates and must not be cited as evidence that an
 | P4-T07A | pending | Verify the separately installed holaOS non-visual adapter boundary | holaOS adapter, tests, and capability/reuse ledger | Targeted adapter conformance test plus upstream entry-point audit | Generic identity, health, and capability smoke test passes without bundling uncleared UI/assets |
 | P4-T08 | pending | Capture foreground UI evidence | `evidence/ui/workbench-first-screen-YYYY-MM-DD.png` | Manual launch plus screenshot review | Screenshot proves first screen is workbench |
 | P4-T09 | pending | Commit workbench product experience slice | Swift files, tests, evidence if allowed | `git diff --check` then `git commit` | Commit created |
+| P4-T10 | pending | Audit the current frontend against the target-release guide and define the final presentation contract | Swift sources, bilingual guides, design plan, tests | Contract red test plus screen/state gap matrix | Every final user journey has a named surface and upstream authority |
+| P4-T11 | pending | Add an explicit read-only Product Preview provider | Swift presentation contract and tests | Preview isolation tests | Preview cannot call runtime, Keychain, network, or write paths |
+| P4-T12 | pending | Build the final task workspace and multi-agent execution thread | SwiftUI app and presentation fixtures | Swift tests plus foreground screenshot review | Goal, route, agents, approvals, artifacts, validation, and result are understandable |
+| P4-T13 | pending | Build final History and recovery surfaces | SwiftUI app and fixtures | State/recovery UI tests | Interrupted, blocked, failed, partial, cancelled, and completed states are distinct |
+| P4-T14 | pending | Build governed-memory review surfaces | SwiftUI app and Semantica-derived fixtures | Candidate/conflict/correction/delete UI tests | Preview matches the Semantica authority boundary |
+| P4-T15 | pending | Build Agents & Tools and Permissions management surfaces | SwiftUI app and capability-manifest fixtures | Scope and approval UI tests | Herdr/holaOS capabilities are presented without reimplementation |
+| P4-T16 | pending | Complete Models, Runtime, Privacy, and Diagnostics final states | SwiftUI app and existing contracts | Full critical-state UI tests | All settings are reachable and honest |
+| P4-T17 | pending | Run final-shape manual frontend acceptance | screenshots and review record | Light/dark, resize, keyboard, text-scale, and normal-speed walkthrough | User can test the intended final shape; preview remains non-runtime evidence |
 
 ### P5: Local and Cloud Model Cooperation
 
@@ -222,25 +258,25 @@ P2 completion never waives these gates and must not be cited as evidence that an
 
 | ID | Status | Action | Files | Command | Expected Evidence |
 |---|---|---|---|---|---|
-| P6-T01 | pending | Write failing Semantica adapter health test | `tests/test_semantica_adapter.py` | `python -m unittest tests.test_semantica_adapter -v` | Fails before adapter |
-| P6-T02 | pending | Add Semantica adapter skeleton | `forma_ai/semantica_adapter.py` | `python -m unittest tests.test_semantica_adapter -v` | Health test passes |
-| P6-T03 | pending | Add candidate memory test | `tests/test_semantica_adapter.py` | `python -m unittest tests.test_semantica_adapter -v` | Fails before candidate flow |
-| P6-T04 | pending | Implement candidate memory envelope | `forma_ai/semantica_adapter.py` | `python -m unittest tests.test_semantica_adapter -v` | Candidate flow passes |
-| P6-T05 | pending | Add approval-to-commit memory test | `tests/test_semantica_adapter.py` | `python -m unittest tests.test_semantica_adapter -v` | Approval flow passes |
-| P6-T06 | pending | Wire task audit event to Semantica adapter | `forma_ai/supervisor.py` | `python -m unittest discover tests -v` | Audit event test passes |
-| P6-T07 | pending | Commit governed memory slice | Adapter, supervisor, tests | `git diff --check` then `git commit` | Commit created |
+| P6-T01 | pending | Audit existing memory code against pinned Semantica capabilities | memory code, Semantica ledger, ADR | Upstream entry-point and duplication matrix | Storage/retrieval authority remains Semantica |
+| P6-T02 | pending | Remove, stop expanding, or justify every duplicated memory behavior | memory code and decisions | Focused tests and diff review | Product code is only the required governance/policy shell |
+| P6-T03 | pending | Verify the pinned real Semantica runtime and embedding dependency | runtime evidence | Import, version, save/load, and real embedding probe | Upstream runtime is real |
+| P6-T04 | pending | Bind candidate and approval policy to Semantica authority | thin adapter/policy tests | Candidate is not authoritative before approval; confirmed data is stored upstream | No second knowledge authority |
+| P6-T05 | pending | Prove retrieve, conflict, correction, export, delete, and restart | real integration tests | All governed operations preserve provenance and upstream IDs | Memory workflow is real |
+| P6-T06 | pending | Bind task audit and native review UI to the real memory path | Supervisor/UI tests | Correlated audit and UI operations pass | UI reflects Semantica truth |
+| P6-T07 | pending | Close and commit the governed-memory slice | evidence, tests, controls | Full real integration suite | P6 milestone becomes verified |
 
 ### P7: History, Cancel, Resume, Recovery
 
 | ID | Status | Action | Files | Command | Expected Evidence |
 |---|---|---|---|---|---|
-| P7-T01 | pending | Write failing persisted task-state test | `tests/test_task_state_store.py` | `python -m unittest tests.test_task_state_store -v` | Fails before store |
-| P7-T02 | pending | Implement repository-local task-state store | `forma_ai/task_state_store.py` | `python -m unittest tests.test_task_state_store -v` | Store test passes |
-| P7-T03 | pending | Add cancellation persistence test | `tests/test_task_state_store.py` | `python -m unittest tests.test_task_state_store -v` | Cancel state survives reload |
-| P7-T04 | pending | Add resume-from-history supervisor test | `tests/test_supervisor_resume.py` | `python -m unittest tests.test_supervisor_resume -v` | Resume route passes |
-| P7-T05 | pending | Add UI history/recovery contract | Swift tests | `swift test --package-path prototypes/packaging` | History recovery visible |
+| P7-T01 | pending | Define the product metadata projection over Herdr authority | projection contract and tests | Authority-boundary red test | Projection cannot declare runtime completion or resumability |
+| P7-T02 | pending | Persist task intent, correlations, approvals, artifact metadata, and last accepted Herdr revision | product metadata projection | Restart tests | No duplicate Agent/process state machine exists |
+| P7-T03 | pending | Reconstruct runtime truth from fresh Herdr snapshot/events | Supervisor/projection tests | Stale local data becomes unknown until reconciled | Herdr remains authoritative |
+| P7-T04 | pending | Bind History and recovery actions to reconciled Herdr lifecycle operations | Supervisor and Swift tests | Cancel/resume routes require current revision and valid session/fresh-run choice | UI cannot manufacture recovery |
+| P7-T05 | pending | Prove app close/reopen and Herdr detach/reconnect | real integration evidence | Original tasks are rediscovered without false completion | Recovery is real |
 | P7-T06 | pending | Run interrupted-task manual recovery proof | `evidence/recovery/recovery-YYYY-MM-DD.md` | Manual scenario | Recovery proof recorded |
-| P7-T07 | pending | Commit history/cancel/resume slice | Store, supervisor, Swift, tests, evidence | `git diff --check` then `git commit` | Commit created |
+| P7-T07 | pending | Commit history/cancel/resume projection slice | Projection, bindings, tests, evidence | `git diff --check` then `git commit` | Commit created |
 
 ### P8: Distribution and Public-Source Hardening
 

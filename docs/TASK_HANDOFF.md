@@ -1,5 +1,30 @@
 # Forma AI Task Handoff
 
+## 2026-09-01 - P0-T11 - exit
+
+Executor: Codex root agent
+Scope: revise execution around strict upstream reuse and early manual testing of the final frontend shape
+Actions: added the controlling frontend-first/upstream-reuse design; required upstream search, reusable entry point, license obligation, and integration decision before implementation; separated the verified Herdr mock/contract slice from new real-runtime tasks; replaced the planned competing task-state store with a Herdr-authoritative metadata projection; rewrote Semantica work around audit and real reuse; added P4-T10 through P4-T17 for an explicit read-only Product Preview and complete final-form frontend review
+Decision: use frontend-shape-first vertical slices, not a frontend-only waterfall; preview data is deterministic, read-only, visibly labeled, cannot call runtime/network/Keychain/write paths, and cannot satisfy runtime acceptance
+Verification: English/Chinese strategy and task summaries agree; P3 real gates, P6 Semantica authority, P7 Herdr authority, preview/runtime separation, and four mandatory upstream-evidence fields are explicit; `git diff --check` passed
+Files changed: new design plan, English master plan/handoff, and both mandatory Chinese mirrors
+Commit and push: included in the following verified plan-adjustment commit
+Blocked items: none
+Next exact action: claim P4-T10 and audit the current SwiftUI against the target-release guide before product UI changes
+Secret/external-write status: no credentials, cloud calls, downloads, or destructive actions; mandatory Chinese mirror synchronization only
+
+## 2026-09-01 - P0-T11 - takeover
+
+Executor: Codex root agent
+Starting git state: `main` clean and synchronized with `origin/main` at `a7fa026`
+Scope: adjust the execution plan so existing capabilities in Semantica, holaOS, Herdr, and oMLX are never reimplemented, while moving visible final-form frontend work earlier for continuous user testing
+Requirements: separate mock/contract completion from real upstream integration; prevent a second runtime or memory authority; expose the final product shape early through explicitly synthetic preview data; bind each completed surface to its upstream authority in the following vertical slice
+Design: frontend-shape-first, upstream-contract-bound vertical slices; product-owned code is limited to native UI, permission/approval, audit correlation, lifecycle, and the thinnest required adapters; every implementation task records upstream search result, reusable entry point, license obligation, and integration decision
+Planned verification: bilingual plan parity, task dependency and authority scan, `git diff --check`; no product code in this governance unit
+Commit and push: pending
+Next exact action: add the revised design and granular tasks, then close P0-T11 and claim P4-T10
+Secret/external-write status: no credentials, cloud calls, downloads, or destructive actions; mandatory Chinese mirror synchronization only
+
 ## 2026-09-01 - P8-T05 - exit
 
 Executor: Codex root agent
