@@ -24,7 +24,31 @@
       "release": "v0.8.2",
       "license": "Apache-2.0",
       "distribution_policy": "bundle_candidate",
-      "reason": "Permissive source license and official macOS arm64/x86_64 binaries exist; notices and transitive dependencies still require audit."
+      "reason": "Permissive source license and official macOS arm64/x86_64 binaries exist; notices and transitive dependencies still require audit.",
+      "artifacts": [
+        {
+          "id": "macos-aarch64",
+          "name": "herdr-macos-aarch64",
+          "platform": "macos",
+          "architecture": "aarch64",
+          "minimum_macos_major": 11,
+          "maximum_macos_major": 99,
+          "size_bytes": 18969952,
+          "sha256": "a5d4f4d504d8b309c91f811050559300faba31258425f53c50852fc96f6ae574",
+          "url": "https://github.com/herdrdev/herdr/releases/download/v0.8.2/herdr-macos-aarch64"
+        },
+        {
+          "id": "macos-x86_64",
+          "name": "herdr-macos-x86_64",
+          "platform": "macos",
+          "architecture": "x86_64",
+          "minimum_macos_major": 11,
+          "maximum_macos_major": 99,
+          "size_bytes": 20551504,
+          "sha256": "ab50262c8190cd7aa9056d249d255c08c328c3e8716de9cfa29db4f131b8e2c1",
+          "url": "https://github.com/herdrdev/herdr/releases/download/v0.8.2/herdr-macos-x86_64"
+        }
+      ]
     },
     {
       "id": "omlx",

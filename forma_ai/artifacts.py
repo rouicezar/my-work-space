@@ -52,14 +52,28 @@ def load_component(path: Path, component_id: str) -> dict[str, Any]:
     return components[0]
 
 
-def select_artifact(component: dict[str, Any], *, platform: str, os_major: int) -> ArtifactExpectation:
-    matches = [
-        item
-        for item in component.get("artifacts", [])
-        if item.get("platform") == platform
-        and int(item.get("minimum_macos_major", -1)) <= os_major
-        and os_major <= int(item.get("maximum_macos_major", -1))
-    ]
+def select_artifact(
+    component: dict[str, Any],
+    *,
+    platform: str,
+    os_major: int,
+    architecture: str | None = None,
+) -> ArtifactExpectation:
+    matches = []
+    for item in component.get("artifacts", []):
+        if item.get("platform") != platform:
+            continue
+        if not int(item.get("minimum_macos_major", -1)) <= os_major <= int(
+            item.get("maximum_macos_major", -1)
+        ):
+            continue
+        item_architecture = item.get("architecture")
+        if architecture is None:
+            if item_architecture is not None:
+                continue
+        elif item_architecture is not None and item_architecture != architecture:
+            continue
+        matches.append(item)
     if len(matches) != 1:
         raise ArtifactError(
             f"expected exactly one {component.get('id')} artifact for {platform} {os_major}, got {len(matches)}"

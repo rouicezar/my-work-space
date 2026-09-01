@@ -21,6 +21,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("artifact", type=Path)
     parser.add_argument("--platform", default="macos")
     parser.add_argument("--os-major", type=int, required=True)
+    parser.add_argument("--architecture", default=None)
     parser.add_argument("--manifest", type=Path, default=REPOSITORY_ROOT / "config/upstreams.json")
     return parser.parse_args()
 
@@ -29,7 +30,12 @@ def main() -> int:
     args = parse_args()
     try:
         component = load_component(args.manifest, args.component)
-        expected = select_artifact(component, platform=args.platform, os_major=args.os_major)
+        expected = select_artifact(
+            component,
+            platform=args.platform,
+            os_major=args.os_major,
+            architecture=args.architecture,
+        )
         result = verify_file(args.artifact, expected)
     except (ArtifactError, OSError, json.JSONDecodeError) as exc:
         print(json.dumps({"schema_version": 1, "status": "error", "error": str(exc)}))

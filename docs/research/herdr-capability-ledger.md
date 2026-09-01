@@ -85,12 +85,13 @@ These paths are upstream entry points, not permission to fork them immediately. 
 
 ## Open validation gaps
 
-- No local release asset has been downloaded or digest-verified.
-- No Herdr process, CLI call, socket request, schema compatibility test, or agent integration has run in Forma AI.
+- CLOSED 2026-09-01 (P3-T10): the official `herdr-macos-aarch64` release asset was downloaded through the product's `ResumableDownloader` (resume path exercised against real network interruptions) and digest/size-verified against the pinned expectation; version `0.8.2`, protocol `20`, and the bundled schema were verified from the official binary itself. Evidence: `evidence/upstream/herdr-v0.8.2-artifact-verification-2026-09-01.md`.
+- REMAINING: no socket request, event subscription, or agent integration has run in Forma AI yet; the transport binding is P3-T11.
 - Cancellation has no single high-level `agent.cancel` method in the reviewed control map; Forma AI must define and test a safe interrupt/termination policy using the available pane/process controls.
 - Resume support depends on the installed official integration version and the external agent's native session behavior.
 - Live handoff remains experimental and is not initial acceptance evidence.
 - Remote operation, updater ownership, plugin execution, and pane-history retention remain separately gated.
+- Schema discrepancy noted 2026-09-01 (P3-T10): the control map above lists `pane.run`, but the official v0.8.2 schema has no such method; the documented path is `pane.split` (creates a pane with a command) plus `pane.send_text`/`pane.send_input` and `agent.start`. P3-T12 must use the schema-documented methods.
 
 ## Primary sources
 

@@ -1,5 +1,20 @@
 # Forma AI Task Handoff
 
+## 2026-09-01 - P3-T10 - takeover
+
+Executor: Qoder agent
+Starting git state: `main` clean and synchronized with `origin/main` at `034fe79`
+Trigger: user authorization on 2026-09-01 to execute the relay-priority recommendations ("优先推进 P3-T10～T15…固定 Herdr artifact，接官方 transport"); P3-T10 claimed per the next exact action recorded identically in all four control documents; plan goals, requirements, and audit logic unchanged; P4-T14 remains pending as the default next frontend task
+Scope: acquire and verify the pinned official Herdr v0.8.2 artifact (macOS aarch64 on this Apple Silicon development machine) and its bundled protocol schema; digest, version, protocol, schema, and license checks recorded as installer/runtime evidence and Herdr ledger updates
+Upstream search result: Herdr v0.8.2 official release assets per the ledger's immutable evidence snapshot — `herdr-macos-aarch64` 18,969,952 bytes SHA-256 `a5d4f4d504d8b309c91f811050559300faba31258425f53c50852fc96f6ae574`, `herdr-macos-x86_64` 20,551,504 bytes SHA-256 `ab50262c8190cd7aa9056d249d255c08c328c3e8716de9cfa29db4f131b8e2c1`; the official pinned binary is the reuse decision (no product-owned runtime substitute)
+Reusable entry point: `config/upstreams.json` pin manifest, `forma_ai/artifacts.py` selection/verification, `forma_ai/downloads.py` `ResumableDownloader` with the pinned-digest gate, `scripts/verify_artifact.py`, the Herdr ledger immutable snapshot, and the repository test suite
+License obligation: acquire only the official Apache-2.0 release asset from `github.com/herdrdev/herdr`; no upstream source, names, or trademarks are copied into product code; Herdr attribution and license material obligations for distribution remain recorded in the ledger
+Integration decision: pin both official macOS release assets in `config/upstreams.json` with architecture-discriminated selection (the existing selector currently distinguishes artifacts only by platform and macOS range); verify the acquired bytes before any execution; take version, protocol version, and schema from the official binary itself and fail closed on incompatibility; the socket transport binding and every runtime call remain owned by P3-T11+
+Planned verification: red/green artifact-selection tests for the architecture dimension; `scripts/verify_artifact.py` digest and size output for the acquired aarch64 binary; `herdr --version`; `herdr api schema --json` parsed with protocol version recorded; evidence file under `evidence/upstream/`; Herdr ledger gap updates; `git diff --check`; full Python suite; both English controls and both Chinese mirrors updated in the same closeout
+Commit and push: pending
+Next exact action: write the failing architecture-selection tests, then add the pinned Herdr artifact entries to `config/upstreams.json`
+Secret/external-write status: no credentials, no cloud model calls, no destructive actions; one authorized HTTPS download of the official Herdr release asset from github.com with pinned digest verification before execution, per the user-approved relay priority
+
 ## 2026-09-01 - P1-T09 - exit
 
 Executor: Qoder agent
