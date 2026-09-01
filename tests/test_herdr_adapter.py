@@ -1,7 +1,12 @@
 import unittest
 
 from forma_ai.herdr_adapter import HerdrAdapter
-from forma_ai.herdr_transport import HerdrProtocolError, HerdrTransportError
+from forma_ai.herdr_transport import (
+    SUPPORTED_PROTOCOL,
+    HerdrProtocolError,
+    HerdrRequestError,
+    HerdrTransportError,
+)
 
 
 class HerdrAdapterAvailabilityTests(unittest.TestCase):
@@ -510,6 +515,220 @@ class HerdrAdapterProbeTests(unittest.TestCase):
         self.assertFalse(availability.installed)
         self.assertEqual(availability.health.status, "ready")
         self.assertTrue(availability.health.reachable)
+
+
+def _session_snapshot_response():
+    return {
+        "type": "session_snapshot",
+        "snapshot": {
+            "version": "0.8.2",
+            "protocol": SUPPORTED_PROTOCOL,
+            "workspaces": [
+                {
+                    "workspace_id": "workspace-001",
+                    "number": 1,
+                    "label": "forma",
+                    "focused": True,
+                    "pane_count": 1,
+                    "tab_count": 1,
+                    "active_tab_id": "tab-001",
+                    "agent_status": "working",
+                }
+            ],
+            "tabs": [
+                {
+                    "tab_id": "tab-001",
+                    "workspace_id": "workspace-001",
+                    "number": 1,
+                    "label": "tab",
+                    "focused": True,
+                    "pane_count": 1,
+                    "agent_status": "working",
+                }
+            ],
+            "panes": [
+                {
+                    "pane_id": "pane-001",
+                    "terminal_id": "terminal-001",
+                    "workspace_id": "workspace-001",
+                    "tab_id": "tab-001",
+                    "focused": True,
+                    "agent_status": "working",
+                    "revision": 3,
+                }
+            ],
+            "layouts": [{"layout_version": 1}],
+            "agents": [
+                {
+                    "terminal_id": "terminal-001",
+                    "agent_status": "working",
+                    "workspace_id": "workspace-001",
+                    "tab_id": "tab-001",
+                    "pane_id": "pane-001",
+                    "focused": True,
+                    "revision": 3,
+                    "name": "codex",
+                }
+            ],
+        },
+    }
+
+
+class HerdrAdapterSnapshotTests(unittest.TestCase):
+    def _adapter(self, responses, calls):
+        def request(method, params):
+            calls.append((method, params))
+            response = next(responses)
+            if isinstance(response, Exception):
+                raise response
+            return response
+
+        return HerdrAdapter(
+            request=request,
+            clock=lambda: "2026-09-01T00:00:00Z",
+        )
+
+    def test_snapshot_maps_herdr_session_state(self):
+        calls = []
+        adapter = self._adapter(iter([_session_snapshot_response()]), calls)
+
+        snapshot = adapter.snapshot()
+
+        self.assertEqual(calls, [("session.snapshot", {})])
+        self.assertEqual(snapshot.version, "0.8.2")
+        self.assertEqual(snapshot.protocol, SUPPORTED_PROTOCOL)
+        self.assertEqual(len(snapshot.workspaces), 1)
+        workspace = snapshot.workspaces[0]
+        self.assertEqual(workspace.workspace_id, "workspace-001")
+        self.assertEqual(workspace.label, "forma")
+        self.assertEqual(workspace.active_tab_id, "tab-001")
+        self.assertEqual(workspace.agent_status, "working")
+        self.assertEqual(len(snapshot.tabs), 1)
+        self.assertEqual(snapshot.tabs[0].tab_id, "tab-001")
+        self.assertEqual(snapshot.tabs[0].agent_status, "working")
+        self.assertEqual(len(snapshot.panes), 1)
+        pane = snapshot.panes[0]
+        self.assertEqual(pane.pane_id, "pane-001")
+        self.assertEqual(pane.terminal_id, "terminal-001")
+        self.assertEqual(pane.revision, 3)
+        self.assertEqual(pane.agent_status, "working")
+        self.assertEqual(len(snapshot.agents), 1)
+        agent = snapshot.agents[0]
+        self.assertEqual(agent.pane_id, "pane-001")
+        self.assertEqual(agent.workspace_id, "workspace-001")
+        self.assertEqual(agent.agent_status, "working")
+        self.assertEqual(agent.revision, 3)
+        self.assertEqual(len(snapshot.layouts), 1)
+
+    def test_snapshot_rejects_unexpected_response_type(self):
+        calls = []
+        adapter = self._adapter(iter([{"type": "unexpected"}]), calls)
+
+        with self.assertRaises(ValueError):
+            adapter.snapshot()
+
+    def test_snapshot_rejects_missing_snapshot_payload(self):
+        calls = []
+        adapter = self._adapter(iter([{"type": "session_snapshot"}]), calls)
+
+        with self.assertRaises(ValueError):
+            adapter.snapshot()
+
+
+class HerdrAdapterWaitForEventTests(unittest.TestCase):
+    def _adapter(self, responses, calls):
+        def request(method, params):
+            calls.append((method, params))
+            response = next(responses)
+            if isinstance(response, Exception):
+                raise response
+            return response
+
+        return HerdrAdapter(
+            request=request,
+            clock=lambda: "2026-09-01T00:00:00Z",
+        )
+
+    def test_wait_for_event_sends_match_and_returns_event(self):
+        calls = []
+        match_event = {
+            "event": "pane_agent_status_changed",
+            "pane_id": "pane-001",
+            "agent_status": "idle",
+        }
+        adapter = self._adapter(
+            iter(
+                [
+                    {
+                        "type": "wait_matched",
+                        "event": {
+                            "event": "pane_agent_status_changed",
+                            "data": {
+                                "pane_id": "pane-001",
+                                "workspace_id": "workspace-001",
+                                "agent_status": "idle",
+                            },
+                        },
+                    }
+                ]
+            ),
+            calls,
+        )
+
+        event = adapter.wait_for_event(
+            match_event=match_event, timeout_ms=1000
+        )
+
+        self.assertEqual(
+            calls,
+            [
+                (
+                    "events.wait",
+                    {
+                        "match_event": {
+                            "event": "pane_agent_status_changed",
+                            "pane_id": "pane-001",
+                            "agent_status": "idle",
+                        },
+                        "timeout_ms": 1000,
+                    },
+                )
+            ],
+        )
+        self.assertEqual(event.kind, "pane_agent_status_changed")
+        self.assertEqual(event.data["pane_id"], "pane-001")
+        self.assertEqual(event.data["agent_status"], "idle")
+
+    def test_wait_for_event_timeout_surfaces_request_error(self):
+        calls = []
+        adapter = self._adapter(
+            iter(
+                [
+                    HerdrRequestError(
+                        "timeout", "timed out waiting for event match"
+                    )
+                ]
+            ),
+            calls,
+        )
+
+        with self.assertRaises(HerdrRequestError) as ctx:
+            adapter.wait_for_event(
+                match_event={"event": "pane_agent_status_changed"},
+                timeout_ms=50,
+            )
+
+        self.assertEqual(ctx.exception.code, "timeout")
+
+    def test_wait_for_event_rejects_unexpected_response_type(self):
+        calls = []
+        adapter = self._adapter(iter([{"type": "unexpected"}]), calls)
+
+        with self.assertRaises(ValueError):
+            adapter.wait_for_event(
+                match_event={"event": "pane_agent_status_changed"},
+                timeout_ms=None,
+            )
 
 
 if __name__ == "__main__":

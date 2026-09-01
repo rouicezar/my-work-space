@@ -64,6 +64,68 @@ class HerdrPane:
     workspace_id: str
 
 
+@dataclass(frozen=True)
+class HerdrSessionWorkspace:
+    workspace_id: str
+    number: int
+    label: str
+    focused: bool
+    pane_count: int
+    tab_count: int
+    active_tab_id: str
+    agent_status: str
+
+
+@dataclass(frozen=True)
+class HerdrSessionTab:
+    tab_id: str
+    workspace_id: str
+    number: int
+    label: str
+    focused: bool
+    pane_count: int
+    agent_status: str
+
+
+@dataclass(frozen=True)
+class HerdrSessionPane:
+    pane_id: str
+    terminal_id: str
+    workspace_id: str
+    tab_id: str
+    focused: bool
+    agent_status: str
+    revision: int
+
+
+@dataclass(frozen=True)
+class HerdrSessionAgent:
+    terminal_id: str
+    agent_status: str
+    workspace_id: str
+    tab_id: str
+    pane_id: str
+    focused: bool
+    revision: int
+
+
+@dataclass(frozen=True)
+class HerdrSessionSnapshot:
+    version: str
+    protocol: int
+    workspaces: tuple[HerdrSessionWorkspace, ...]
+    tabs: tuple[HerdrSessionTab, ...]
+    panes: tuple[HerdrSessionPane, ...]
+    agents: tuple[HerdrSessionAgent, ...]
+    layouts: tuple[dict[str, object], ...]
+
+
+@dataclass(frozen=True)
+class HerdrSessionEvent:
+    kind: str
+    data: dict[str, object]
+
+
 class HerdrAdapter:
     """Discover Herdr without mistaking executable presence for health."""
 
@@ -343,6 +405,90 @@ class HerdrAdapter:
             state=task.state,
             revision=task.revision,
         )
+
+    def snapshot(self) -> HerdrSessionSnapshot:
+        response = self._send("session.snapshot", {})
+        if response.get("type") != "session_snapshot":
+            raise ValueError("unexpected Herdr session.snapshot response")
+        raw = response.get("snapshot")
+        if not isinstance(raw, dict):
+            raise ValueError("Herdr response is missing snapshot data")
+        return HerdrSessionSnapshot(
+            version=str(raw["version"]),
+            protocol=int(raw["protocol"]),
+            workspaces=tuple(
+                HerdrSessionWorkspace(
+                    workspace_id=str(item["workspace_id"]),
+                    number=int(item["number"]),
+                    label=str(item["label"]),
+                    focused=bool(item["focused"]),
+                    pane_count=int(item["pane_count"]),
+                    tab_count=int(item["tab_count"]),
+                    active_tab_id=str(item["active_tab_id"]),
+                    agent_status=str(item["agent_status"]),
+                )
+                for item in raw["workspaces"]
+            ),
+            tabs=tuple(
+                HerdrSessionTab(
+                    tab_id=str(item["tab_id"]),
+                    workspace_id=str(item["workspace_id"]),
+                    number=int(item["number"]),
+                    label=str(item["label"]),
+                    focused=bool(item["focused"]),
+                    pane_count=int(item["pane_count"]),
+                    agent_status=str(item["agent_status"]),
+                )
+                for item in raw["tabs"]
+            ),
+            panes=tuple(
+                HerdrSessionPane(
+                    pane_id=str(item["pane_id"]),
+                    terminal_id=str(item["terminal_id"]),
+                    workspace_id=str(item["workspace_id"]),
+                    tab_id=str(item["tab_id"]),
+                    focused=bool(item["focused"]),
+                    agent_status=str(item["agent_status"]),
+                    revision=int(item["revision"]),
+                )
+                for item in raw["panes"]
+            ),
+            agents=tuple(
+                HerdrSessionAgent(
+                    terminal_id=str(item["terminal_id"]),
+                    agent_status=str(item["agent_status"]),
+                    workspace_id=str(item["workspace_id"]),
+                    tab_id=str(item["tab_id"]),
+                    pane_id=str(item["pane_id"]),
+                    focused=bool(item["focused"]),
+                    revision=int(item["revision"]),
+                )
+                for item in raw["agents"]
+            ),
+            layouts=tuple(
+                item for item in raw["layouts"] if isinstance(item, dict)
+            ),
+        )
+
+    def wait_for_event(
+        self,
+        *,
+        match_event: dict[str, object],
+        timeout_ms: int | None,
+    ) -> HerdrSessionEvent:
+        response = self._send(
+            "events.wait",
+            {"match_event": match_event, "timeout_ms": timeout_ms},
+        )
+        if response.get("type") != "wait_matched":
+            raise ValueError("unexpected Herdr events.wait response")
+        event = response.get("event")
+        if not isinstance(event, dict):
+            raise ValueError("Herdr response is missing waited event data")
+        data = event.get("data")
+        if not isinstance(data, dict):
+            raise ValueError("Herdr waited event is missing event data")
+        return HerdrSessionEvent(kind=str(event["event"]), data=dict(data))
 
     def _send(
         self, method: str, params: dict[str, object]

@@ -179,3 +179,126 @@ class HerdrSocketTransport:
                 f"Herdr response for {method} has no result payload"
             )
         return result
+
+
+class HerdrSubscriptionListener:
+    """Dedicated long-lived connection carrying one Herdr event subscription.
+
+    Herdr closes a request connection right after its response, so a
+    subscription cannot share the request path: the subscription socket stays
+    open past its ``subscription_started`` ack and pushes unsolicited
+    ``{"event": ..., "data": ...}`` envelopes until the server goes away. The
+    server supports one subscription per connection.
+    """
+
+    def __init__(
+        self,
+        *,
+        socket_path: str | None = None,
+        environ: Mapping[str, str] | None = None,
+        socket_factory: Callable[[str], socket.socket] | None = None,
+        subscribe_timeout: float = 5.0,
+    ) -> None:
+        self._socket_path = socket_path
+        self._environ = environ
+        if socket_factory is None:
+            timeout = subscribe_timeout
+
+            def socket_factory(path: str) -> socket.socket:
+                return _connect_unix_socket(path, timeout)
+
+        self._socket_factory = socket_factory
+        self._stopped = False
+        self._socket: socket.socket | None = None
+        self._read_buffer = b""
+
+    def subscribe(
+        self,
+        subscriptions: list[dict[str, object]],
+        on_event: Callable[[dict[str, object]], None],
+    ) -> None:
+        self._stopped = False
+        path = resolve_socket_path(
+            socket_path=self._socket_path, environ=self._environ
+        )
+        payload = {
+            "id": uuid.uuid4().hex,
+            "method": "events.subscribe",
+            "params": {"subscriptions": list(subscriptions)},
+        }
+        try:
+            sock = self._socket_factory(path)
+        except OSError as exc:
+            raise HerdrTransportError(
+                f"cannot connect to Herdr socket {path}: {exc}"
+            ) from exc
+        self._socket = sock
+        self._read_buffer = b""
+        try:
+            sock.sendall((json.dumps(payload) + "\n").encode("utf-8"))
+            self._validate_ack(self._read_message(sock))
+            while not self._stopped:
+                message = self._read_message(sock)
+                if isinstance(message, dict) and "event" in message and "data" in message:
+                    on_event(message)
+        except OSError as exc:
+            if self._stopped:
+                return
+            raise HerdrTransportError(
+                f"Herdr subscription socket {path} failed: {exc}"
+            ) from exc
+        finally:
+            self._socket = None
+            sock.close()
+
+    def stop(self) -> None:
+        """Close the subscription connection from this or another thread."""
+        self._stopped = True
+        sock = self._socket
+        if sock is not None:
+            try:
+                sock.close()
+            except OSError:
+                pass
+
+    @staticmethod
+    def _validate_ack(message: object) -> None:
+        if not isinstance(message, dict):
+            raise HerdrTransportError("malformed Herdr subscription ack")
+        if "error" in message:
+            error = message["error"]
+            if not isinstance(error, dict):
+                raise HerdrTransportError(
+                    "malformed Herdr subscription error response"
+                )
+            raise HerdrRequestError(
+                str(error.get("code", "HERDR_ERROR")),
+                str(error.get("message", "")),
+            )
+        result = message.get("result")
+        if not isinstance(result, dict) or result.get("type") != "subscription_started":
+            raise HerdrProtocolError(
+                "Herdr events.subscribe did not confirm subscription_started"
+            )
+
+    def _read_message(self, sock: socket.socket) -> dict[str, object]:
+        while True:
+            while b"\n" not in self._read_buffer:
+                chunk = sock.recv(4096)
+                if not chunk:
+                    raise HerdrTransportError(
+                        "Herdr subscription connection closed"
+                    )
+                self._read_buffer += chunk
+            line, _, self._read_buffer = self._read_buffer.partition(b"\n")
+            text = line.decode("utf-8", errors="replace").strip()
+            if not text:
+                continue
+            try:
+                message = json.loads(text)
+            except ValueError as exc:
+                raise HerdrTransportError(
+                    f"malformed Herdr subscription line: {text!r}"
+                ) from exc
+            if isinstance(message, dict):
+                return message

@@ -9,6 +9,7 @@ from forma_ai.herdr_transport import (
     SUPPORTED_PROTOCOL,
     HerdrProtocolError,
     HerdrRequestError,
+    HerdrSubscriptionListener,
     HerdrSocketTransport,
     HerdrTransportError,
     resolve_socket_path,
@@ -233,6 +234,149 @@ class HerdrSocketTransportTests(unittest.TestCase):
 
         with self.assertRaises(HerdrTransportError):
             transport("agent.get", {})
+
+
+def _agent_status_event(agent_status, pane_id="pane-001", workspace_id="workspace-001"):
+    return {
+        "event": "pane.agent_status_changed",
+        "data": {
+            "pane_id": pane_id,
+            "workspace_id": workspace_id,
+            "agent_status": agent_status,
+        },
+    }
+
+
+def make_listener(factory):
+    return HerdrSubscriptionListener(
+        socket_path="/tmp/fake-herdr/herdr.sock",
+        environ={},
+        socket_factory=factory,
+    )
+
+
+class HerdrSubscriptionListenerTests(unittest.TestCase):
+    def test_subscribe_streams_dotted_events_until_connection_closes(self):
+        factory = FakeSocketFactory(
+            [
+                [
+                    {"id": "any", "result": {"type": "subscription_started"}},
+                    _agent_status_event("working"),
+                    _agent_status_event("idle"),
+                ]
+            ]
+        )
+        listener = make_listener(factory)
+        received = []
+
+        with self.assertRaises(HerdrTransportError):
+            listener.subscribe(
+                [{"type": "pane.agent_status_changed", "pane_id": "pane-001"}],
+                received.append,
+            )
+
+        self.assertEqual(len(factory.sockets), 1)
+        self.assertEqual(len(factory.sent), 1)
+        _path, envelope = factory.sent[0]
+        self.assertEqual(envelope["method"], "events.subscribe")
+        self.assertEqual(
+            envelope["params"],
+            {
+                "subscriptions": [
+                    {"type": "pane.agent_status_changed", "pane_id": "pane-001"}
+                ]
+            },
+        )
+        self.assertEqual(set(envelope), {"id", "method", "params"})
+        self.assertIsInstance(envelope["id"], str)
+        self.assertNotEqual(envelope["id"], "")
+        self.assertEqual(
+            received,
+            [_agent_status_event("working"), _agent_status_event("idle")],
+        )
+        self.assertTrue(factory.sockets[0].closed)
+
+    def test_stop_from_event_callback_ends_subscription_without_error(self):
+        factory = FakeSocketFactory(
+            [
+                [
+                    {"id": "any", "result": {"type": "subscription_started"}},
+                    _agent_status_event("working"),
+                    _agent_status_event("idle"),
+                ]
+            ]
+        )
+        listener = make_listener(factory)
+        received = []
+
+        def on_event(event):
+            received.append(event)
+            listener.stop()
+
+        listener.subscribe(
+            [{"type": "pane.agent_status_changed", "pane_id": "pane-001"}],
+            on_event,
+        )
+
+        self.assertEqual(received, [_agent_status_event("working")])
+        self.assertTrue(factory.sockets[0].closed)
+
+    def test_subscribe_error_response_raises_request_error(self):
+        factory = FakeSocketFactory(
+            [
+                [
+                    {
+                        "id": "",
+                        "error": {"code": "internal_error", "message": "boom"},
+                    }
+                ]
+            ]
+        )
+        listener = make_listener(factory)
+
+        with self.assertRaises(HerdrRequestError) as ctx:
+            listener.subscribe(
+                [{"type": "pane.agent_status_changed"}], lambda _event: None
+            )
+
+        self.assertEqual(ctx.exception.code, "internal_error")
+        self.assertEqual(ctx.exception.message, "boom")
+
+    def test_unexpected_ack_payload_fails_closed(self):
+        factory = FakeSocketFactory(
+            [[{"id": "any", "result": {"type": "agent_info"}}]]
+        )
+        listener = make_listener(factory)
+
+        with self.assertRaises(HerdrProtocolError):
+            listener.subscribe(
+                [{"type": "pane.agent_status_changed"}], lambda _event: None
+            )
+
+    def test_unreachable_socket_raises_transport_error(self):
+        factory = FakeSocketFactory([ConnectionRefusedError("refused")])
+        listener = make_listener(factory)
+
+        with self.assertRaises(HerdrTransportError):
+            listener.subscribe(
+                [{"type": "pane.agent_status_changed"}], lambda _event: None
+            )
+
+    def test_malformed_event_line_raises_transport_error(self):
+        factory = FakeSocketFactory(
+            [
+                [
+                    {"id": "any", "result": {"type": "subscription_started"}},
+                    b"@@@not json@@@\n",
+                ]
+            ]
+        )
+        listener = make_listener(factory)
+
+        with self.assertRaises(HerdrTransportError):
+            listener.subscribe(
+                [{"type": "pane.agent_status_changed"}], lambda _event: None
+            )
 
 
 class ResolveSocketPathTests(unittest.TestCase):
