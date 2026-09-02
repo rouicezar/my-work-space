@@ -195,6 +195,7 @@ struct DiagnosticsRecoveryPreview: View {
     }
 }
 
+@MainActor
 private func detailCard(_ title: String, _ body: String, _ symbol: String) -> some View {
     VStack(alignment: .leading, spacing: 8) {
         Label(title, systemImage: symbol).font(.headline)
@@ -203,6 +204,7 @@ private func detailCard(_ title: String, _ body: String, _ symbol: String) -> so
     .cardStyle()
 }
 
+@MainActor
 private func boundaryCard(_ title: String, _ body: String) -> some View {
     VStack(alignment: .leading, spacing: 12) {
         Label(title, systemImage: "lock.shield").font(.headline)
@@ -211,6 +213,7 @@ private func boundaryCard(_ title: String, _ body: String) -> some View {
     .cardStyle()
 }
 
+@MainActor
 private func staticSettingsPreview(
     title: String,
     subtitle: String,
