@@ -1,5 +1,31 @@
 # Forma AI Task Handoff
 
+## 2026-09-03 - P3-T17 - pi exit
+
+Executor: pi agent (closed the real Herdr multi-agent phase)
+Scope verified: the real Herdr multi-agent loop is fully machine-verified and the P3 milestone is closed. Four live Herdr integration tests pass against the pinned binary (P3-T12 two-fixture parallel/cancel/isolation, P3-T13 live subscription + forced socket-loss reconnect, P3-T14 real wait/blocked/bounded read/explicit force-close, P3-T15 detach/reconnect reclaim + explicit fresh-run) in 30.391s, each in a disposable named session that self-cleans. Full Python suite 311 OK (1 expected opt-in Semantica skip); full Swift suite 44 passed (2 real-Keychain skips); no named-session residue; `git diff --check` clean. Manual review: real `scripts/supervisor.py herdr-snapshot --root <product-root>` with no runtime returns the fail-closed envelope `HERDR_NOT_RUNNING`/stale/`[]` (does not connect or serve stale data).
+Evidence: `evidence/upstream/herdr-v0.8.2-p3-phase-closeout-2026-09-03.md`; Herdr capability ledger updated to 2026-09-03 (P3-T16/T17 complete, P3 milestone verified; provider-native session resume remains gated on a separately approved real-provider probe).
+Upstream decision: Herdr remains sole authority for terminal/pane/agent identity and state. The product adds only thin adapters and policy (digest-verified binary launch, fail-closed snapshot query, bounded read/wait/cancel, explicit fresh-run recovery choice). No competing state machine, no fabricated display fields.
+Files changed: `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md` (P3-T17 + P3 milestone verified, current state, completion note), `docs/research/herdr-capability-ledger.md`, `docs/TASK_HANDOFF.md`, `evidence/upstream/herdr-v0.8.2-p3-phase-closeout-2026-09-03.md`, and the mandatory Chinese mirrors.
+Commit and push: local commits created (implementation, docs); NOT pushed (user has not requested a push).
+Blocked items: none for P3-T17. P3 milestone gate met with upstream-backed evidence.
+Next exact action: P3 is verified. Next is P4 frontend work (default next frontend task P4-T14 bilingual governed-memory review Preview) and P5-P8 per the execution order.
+Secret/external-write status: no credentials, cloud/model calls, production/default sessions, or external network; only disposable local named Herdr sessions (self-cleaned) used by the live tests. The pinned Herdr binary was only queried read-only; no server or default session started by me.
+
+## 2026-09-03 - P3-T17 - pi takeover
+
+Executor: pi agent
+Starting git state: `main` clean at `135a3ac` (P3-T16 implementation `feedd96` + docs closeout `135a3ac`), 3 commits ahead of `origin/main` (unpushed). No uncommitted paths.
+Trigger: user instructed continuation to P3-T17 after P3-T16 was verified.
+Scope: close the real Herdr multi-agent phase. Run the full real integration suite (the four live Herdr tests for P3-T12/T13/T14/T15 in `tests/test_herdr_integration.py`), run the full Python + Swift suites, do a manual task review, update `docs/research/herdr-capability-ledger.md` to reflect the closed P3 phase, mark the P3 milestone verified, and write the P3-T17 closeout in both control languages.
+Upstream search result: the pending live evidence is already implemented by P3-T12 through P3-T16 (official `agent.start` two-fixture parallel/cancel/isolation; snapshot-first presentation with forced socket-loss reconnect; real wait/blocked/bounded-read/graceful+force-cancel; detach/reconnect reclaim + explicit fresh-run; real runtime agent cards + Herdr lifecycle management). No new upstream capability is needed; P3-T17 is a phase-closure/verification task, not new implementation.
+License obligation: Apache-2.0 external binary/socket reuse only; no upstream source, assets, names, or trademarks copied.
+Integration decision: Herdr remains solo authority for terminal/pane/agent identity and state throughout.
+Planned verification: `python3 -m unittest tests.test_herdr_integration -v` (the four live tests), `python3 -m unittest discover tests -v`, `swift test --package-path prototypes/packaging`, no `forma-*` named-session residue, bilingual parity, and `git diff --check`.
+Commit and push: commit locally; no push without an explicit user request.
+Next exact action: run the full real Herdr integration suite, then the full Python + Swift suites, then update the ledger and close the P3 milestone.
+Secret/external-write status: no credentials, cloud/model calls, production/default sessions, or external network; only disposable local named Herdr sessions (self-cleaned) used by the live tests.
+
 ## 2026-09-03 - P3-T16 - pi exit
 
 Executor: pi agent (completed the widened P3-T16 taken over from Qoder on 2026-09-03)

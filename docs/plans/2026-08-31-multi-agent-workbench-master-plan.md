@@ -31,8 +31,8 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-09-02 Asia/Shanghai
 Current phase: P3 Herdr runtime integration, continuing the user-approved relay priority P3-T10～T15 (plan goals, requirements, and audit logic unchanged)
-Current task: P3-T16 (verified) replace Preview agent cards with real Herdr data + add Herdr lifecycle management. Next task: P3-T17 (pending) close the real Herdr multi-agent phase.
-Current status: P3-T16 verified by the pi agent (2026-09-03). The widened scope is fully implemented and machine-verified: (A) `forma_ai/artifacts.py` reuse resolves and digest-verifies the cached Herdr binary against `config/upstreams.json` via `_installed_herdr_executable`; (B) `herdr_process_spec` builds the headless-server launch `("--session", name, "server")` — confirmed to match the project's own live Herdr integration-test harness which launches `[binary, "--session", name, "server"]`; (C) `RuntimeRecord`/`RuntimeManager` gained a 4th "herdr" role (start-first, stop-first, status `herdr_alive`, rollback on failure); (D) `herdr-snapshot` switched to `--root` and fails closed (returns `HERDR_NOT_RUNNING`/stale without connecting when `herdr_alive` is false); (E)-(H) Python and Swift tests added; (G) `AgentTaskViewState.parallelPreview` and the "Preview fixture · not runtime evidence" label removed, and `ManifestOverview` loads real Herdr snapshot data through `RuntimePresentationProvider.herdrSnapshot(rootURL:)` with fail-closed disconnect/empty states and only schema-present fields (pane/workspace/tab/terminal/state/revision).
+Current task: P3-T17 (verified) — P3 milestone verified. Next phase: P4 frontend work (P4-T14 is the default next frontend task) / P5-P8 per execution order.
+Current status: P3 verified (2026-09-03). P3-T17 closed the real Herdr multi-agent phase: full real integration suite (4 live tests for P3-T12/T13/T14/T15, 30.391s OK), full Python suite (311 OK, 1 expected skip), full Swift suite (44 passed), no named-session residue, and a manual product-CLI review proving `herdr-snapshot` fails closed (`HERDR_NOT_RUNNING`/stale) when no runtime is up. Evidence: `evidence/upstream/herdr-v0.8.2-p3-phase-closeout-2026-09-03.md`; Herdr capability ledger updated to 2026-09-03. The P3 milestone gate (two parallel tasks run, stream status, cancel, resume, recover) is met with upstream-backed, machine-verified evidence.
 Pre-closeout verification (pi agent): focused pytest `tests/test_processes.py tests/test_runtime.py tests/test_supervisor.py` → 65 passed + 7 subtests; full `python3 -m unittest discover tests` → 311 tests OK (1 expected opt-in Semantica skip); full `swift test --package-path prototypes/packaging` → 44 tests passed (2 real-Keychain environment-gated skips); `git diff --check` clean; no `forma-*` named-session residue. The runtime-card requirement (no fixture fallback, authoritative Herdr data) and fail-closed snapshot requirement are both met by tested code.
 Next action: begin P3-T17 (close the real Herdr multi-agent phase) — run the full real integration suite and manual task review, then the P3 milestone can be marked verified.
 Audit verdict: most product-owned runtime-like capability is justified, thin upstream adaptation, or scheduled reduction. Follow-up audit found one concrete removal candidate: obsolete `spawn_reported_task()` from the superseded client-reported fixture. F5 in `docs/research/product-runtime-capability-audit-2026-09-01.md` is resolved by its removal; no plan goal or architecture change is required.
@@ -142,7 +142,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 | P0 | Correct governance and stop product drift | verified | Tracker, handoff, role documents, and upstream-first reuse rules agree |
 | P1 | Inventory upstream capabilities and licenses | verified | Reuse decisions for all four upstreams have evidence |
 | P2 | Freeze the vendor-neutral adapter protocol and assign concrete conformance gates | verified | Generic identity, health, capability, policy, audit, and agent-lifecycle contracts pass machine tests; every concrete adapter has a named downstream conformance owner |
-| P3 | Make Herdr-backed multi-agent loop real | pending | Two parallel tasks run, stream status, cancel, resume, and recover |
+| P3 | Make Herdr-backed multi-agent loop real | verified | Two parallel tasks run, stream status, cancel, resume, and recover |
 | P4 | Make independent workbench usable | pending | First-run user can start a task without visiting recovery settings |
 | P5 | Make local/cloud model cooperation real | pending | oMLX local proof plus approved low-cost DeepSeek loop |
 | P6 | Make Semantica governed memory real | pending | Retrieval, candidate memory, approval, and audit verified |
@@ -225,7 +225,7 @@ P2 completion never waives these gates and must not be cited as evidence that an
 | P3-T14 | verified | Prove real wait, blocked, bounded output read, and two-stage cancellation | Herdr integration tests and upstream evidence | Official blocked truth, bounded ANSI-stripped read, replacement-terminal rejection, normalized process reconciliation, graceful interrupt, confirmed force close, post-close `agent_not_found`, and complete registry invalidation all pass | Lifecycle is upstream-backed and independently reviewed |
 | P3-T15 | verified | Prove detach/reconnect and native or explicit fresh-run resume | recovery integration tests | Revision/session reconciliation passes and stale references fail closed | Resume is truthful: fresh-run/reclaim proven live; native provider resume remains unverified and unclaimed |
 | P3-T16 | verified | Replace preview agent cards with real Herdr data in runtime mode; scope widened by user approval to also add Herdr process lifecycle management (start/stop/status), previously absent | Swift app and protocol tests; forma_ai/runtime.py, forma_ai/processes.py, scripts/supervisor.py | Runtime mode contains no fixture fallback; herdr-snapshot fails closed when Herdr is not running | User sees authoritative agents |
-| P3-T17 | pending | Close the real Herdr multi-agent phase | evidence, tests, bilingual controls | Full real integration suite and manual task review | P3 milestone becomes verified |
+| P3-T17 | verified | Close the real Herdr multi-agent phase | evidence, tests, bilingual controls | Full real integration suite and manual task review | P3 milestone becomes verified |
 
 ### P4: Independent Workbench Product Experience
 
@@ -311,6 +311,8 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 ```
 
 ## Completion Notes
+
+- 2026-09-03 Asia/Shanghai - P3-T17 - pi agent - closed the real Herdr multi-agent phase; P3 milestone verified - full real integration suite (4 live tests, 30.391s OK), full Python 311 (1 expected opt-in Semantica skip), Swift 44 tests (2 real-Keychain skips), no named-session residue, manual product-CLI herdr-snapshot fail-closed review, `git diff --check` clean; ledger + evidence updated - local commit (no push without user request) - next P4-T14 (frontend) or as directed
 
 - 2026-09-03 Asia/Shanghai - P3-T16 - pi agent - completed the widened P3-T16 (real Herdr runtime agent cards + Herdr lifecycle management) and verified no fixture fallback + fail-closed herdr-snapshot - focused pytest 65+7 subtests; full Python 311 (1 expected opt-in Semantica skip); Swift 44 tests (2 real-Keychain skips); `git diff --check` clean; no named-session residue - local commit (no push without user request) - next P3-T17
 
