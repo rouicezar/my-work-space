@@ -1,5 +1,44 @@
 # Forma AI Task Handoff
 
+## 2026-09-02 - P1-T09 F5 correction - Qoder exit
+
+Executor: Qoder agent
+Scope: verified Codex's existing removal of obsolete `spawn_reported_task()` and its two dedicated unit tests; no other production/runtime behavior changed
+Verification: production and test absence scans passed; focused Herdr suite passed 53 tests in 19.790s; full Python suite passed 296 tests with 1 expected skip in 23.986s; Swift package passed 43 tests with 2 environment-gated Keychain skips; no `forma-p3t*` named-session residue; bilingual current-state parity and `git diff --check` passed
+Files changed: `forma_ai/herdr_adapter.py`, `tests/test_herdr_adapter.py`, `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md`, `docs/TASK_HANDOFF.md`, and their mandatory Chinese mirrors
+Upstream decision: Herdr `agent.start` remains the sole product task-launch authority; historical evidence may retain old terminology but production and test code contain no obsolete launcher reference
+Commit and push: pending explicit user authorization
+Blocked items: no technical blocker; P3-T15 must wait for this verified batch to be committed and pushed
+Next exact action: after explicit authorization, commit and push the scoped correction, then claim P3-T15
+Secret/external-write status: no credentials, cloud/model calls, production/default sessions, or external network; disposable local sessions self-cleaned
+
+## 2026-09-02 - P1-T09 F5 correction - Qoder takeover
+
+Executor: Qoder agent
+Starting git state: `main` at `9c01a5a` with Codex's uncommitted four-file correction: the control-document claim plus deletion of `spawn_reported_task()` and its two dedicated unit tests
+Trigger: user requested Qoder resume execution after reviewing Codex's takeover changes
+Scope: verify only the existing precise removal; retain official `agent.start`, workspace/pane thin mappings, historical evidence, and current live integration proofs
+Upstream search result: the recorded P3-T12 correction and F5 audit establish Herdr `agent.start` as the only selected task-launch authority; `pane.report_agent` remains an upstream reporting hook, not a product task launcher
+Reusable entry point: existing `HerdrAdapter.spawn_task`, Herdr focused/full test suites, Swift package tests, and disposable named-session test framework
+License obligation: Apache-2.0 external Herdr binary/socket reuse only; no upstream source, assets, names, or trademarks copied
+Integration decision: remove the superseded client-reported launcher rather than retain two launch authorities; runtime state remains Herdr-authoritative
+Planned verification: production/test absence scan, Herdr focused suite, full Python suite, Swift package, named-session residue, bilingual parity, and `git diff --check`
+Commit and push: pending explicit user authorization
+Next exact action: run the scoped verification suite and record its results in both language sets
+Secret/external-write status: no credentials, cloud/model calls, production/default sessions, or external network
+
+## 2026-09-02 - P1-T09 F5 correction - takeover
+
+Executor: Codex root agent
+Starting git state: `main` clean and synchronized with `origin/main` at `9c01a5a`
+Trigger: user accepted the exact recommendation to remove `spawn_reported_task()` and its two obsolete unit tests, verify, commit/push, then enter P3-T15
+Scope: delete only the duplicate production adapter method and the two tests that exist solely for it; retain official `agent.start`, workspace/pane thin mappings, historical evidence, and all current live integration proofs
+Upstream decision: Herdr `agent.start` is the sole selected task-launch authority; `pane.report_agent` remains an upstream reporting hook but is no longer wrapped as a product task launcher
+Planned verification: absence scan, Herdr focused suite, full Python suite, Swift package, named-session residue, bilingual parity, and `git diff --check`
+Commit and push: pending
+Next exact action: remove the method and the two exact unit-test methods
+Secret/external-write status: no credentials, cloud/model calls, production/default sessions, or external network
+
 ## 2026-09-02 - P3-T12 diagnostic hardening - exit
 
 Executor: Codex root agent

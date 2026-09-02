@@ -289,44 +289,6 @@ class HerdrAdapter:
             workspace_id=str(pane["workspace_id"]),
         )
 
-    def spawn_reported_task(
-        self,
-        *,
-        task_id: str,
-        correlation_id: str,
-        agent_name: str,
-        pane_id: str,
-        command: str,
-    ) -> HerdrTask:
-        sent = self._send("pane.send_text", {"pane_id": pane_id, "text": command})
-        if sent["type"] != "ok":
-            raise ValueError("unexpected Herdr pane.send_text response")
-        reported = self._send(
-            "pane.report_agent",
-            {
-                "pane_id": pane_id,
-                "source": "forma-fixture",
-                "agent": agent_name,
-                "state": "working",
-            },
-        )
-        if reported["type"] != "ok":
-            raise ValueError("unexpected Herdr pane.report_agent response")
-        response = self._send("agent.get", {"target": pane_id})
-        if response["type"] != "agent_info":
-            raise ValueError("unexpected Herdr agent.get response")
-        run_id = f"herdr:{task_id}:{pane_id}"
-        task = self._task_from_agent(
-            task_id=task_id,
-            run_id=run_id,
-            agent=response["agent"],
-        )
-        self._task_ids_by_run_id[task.run_id] = task.task_id
-        self._pane_ids_by_run_id[task.run_id] = task.pane_id
-        self._tasks_by_run_id[task.run_id] = task
-        _ = correlation_id
-        return task
-
     def spawn_task(
         self,
         *,
