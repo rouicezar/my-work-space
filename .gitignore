@@ -15,3 +15,16 @@ __pycache__/
 .build/
 DerivedData/
 dist/
+
+# Private development documentation (not for public distribution)
+docs/plans/
+docs/research/
+docs/adr/
+docs/decisions.md
+docs/TASK_HANDOFF.md
+docs/support-matrix.md
+docs/product-requirements.md
+docs/runbooks/omlx.md
+docs/runbooks/semantica.md
+evidence/
+prototypes/packaging/README.md
