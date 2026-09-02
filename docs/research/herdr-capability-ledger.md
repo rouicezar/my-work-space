@@ -31,7 +31,7 @@ The preferred first integration is the official pinned binary through CLI wrappe
 ## Granular control-surface map
 
 | Forma AI requirement | Pinned Herdr surface | Reuse decision | Required acceptance evidence |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Runtime identity and compatibility | `ping`, `herdr status`, protocol version; bundled schema via `herdr api schema --json` | Direct reuse | Verify binary digest, version, protocol version, schema parse, and unknown-field tolerance before enabling dispatch. |
 | Initial state bootstrap | `session.snapshot` / `herdr api snapshot` | Direct reuse | Snapshot returns version/protocol metadata, focused IDs, workspaces, tabs, panes, layouts, and agents; Forma cache rebuild test passes. |
 | Long-lived state updates | `events.subscribe`, `events.wait`; workspace/tab/pane/layout/worktree lifecycle events | Direct reuse | Reconnect/resubscribe test proves no stale UI after socket loss; refresh with `session.snapshot` after reconnect. |

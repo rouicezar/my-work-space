@@ -29,14 +29,14 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 ## Current State
 
-Updated: 2026-09-02 Asia/Shanghai
-Current phase: P3 Herdr runtime integration, continuing the user-approved relay priority P3-T10～T15 (plan goals, requirements, and audit logic unchanged)
-Current task: P3-T17 (verified) — P3 milestone verified. Next phase: P4 frontend work (P4-T14 is the default next frontend task) / P5-P8 per execution order.
-Current status: P3 verified (2026-09-03). P3-T17 closed the real Herdr multi-agent phase: full real integration suite (4 live tests for P3-T12/T13/T14/T15, 30.391s OK), full Python suite (311 OK, 1 expected skip), full Swift suite (44 passed), no named-session residue, and a manual product-CLI review proving `herdr-snapshot` fails closed (`HERDR_NOT_RUNNING`/stale) when no runtime is up. Evidence: `evidence/upstream/herdr-v0.8.2-p3-phase-closeout-2026-09-03.md`; Herdr capability ledger updated to 2026-09-03. The P3 milestone gate (two parallel tasks run, stream status, cancel, resume, recover) is met with upstream-backed, machine-verified evidence.
-Pre-closeout verification (pi agent): focused pytest `tests/test_processes.py tests/test_runtime.py tests/test_supervisor.py` → 65 passed + 7 subtests; full `python3 -m unittest discover tests` → 311 tests OK (1 expected opt-in Semantica skip); full `swift test --package-path prototypes/packaging` → 44 tests passed (2 real-Keychain environment-gated skips); `git diff --check` clean; no `forma-*` named-session residue. The runtime-card requirement (no fixture fallback, authoritative Herdr data) and fail-closed snapshot requirement are both met by tested code.
-Next action: begin P3-T17 (close the real Herdr multi-agent phase) — run the full real integration suite and manual task review, then the P3 milestone can be marked verified.
+Updated: 2026-09-03 Asia/Shanghai
+Current phase: P4 independent workbench product experience (P3 Herdr milestone verified 2026-09-03)
+Current task: P4-T14 (verified) build governed-memory review surfaces (bilingual Preview).
+Current status: P3 milestone verified (2026-09-03). P4-T14 completed by the Claude agent (taking over from the pi agent): the governed-memory review surface is a bilingual Preview bound to the Semantica authority boundary — `GovernedMemoryReviewState` (.candidate/.confirmed/.conflict/.correction/.deleted), a read-only `GovernedMemoryReviewContract` (`readsPersistentMemory=false`, `runtimeActionsAllowed=false`, `performsPromote/Correct/Delete=false`), `GovernedMemoryReviewPreview` (candidate list + record detail + provenance + authority boundary), and a bilingual `MemoryLocalization`, wired as a `.settings` destination in `DailyWorkbenchPreview`. Semantica remains the sole long-term memory authority; the Preview renders review states and provenance but performs no promote/confirm/reject/correct/delete.
+Pre-closeout verification (Claude agent): full `swift test --package-path prototypes/packaging` → 46 tests passed (2 real-Keychain environment-gated skips); the two new tests `governedMemoryReviewPreviewPresentsCandidateConflictCorrectionAndDeleteStates` and `governedMemoryReviewPreviewIsReadOnlyAndBoundedBySemanticaAuthority` pass; `git diff --check` clean.
+Next action: begin P4-T15 (Agents & Tools and Permissions management surfaces).
 Audit verdict: most product-owned runtime-like capability is justified, thin upstream adaptation, or scheduled reduction. Follow-up audit found one concrete removal candidate: obsolete `spawn_reported_task()` from the superseded client-reported fixture. F5 in `docs/research/product-runtime-capability-audit-2026-09-01.md` is resolved by its removal; no plan goal or architecture change is required.
-Default next frontend task after the audit gate: P4-T14 (bilingual governed-memory review Preview), still pending and unchanged.
+Default next frontend task after the audit gate: P4-T15 (Agents & Tools and Permissions management surfaces), still pending and unchanged.
 
 Current Git fact at P0-T10 takeover:
 
@@ -249,7 +249,7 @@ P2 completion never waives these gates and must not be cited as evidence that an
 | P4-T12B | verified | Build the final bilingual daily product shell and New Task workspace | SwiftUI app, presentation/localization contract, tests, screenshots | Shell/navigation/composer/language tests and Chinese/English window review | Explicit language switch, compact/regular window evidence, collapsible supervision rail; 40 Swift tests passed with 2 real-Keychain skips |
 | P4-T12C | verified | Connect deterministic bilingual compose-to-execution Preview states | SwiftUI preview navigation, shared localization, and tests | Transition contract, no-command scan, bilingual normal-speed walkthrough | Seven ordered stages, live language preservation, approval/result evidence, and 41 Swift tests passed with 2 real-Keychain skips |
 | P4-T13 | verified | Build final History and recovery surfaces | SwiftUI app and fixtures | State/recovery UI tests | Seven lifecycle states remain distinct; bilingual selection is preserved; 42 Swift tests passed with 2 real-Keychain skips; Preview performs no recovery |
-| P4-T14 | pending | Build governed-memory review surfaces | SwiftUI app and Semantica-derived fixtures | Candidate/conflict/correction/delete UI tests | Preview matches the Semantica authority boundary |
+| P4-T14 | verified | Build governed-memory review surfaces | SwiftUI app and Semantica-derived fixtures | Candidate/conflict/correction/delete UI tests | Preview matches the Semantica authority boundary; 46 Swift tests passed with 2 real-Keychain skips |
 | P4-T15 | pending | Build Agents & Tools and Permissions management surfaces | SwiftUI app and capability-manifest fixtures | Scope and approval UI tests | Herdr/holaOS capabilities are presented without reimplementation |
 | P4-T16 | pending | Complete Models, Runtime, Privacy, and Diagnostics final states | SwiftUI app and existing contracts | Full critical-state UI tests | All settings are reachable and honest |
 | P4-T17 | pending | Run final-shape manual frontend acceptance | screenshots and review record | Light/dark, resize, keyboard, text-scale, and normal-speed walkthrough | User can test the intended final shape; preview remains non-runtime evidence |
@@ -311,6 +311,8 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 ```
 
 ## Completion Notes
+
+- 2026-09-03 Asia/Shanghai - P4-T14 - Claude agent - completed the governed-memory review surface (bilingual Preview bound to the Semantica authority boundary) - full `swift test --package-path prototypes/packaging` → 46 tests passed (2 real-Keychain skips); two new tests (governedMemoryReviewPreviewPresentsCandidateConflictCorrectionAndDeleteStates, governedMemoryReviewPreviewIsReadOnlyAndBoundedBySemanticaAuthority) pass; `git diff --check` clean - local commit (no push without user request) - next P4-T15
 
 - 2026-09-03 Asia/Shanghai - P3-T17 - pi agent - closed the real Herdr multi-agent phase; P3 milestone verified - full real integration suite (4 live tests, 30.391s OK), full Python 311 (1 expected opt-in Semantica skip), Swift 44 tests (2 real-Keychain skips), no named-session residue, manual product-CLI herdr-snapshot fail-closed review, `git diff --check` clean; ledger + evidence updated - local commit (no push without user request) - next P4-T14 (frontend) or as directed
 

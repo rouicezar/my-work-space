@@ -1,5 +1,32 @@
 # Forma AI Task Handoff
 
+## 2026-09-03 - P4-T14 - pi takeover
+
+Executor: pi agent
+Starting git state: `main` clean at `b904960` (P3-T17 phase closeout), 4 commits ahead of `origin/main` (unpushed). No uncommitted paths.
+Trigger: user instructed continuation to P4-T14 after the P3 milestone was verified.
+Scope: build the governed-memory review surfaces as a bilingual Preview bound to the Semantica authority boundary. Define `GovernedMemoryReviewState` (.candidate/.confirmed/.conflict/.correction/.deleted) and a read-only `GovernedMemoryReviewContract`; build `GovernedMemoryReviewPreview` (candidate list + record detail + provenance + authority boundary) and a bilingual `MemoryLocalization`; wire it as a `.settings` destination in `DailyWorkbenchPreview`; add candidate/conflict/correction/delete UI tests plus an authority-boundary test; then verify (swift build/test) and close out bilingually.
+Upstream search result: `forma_ai/governed_memory.py` is the Semantica authority — Candidates (pending/duplicate/conflict/rejected/confirmed) and Records (confirmed/superseded/deleted) with propose/confirm/reject/correct/delete; `config/schemas/memory-record-v1.json` pins the record fields. No upstream capability is missing; the Preview is frontend-shape-first and does not reimplement the authority.
+Reusable entry point: the established Preview pattern (`HistoryRecoveryPreview` contract enums + `HistoryRecoveryPreviewContract` in LifecycleContract, view in FormaAIApp, `ProductCopy` bilingual extension in HistoryLocalization; `DailyWorkbenchPreview` destination navigation via `.settings`).
+License obligation: Semantica MIT reuse via the existing `forma_ai/governed_memory.py` contract only; no upstream source/assets copied.
+Integration decision: Semantica stays the sole long-term memory authority. The Preview is strictly read-only — it renders the review states and provenance but performs NO promote/confirm/reject/correct/delete (gated by `runtimeActionsAllowed=false`, `performsPromote/Correct/Delete=false`).
+Planned verification: `swift test --package-path prototypes/packaging` (contract + full suite), no residue, bilingual parity, `git diff --check`.
+Commit and push: commit locally; no push without an explicit user request.
+Next exact action: add the contract to LifecycleContract, then the view + localization, wire it into DailyWorkbenchPreview, add tests, verify.
+Secret/external-write status: no credentials, cloud/model calls, production/default sessions, or external network; only repo-local preview fixtures.
+
+## 2026-09-03 - P4-T14 - Claude exit
+
+Executor: Claude agent (took over the P4-T14 claim from the pi agent)
+Scope verified: the governed-memory review surface is complete as a bilingual Preview bound to the Semantica authority boundary — `GovernedMemoryReviewState` (.candidate/.confirmed/.conflict/.correction/.deleted), a read-only `GovernedMemoryReviewContract` (`readsPersistentMemory=false`, `runtimeActionsAllowed=false`, `performsPromote/Correct/Delete=false`), `GovernedMemoryReviewPreview` (candidate list + record detail + provenance + authority boundary), and a bilingual `MemoryLocalization`, wired as a `.settings` destination in `DailyWorkbenchPreview`.
+Evidence: two new Swift tests — `governedMemoryReviewPreviewPresentsCandidateConflictCorrectionAndDeleteStates` and `governedMemoryReviewPreviewIsReadOnlyAndBoundedBySemanticaAuthority` — both pass; full `swift test --package-path prototypes/packaging` → 46 tests passed (2 real-Keychain environment-gated skips); `git diff --check` clean.
+Upstream decision: Semantica remains the sole long-term memory authority (`forma_ai/governed_memory.py`); the Preview is strictly read-only and reimplements nothing.
+Files changed: `prototypes/packaging/Sources/LifecycleContract/ProductPreviewProvider.swift`, `prototypes/packaging/Sources/FormaAIApp/GovernedMemoryReviewPreview.swift`, `prototypes/packaging/Sources/FormaAIApp/MemoryLocalization.swift`, `prototypes/packaging/Sources/FormaAIApp/DailyWorkbenchPreview.swift`, `prototypes/packaging/Tests/LifecycleContractTests/ProductPreviewProviderTests.swift`, `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md`, `docs/TASK_HANDOFF.md`, and the mandatory Chinese mirrors.
+Commit and push: local commit; no push without an explicit user request.
+Blocked items: none. Swift build/test requires a non-sandbox environment; the user ran the verification in their own terminal.
+Next exact action: P4-T15 (Agents & Tools and Permissions management surfaces).
+Secret/external-write status: no credentials, cloud/model calls, production/default sessions, or external network; only repo-local preview fixtures.
+
 ## 2026-09-03 - P3-T17 - pi exit
 
 Executor: pi agent (closed the real Herdr multi-agent phase)
