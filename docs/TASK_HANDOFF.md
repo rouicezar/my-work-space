@@ -1,5 +1,20 @@
 # Forma AI Task Handoff
 
+## 2026-09-03 - P4-T15 - Claude takeover
+
+Executor: Claude agent
+Starting git state: `main` clean and synchronized with `origin/main` at `35a3b54` (P4-T14 closeout + stage-review audit pushed).
+Trigger: user instructed to commit/push, record the stage-review audit, and proceed to P4-T15.
+Scope: build the Agents & Tools and Permissions management surfaces as bilingual Previews bound to the Herdr/holaOS capability boundary. Define agent-adapter scope and permission/approval contracts; build read-only bilingual views; wire into the Settings surface; add scope/approval tests; verify and close out bilingually.
+Upstream search result: Herdr is the authoritative agent executor (P3 verified); holaOS contributes workflow/tool capabilities as an external-install reference (`holaos-capability-ledger.md`); the vendor-neutral agent adapter contract is P2's `docs/contracts/agent-adapter.md`. No upstream capability is missing; the Preview presents these capabilities read-only without reimplementation.
+Reusable entry point: the established Preview pattern (contract enums in LifecycleContract, views in FormaAIApp, bilingual `ProductCopy` extensions).
+License obligation: no upstream source/assets copied; Herdr/holaOS capabilities shown as read-only reference.
+Integration decision: the Preview performs no agent dispatch, tool execution, or approval; it only renders scope and approval states.
+Planned verification: `swift test --package-path prototypes/packaging` (contract + full suite), bilingual parity, `git diff --check`.
+Commit and push: local commit + push (user instructed commit/push).
+Next exact action: add the contracts to LifecycleContract, then the views + localization, wire into Settings, add tests, verify.
+Secret/external-write status: no credentials, cloud/model calls, production/default sessions, or external network; only repo-local preview fixtures.
+
 ## 2026-09-03 - P4-T14 - pi takeover
 
 Executor: pi agent
