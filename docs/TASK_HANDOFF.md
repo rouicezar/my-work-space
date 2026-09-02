@@ -8,7 +8,7 @@ Actions: added flushed elapsed-time stages, captured server output with failure 
 Verification: initial live pass 10.174s; 10 consecutive live passes completed 10/10 in 100.312s; focused Herdr 55 passed in 19.620s; full Python 298 passed with 1 expected skip in 23.849s; Swift 43 passed with 2 environment-gated skips; `git diff --check` passed; no P3-T12/T13/T14 named-session residue
 Evidence: `evidence/upstream/herdr-v0.8.2-p3t12-test-diagnostics-2026-09-02.md`
 Duplication audit: transport, snapshot/subscription presentation, bounded read/wait, and two-stage cancellation remain thin upstream mappings or justified product UI/approval policy. One concrete suspect exists: `spawn_reported_task()` is an obsolete production adapter method used only by two unit tests after live P3-T12 switched to official `agent.start`; the audit records it as F5 and blocks P3-T15 until removal or new retention evidence.
-Commit and push: pending immediately after this synchronized exit record
+Commit and push: diagnostic/evidence/audit commit `45aaa16` (`test: bound herdr fixture diagnostics`) is pushed to `origin/main`; this exact push-state line is recorded by the following metadata commit
 Blocked items: P3-T12 diagnostics have no blocker; P3-T15 is held at the upstream-first F5 decision checkpoint
 Next exact action: commit and push this diagnostic/audit batch, then obtain direction to remove `spawn_reported_task()` and its obsolete tests or supply a justified retained use
 Secret/external-write status: no credentials, cloud/model calls, production/default Herdr sessions, or external network; disposable local sessions only

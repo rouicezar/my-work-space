@@ -31,9 +31,9 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-09-02 Asia/Shanghai
 Current phase: P3 Herdr runtime integration, continuing the user-approved relay priority P3-T10～T15 (plan goals, requirements, and audit logic unchanged)
-Current task: none (P3-T12 diagnostic hardening verified; commit and push pending)
-Current status: P3-T12 correction verified — live stages are visible, server log tails survive failure, request/marker/start/cleanup timeouts are bounded, and a 45-second whole-test watchdog names the stuck stage. Ten consecutive live runs passed in 100.312s; focused Herdr 55, full Python 298 with 1 expected skip, and Swift 43 with 2 environment-gated skips passed with no named-session residue.
-Next action: commit and push the P3-T12 diagnostic batch. Before P3-T15, resolve the upstream-first audit stop on obsolete `spawn_reported_task()`; it is unused outside two unit tests and duplicates the selected official `agent.start` launch path.
+Current task: none (P3-T12 diagnostic hardening verified and pushed)
+Current status: P3-T12 correction commit `45aaa16` is pushed to `origin/main`. Live stages are visible, server log tails survive failure, request/marker/start/cleanup timeouts are bounded, and a 45-second whole-test watchdog names the stuck stage. Ten consecutive live runs passed in 100.312s; focused Herdr 55, full Python 298 with 1 expected skip, and Swift 43 with 2 environment-gated skips passed with no named-session residue.
+Next action: before P3-T15, resolve the upstream-first audit stop on obsolete `spawn_reported_task()`; it is unused outside two unit tests and duplicates the selected official `agent.start` launch path.
 Audit verdict: most product-owned runtime-like capability is justified, thin upstream adaptation, or scheduled reduction. Follow-up audit found one concrete removal candidate: obsolete `spawn_reported_task()` from the superseded client-reported fixture. F5 in `docs/research/product-runtime-capability-audit-2026-09-01.md` must be resolved before P3-T15; no plan goal or architecture change is required.
 Default next frontend task after the audit gate: P4-T14 (bilingual governed-memory review Preview), still pending and unchanged.
 
