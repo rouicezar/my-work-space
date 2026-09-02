@@ -142,9 +142,14 @@ class DeepSeekAdapter:
             raise DeepSeekError("DEEPSEEK_RESPONSE_INVALID", "response shape") from exc
         if data.get("model") != proposal.model_id:
             raise DeepSeekError("DEEPSEEK_MODEL_MISMATCH", str(data.get("model")))
+        finish = choice.get("finish_reason")
+        if not isinstance(finish, str):
+            raise DeepSeekError("DEEPSEEK_RESPONSE_INVALID", "finish reason")
         content = message.get("content")
         tools = message.get("tool_calls", [])
-        if not isinstance(content, str) or not content.strip() or not isinstance(tools, list):
+        if not isinstance(tools, list):
+            raise DeepSeekError("DEEPSEEK_RESPONSE_INVALID", "content or tools")
+        if finish != "length" and (not isinstance(content, str) or not content.strip()):
             raise DeepSeekError("DEEPSEEK_RESPONSE_INVALID", "content or tools")
         names = (
             "prompt_tokens", "completion_tokens", "total_tokens",
@@ -164,9 +169,6 @@ class DeepSeekAdapter:
             + miss * (prices.cache_miss_peak if peak else prices.cache_miss_off_peak)
             + usage["completion_tokens"] * (prices.output_peak if peak else prices.output_off_peak)
         ) / 1_000_000
-        finish = choice.get("finish_reason")
-        if not isinstance(finish, str):
-            raise DeepSeekError("DEEPSEEK_RESPONSE_INVALID", "finish reason")
         return DeepSeekResult(
             proposal.model_id, content, finish, tuple(tools),
             DeepSeekUsage(usage["prompt_tokens"], hit, miss, usage["completion_tokens"],

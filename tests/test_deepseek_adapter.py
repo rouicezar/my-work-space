@@ -207,6 +207,29 @@ class DeepSeekAdapterTests(unittest.TestCase):
         self.assertEqual(audit.events[0]["error_type"], "RuntimeError")
         self.assertNotIn("private provider detail", json.dumps(audit.events[0]))
 
+    def test_small_output_budget_empty_content_is_handled_honestly(self):
+        proposal, payload = self.proposal()
+        body = json.dumps({
+            "id": "fixture", "object": "chat.completion", "model": "deepseek-v4-flash",
+            "choices": [{"index": 0, "finish_reason": "length",
+                         "message": {"role": "assistant", "content": ""}}],
+            "usage": {"prompt_tokens": 100, "prompt_cache_hit_tokens": 20,
+                      "prompt_cache_miss_tokens": 80, "completion_tokens": 8,
+                      "total_tokens": 108},
+        }).encode()
+        with tempfile.TemporaryDirectory() as directory:
+            approvals = CloudApprovalStore(Path(directory))
+            approvals.approve(
+                proposal, maximum_cost_usd=proposal.estimated_cost.maximum, now=self.now,
+            )
+            adapter = DeepSeekAdapter(
+                self.provider, approvals, MemoryAuditSink(),
+                open_url=FakeOpen([FakeResponse(body)]),
+            )
+            result = adapter.execute(proposal, payload, api_key="fixture-key", now=self.now)
+        self.assertEqual(result.content, "")
+        self.assertEqual(result.finish_reason, "length")
+
 
 if __name__ == "__main__":
     unittest.main()
