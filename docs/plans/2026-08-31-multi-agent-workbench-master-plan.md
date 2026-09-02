@@ -31,11 +31,11 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-09-03 Asia/Shanghai
 Current phase: P4 independent workbench product experience (P3 Herdr milestone verified 2026-09-03)
-Current task: P4-T15 (verified) build Agents & Tools and Permissions management surfaces (bilingual Preview).
-Current status: P3 milestone verified (2026-09-03). P4-T15 completed by the Claude agent: the Agents & Tools and Permissions management surfaces are bilingual Previews bound to the Herdr/holaOS capability boundary — `AgentsToolsContract` (4 agent adapter kinds + 8 required operations, `performsDispatch=false`, `reimplementsUpstream=false`), `PermissionsContract` (6 permission scopes, `performsApproval=false`, `grantsPermission=false`), `AgentsToolsPreview`/`PermissionsPreview` views, and a shared bilingual `AgentsToolsPermissionsLocalization`, wired into the `DailyWorkbenchPreview` Settings surface with a section navigator (memory / agents & tools / permissions). Herdr remains the sole execution authority; holaOS capabilities are shown read-only without reimplementation.
-Next action: begin P4-T16 (Complete Models, Runtime, Privacy, and Diagnostics final states).
+Current task: P4-T16 (in_progress) complete Models, Runtime, Privacy, and Diagnostics final states (bilingual Preview).
+Current status: P3 milestone verified (2026-09-03). P4-T16 claimed by the Claude agent: complete the Models, Runtime, Privacy, and Diagnostics final states as bilingual Previews. Upstream search: oMLX is the local inference runtime (model selection via the existing `ModelSelectionContract`) and DeepSeek is the optional cloud provider; Herdr/oMLX processes are the managed runtime; privacy and diagnostics are product-owned policy/lifecycle with no upstream equivalent. Reusable entry point: the established Preview pattern and the existing contracts (`ModelSelectionContract`, `SettingsSurfaceContract`). License obligation: no upstream source/assets copied. Integration decision: the Preview is strictly read-only — it renders the final states and honest boundaries but performs no runtime start/stop, model download, or diagnostic action.
+Next action: add the four contracts to LifecycleContract, build the bilingual views + localization, wire into the Settings section navigator, add critical-state tests, verify.
 Audit verdict: most product-owned runtime-like capability is justified, thin upstream adaptation, or scheduled reduction. Follow-up audit found one concrete removal candidate: obsolete `spawn_reported_task()` from the superseded client-reported fixture. F5 in `docs/research/product-runtime-capability-audit-2026-09-01.md` is resolved by its removal; no plan goal or architecture change is required.
-Default next frontend task after the audit gate: P4-T16 (Complete Models, Runtime, Privacy, and Diagnostics final states), still pending and unchanged.
+Default next frontend task after the audit gate: P4-T17 (final-shape manual frontend acceptance), still pending and unchanged.
 
 Current Git fact at P0-T10 takeover:
 
@@ -250,7 +250,7 @@ P2 completion never waives these gates and must not be cited as evidence that an
 | P4-T13 | verified | Build final History and recovery surfaces | SwiftUI app and fixtures | State/recovery UI tests | Seven lifecycle states remain distinct; bilingual selection is preserved; 42 Swift tests passed with 2 real-Keychain skips; Preview performs no recovery |
 | P4-T14 | verified | Build governed-memory review surfaces | SwiftUI app and Semantica-derived fixtures | Candidate/conflict/correction/delete UI tests | Preview matches the Semantica authority boundary; 46 Swift tests passed with 2 real-Keychain skips |
 | P4-T15 | verified | Build Agents & Tools and Permissions management surfaces | SwiftUI app and capability-manifest fixtures | Scope and approval UI tests | Herdr/holaOS capabilities are presented without reimplementation; 48 Swift tests passed with 2 real-Keychain skips |
-| P4-T16 | pending | Complete Models, Runtime, Privacy, and Diagnostics final states | SwiftUI app and existing contracts | Full critical-state UI tests | All settings are reachable and honest |
+| P4-T16 | in_progress | Complete Models, Runtime, Privacy, and Diagnostics final states | SwiftUI app and existing contracts | Full critical-state UI tests | All settings are reachable and honest |
 | P4-T17 | pending | Run final-shape manual frontend acceptance | screenshots and review record | Light/dark, resize, keyboard, text-scale, and normal-speed walkthrough | User can test the intended final shape; preview remains non-runtime evidence |
 
 ### P5: Local and Cloud Model Cooperation

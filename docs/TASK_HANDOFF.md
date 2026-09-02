@@ -1,5 +1,20 @@
 # Forma AI Task Handoff
 
+## 2026-09-03 - P4-T16 - Claude takeover
+
+Executor: Claude agent
+Starting git state: `main` clean and synchronized with `origin/main` at `bdb4b26` (P4-T15 closeout pushed).
+Trigger: user instructed to proceed to P4-T16.
+Scope: complete the Models, Runtime, Privacy, and Diagnostics final states as bilingual Previews bound to the existing contracts. Define four read-only contracts; build bilingual views; wire into the Settings section navigator; add critical-state tests; verify and close out bilingually.
+Upstream search result: oMLX is the local inference runtime (model selection via `ModelSelectionContract`); DeepSeek is the optional cloud provider; Herdr/oMLX are the managed runtime; privacy and diagnostics are product-owned policy/lifecycle with no upstream equivalent. No upstream capability is missing; the Preview is read-only.
+Reusable entry point: the established Preview pattern and existing contracts (`ModelSelectionContract`, `SettingsSurfaceContract`).
+License obligation: no upstream source/assets copied.
+Integration decision: the Preview performs no runtime start/stop, model download, or diagnostic action.
+Planned verification: `swift test --package-path prototypes/packaging` (contract + full suite), bilingual parity, `git diff --check`.
+Commit and push: local commit + push (user instructed commit/push).
+Next exact action: add the four contracts to LifecycleContract, then views + localization, wire, add tests, verify.
+Secret/external-write status: no credentials, cloud/model calls, production/default sessions, or external network; only repo-local preview fixtures.
+
 ## 2026-09-03 - P4-T15 - Claude takeover
 
 Executor: Claude agent
