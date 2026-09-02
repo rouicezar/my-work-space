@@ -368,6 +368,92 @@ public struct PermissionsContract: Sendable {
     )
 }
 
+public enum ModelRouteState: String, CaseIterable, Sendable, Equatable, Hashable, Identifiable {
+    case automaticLocalFirst
+    case localOnly
+    case cloudWithApproval
+
+    public var id: String { rawValue }
+}
+
+public struct ModelsProvidersContract: Sendable {
+    public let routeStates: [ModelRouteState]
+    public let supportedLanguages: [ProductLanguage]
+    public let allowedInteraction: PreviewInteraction
+    public let runtimeActionsAllowed: Bool
+    public let downloadsModel: Bool
+    public let cloudDisabledByDefault: Bool
+
+    public static let productDefault = ModelsProvidersContract(
+        routeStates: ModelRouteState.allCases,
+        supportedLanguages: [.simplifiedChinese, .english],
+        allowedInteraction: .showNextPreviewState,
+        runtimeActionsAllowed: false,
+        downloadsModel: false,
+        cloudDisabledByDefault: true
+    )
+}
+
+public enum RuntimeFinalState: String, CaseIterable, Sendable, Equatable, Hashable, Identifiable {
+    case stopped
+    case starting
+    case running
+    case degraded
+    case failed
+
+    public var id: String { rawValue }
+}
+
+public struct LocalRuntimeContract: Sendable {
+    public let states: [RuntimeFinalState]
+    public let supportedLanguages: [ProductLanguage]
+    public let allowedInteraction: PreviewInteraction
+    public let runtimeActionsAllowed: Bool
+    public let startsRuntime: Bool
+    public let reportsHonestState: Bool
+
+    public static let productDefault = LocalRuntimeContract(
+        states: RuntimeFinalState.allCases,
+        supportedLanguages: [.simplifiedChinese, .english],
+        allowedInteraction: .showNextPreviewState,
+        runtimeActionsAllowed: false,
+        startsRuntime: false,
+        reportsHonestState: true
+    )
+}
+
+public struct DataPrivacyContract: Sendable {
+    public let supportedLanguages: [ProductLanguage]
+    public let allowedInteraction: PreviewInteraction
+    public let runtimeActionsAllowed: Bool
+    public let storesSecretsInKeychain: Bool
+    public let readsUserData: Bool
+
+    public static let productDefault = DataPrivacyContract(
+        supportedLanguages: [.simplifiedChinese, .english],
+        allowedInteraction: .showNextPreviewState,
+        runtimeActionsAllowed: false,
+        storesSecretsInKeychain: true,
+        readsUserData: false
+    )
+}
+
+public struct DiagnosticsRecoveryContract: Sendable {
+    public let supportedLanguages: [ProductLanguage]
+    public let allowedInteraction: PreviewInteraction
+    public let runtimeActionsAllowed: Bool
+    public let performsRecovery: Bool
+    public let honestDegradation: Bool
+
+    public static let productDefault = DiagnosticsRecoveryContract(
+        supportedLanguages: [.simplifiedChinese, .english],
+        allowedInteraction: .showNextPreviewState,
+        runtimeActionsAllowed: false,
+        performsRecovery: false,
+        honestDegradation: true
+    )
+}
+
 public struct PreviewAgent: Identifiable, Sendable, Equatable {
     public let id: String
     public let role: String

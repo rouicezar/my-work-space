@@ -200,3 +200,45 @@ import Testing
     #expect(permissions.performsApproval == false)
     #expect(permissions.grantsPermission == false)
 }
+
+@Test func modelsProvidersPreviewIsLocalFirstWithoutModelDownload() {
+    let models = ModelsProvidersContract.productDefault
+
+    #expect(models.routeStates == [.automaticLocalFirst, .localOnly, .cloudWithApproval])
+    #expect(models.supportedLanguages == [.simplifiedChinese, .english])
+    #expect(models.allowedInteraction == .showNextPreviewState)
+    #expect(models.runtimeActionsAllowed == false)
+    #expect(models.downloadsModel == false)
+    #expect(models.cloudDisabledByDefault == true)
+}
+
+@Test func localRuntimePreviewReportsHonestStateWithoutStartingRuntime() {
+    let runtime = LocalRuntimeContract.productDefault
+
+    #expect(runtime.states == [.stopped, .starting, .running, .degraded, .failed])
+    #expect(runtime.supportedLanguages == [.simplifiedChinese, .english])
+    #expect(runtime.allowedInteraction == .showNextPreviewState)
+    #expect(runtime.runtimeActionsAllowed == false)
+    #expect(runtime.startsRuntime == false)
+    #expect(runtime.reportsHonestState == true)
+}
+
+@Test func dataPrivacyPreviewStoresSecretsInKeychainWithoutReadingUserData() {
+    let privacy = DataPrivacyContract.productDefault
+
+    #expect(privacy.supportedLanguages == [.simplifiedChinese, .english])
+    #expect(privacy.allowedInteraction == .showNextPreviewState)
+    #expect(privacy.runtimeActionsAllowed == false)
+    #expect(privacy.storesSecretsInKeychain == true)
+    #expect(privacy.readsUserData == false)
+}
+
+@Test func diagnosticsRecoveryPreviewDegradesHonestlyWithoutRecovery() {
+    let diagnostics = DiagnosticsRecoveryContract.productDefault
+
+    #expect(diagnostics.supportedLanguages == [.simplifiedChinese, .english])
+    #expect(diagnostics.allowedInteraction == .showNextPreviewState)
+    #expect(diagnostics.runtimeActionsAllowed == false)
+    #expect(diagnostics.performsRecovery == false)
+    #expect(diagnostics.honestDegradation == true)
+}

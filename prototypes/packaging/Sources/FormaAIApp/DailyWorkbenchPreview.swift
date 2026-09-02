@@ -15,6 +15,8 @@ struct DailyWorkbenchPreview: View {
     @State private var settingsSection: PreviewSettingsSection = .memory
     @State private var agentSelection: AgentAdapterKind = .herdrTerminal
     @State private var permissionSelection: PermissionScope = .write
+    @State private var modelRouteSelection: ModelRouteState = .automaticLocalFirst
+    @State private var runtimeSelection: RuntimeFinalState = .stopped
 
     var body: some View {
         let copy = ProductCopy(language: language)
@@ -67,6 +69,10 @@ struct DailyWorkbenchPreview: View {
                 settingsSectionRow(.memory, copy[.memoryTitle], "brain.head.profile")
                 settingsSectionRow(.agentsTools, copy[.agentsToolsTitle], "rectangle.3.group")
                 settingsSectionRow(.permissions, copy[.permissionsTitle], "hand.raised")
+                settingsSectionRow(.modelsProviders, copy[.modelsProvidersTitle], "cpu")
+                settingsSectionRow(.localRuntime, copy[.localRuntimeTitle], "gearshape.2")
+                settingsSectionRow(.dataPrivacy, copy[.dataPrivacyTitle], "lock.shield")
+                settingsSectionRow(.diagnostics, copy[.diagnosticsTitle], "wrench.and.screwdriver")
                 Spacer()
             }
             .padding(16).frame(width: 170).background(.thinMaterial)
@@ -102,6 +108,14 @@ struct DailyWorkbenchPreview: View {
             AgentsToolsPreview(language: language, selection: $agentSelection)
         case .permissions:
             PermissionsPreview(language: language, selection: $permissionSelection)
+        case .modelsProviders:
+            ModelsProvidersPreview(language: language, selection: $modelRouteSelection)
+        case .localRuntime:
+            LocalRuntimePreview(language: language, selection: $runtimeSelection)
+        case .dataPrivacy:
+            DataPrivacyPreview(language: language)
+        case .diagnostics:
+            DiagnosticsRecoveryPreview(language: language)
         }
     }
 
@@ -347,6 +361,10 @@ struct DailyWorkbenchPreview: View {
         case .memory: "brain.head.profile"
         case .agentsTools: "rectangle.3.group"
         case .permissions: "hand.raised"
+        case .modelsProviders: "cpu"
+        case .localRuntime: "gearshape.2"
+        case .dataPrivacy: "lock.shield"
+        case .diagnostics: "wrench.and.screwdriver"
         }
     }
 
@@ -356,6 +374,10 @@ struct DailyWorkbenchPreview: View {
         case .memory: return copy.memoryStateTitle(memorySelection)
         case .agentsTools: return copy.agentKindTitle(agentSelection)
         case .permissions: return copy.permissionScopeTitle(permissionSelection)
+        case .modelsProviders: return copy.modelRouteTitle(modelRouteSelection)
+        case .localRuntime: return copy.runtimeStateTitle(runtimeSelection)
+        case .dataPrivacy: return copy[.dataPrivacyTitle]
+        case .diagnostics: return copy[.diagnosticsTitle]
         }
     }
 
@@ -365,6 +387,10 @@ struct DailyWorkbenchPreview: View {
         case .memory: return copy[.memorySyntheticOnly]
         case .agentsTools: return copy[.agentsToolsSyntheticOnly]
         case .permissions: return copy[.permissionsSyntheticOnly]
+        case .modelsProviders: return copy[.modelsProvidersSyntheticOnly]
+        case .localRuntime: return copy[.localRuntimeSyntheticOnly]
+        case .dataPrivacy: return copy[.dataPrivacySyntheticOnly]
+        case .diagnostics: return copy[.diagnosticsSyntheticOnly]
         }
     }
 
@@ -374,6 +400,10 @@ struct DailyWorkbenchPreview: View {
         case .memory: return copy.memoryProvenance(memorySelection)
         case .agentsTools: return copy.agentKindDetail(agentSelection)
         case .permissions: return copy.permissionScopeDetail(permissionSelection)
+        case .modelsProviders: return copy.modelRouteDetail(modelRouteSelection)
+        case .localRuntime: return copy.runtimeStateDetail(runtimeSelection)
+        case .dataPrivacy: return copy[.dataPrivacyBoundaryBody]
+        case .diagnostics: return copy[.diagnosticsBoundaryBody]
         }
     }
 
@@ -399,4 +429,8 @@ private enum PreviewSettingsSection: Hashable {
     case memory
     case agentsTools
     case permissions
+    case modelsProviders
+    case localRuntime
+    case dataPrivacy
+    case diagnostics
 }
