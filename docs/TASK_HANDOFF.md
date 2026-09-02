@@ -15,6 +15,18 @@ Commit and push: local commit + push (user instructed commit/push).
 Next exact action: add the contracts to LifecycleContract, then the views + localization, wire into Settings, add tests, verify.
 Secret/external-write status: no credentials, cloud/model calls, production/default sessions, or external network; only repo-local preview fixtures.
 
+## 2026-09-03 - P4-T15 - Claude exit
+
+Executor: Claude agent
+Scope verified: the Agents & Tools and Permissions management surfaces are complete as bilingual Previews bound to the Herdr/holaOS capability boundary — `AgentsToolsContract` (4 agent adapter kinds + 8 required operations, `performsDispatch=false`, `reimplementsUpstream=false`), `PermissionsContract` (6 permission scopes, `performsApproval=false`, `grantsPermission=false`), `AgentsToolsPreview`/`PermissionsPreview` views, and a shared bilingual `AgentsToolsPermissionsLocalization`, wired into the `DailyWorkbenchPreview` Settings surface with a section navigator (memory / agents & tools / permissions) and supervision-rail reflection.
+Evidence: two new Swift tests — `agentsToolsPreviewPresentsAdapterScopeWithoutReimplementation` and `permissionsPreviewPresentsScopesWithoutGrantingApproval` — both pass; full `swift test --package-path prototypes/packaging` → 48 tests passed (2 real-Keychain environment-gated skips); `git diff --check` clean.
+Upstream decision: Herdr remains the sole agent execution authority; holaOS capabilities are shown read-only without reimplementation; the product owns the vendor-neutral agent adapter contract and permission/approval policy.
+Files changed: `prototypes/packaging/Sources/LifecycleContract/ProductPreviewProvider.swift`, `prototypes/packaging/Sources/FormaAIApp/AgentsToolsPreview.swift`, `prototypes/packaging/Sources/FormaAIApp/PermissionsPreview.swift`, `prototypes/packaging/Sources/FormaAIApp/AgentsToolsPermissionsLocalization.swift`, `prototypes/packaging/Sources/FormaAIApp/DailyWorkbenchPreview.swift`, `prototypes/packaging/Tests/LifecycleContractTests/ProductPreviewProviderTests.swift`, `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md`, `docs/TASK_HANDOFF.md`, and the mandatory Chinese mirrors.
+Commit and push: local commits created (claim, feat, two fixes); push follows the user's commit+push instruction.
+Blocked items: none. Swift build/test requires a non-sandbox environment; the user ran the verification in their own terminal.
+Next exact action: P4-T16 (Complete Models, Runtime, Privacy, and Diagnostics final states).
+Secret/external-write status: no credentials, cloud/model calls, production/default sessions, or external network; only repo-local preview fixtures.
+
 ## 2026-09-03 - P4-T14 - pi takeover
 
 Executor: pi agent

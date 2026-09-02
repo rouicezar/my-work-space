@@ -31,11 +31,11 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-09-03 Asia/Shanghai
 Current phase: P4 independent workbench product experience (P3 Herdr milestone verified 2026-09-03)
-Current task: P4-T15 (in_progress) build Agents & Tools and Permissions management surfaces (bilingual Preview).
-Current status: P3 milestone verified (2026-09-03). P4-T15 claimed by the Claude agent: build the Agents & Tools and Permissions management surfaces as bilingual Previews. Upstream search: Herdr is the authoritative agent executor (P3 verified) and holaOS contributes workflow/application/tool capabilities as an external-install reference (`holaos-capability-ledger.md`); the product owns the vendor-neutral agent adapter contract (P2, `docs/contracts/agent-adapter.md`) and the permission/approval policy layer. Reusable entry point: the established Preview pattern (`HistoryRecoveryPreview`/`GovernedMemoryReviewPreview` contract enums in LifecycleContract, views in FormaAIApp, bilingual `ProductCopy` extensions). License obligation: no upstream source/assets copied; Herdr/holaOS capabilities are presented as read-only reference, not reimplemented. Integration decision: the Preview is strictly read-only — it renders the agent adapter scope and permission/approval states but performs no dispatch, tool execution, or approval.
-Next action: add the Agents & Tools and Permissions contracts to LifecycleContract, then the bilingual views + localization, wire into the Settings surface, add scope/approval tests, verify.
+Current task: P4-T15 (verified) build Agents & Tools and Permissions management surfaces (bilingual Preview).
+Current status: P3 milestone verified (2026-09-03). P4-T15 completed by the Claude agent: the Agents & Tools and Permissions management surfaces are bilingual Previews bound to the Herdr/holaOS capability boundary — `AgentsToolsContract` (4 agent adapter kinds + 8 required operations, `performsDispatch=false`, `reimplementsUpstream=false`), `PermissionsContract` (6 permission scopes, `performsApproval=false`, `grantsPermission=false`), `AgentsToolsPreview`/`PermissionsPreview` views, and a shared bilingual `AgentsToolsPermissionsLocalization`, wired into the `DailyWorkbenchPreview` Settings surface with a section navigator (memory / agents & tools / permissions). Herdr remains the sole execution authority; holaOS capabilities are shown read-only without reimplementation.
+Next action: begin P4-T16 (Complete Models, Runtime, Privacy, and Diagnostics final states).
 Audit verdict: most product-owned runtime-like capability is justified, thin upstream adaptation, or scheduled reduction. Follow-up audit found one concrete removal candidate: obsolete `spawn_reported_task()` from the superseded client-reported fixture. F5 in `docs/research/product-runtime-capability-audit-2026-09-01.md` is resolved by its removal; no plan goal or architecture change is required.
-Default next frontend task after the audit gate: P4-T15 (Agents & Tools and Permissions management surfaces), still pending and unchanged.
+Default next frontend task after the audit gate: P4-T16 (Complete Models, Runtime, Privacy, and Diagnostics final states), still pending and unchanged.
 
 Current Git fact at P0-T10 takeover:
 
@@ -249,7 +249,7 @@ P2 completion never waives these gates and must not be cited as evidence that an
 | P4-T12C | verified | Connect deterministic bilingual compose-to-execution Preview states | SwiftUI preview navigation, shared localization, and tests | Transition contract, no-command scan, bilingual normal-speed walkthrough | Seven ordered stages, live language preservation, approval/result evidence, and 41 Swift tests passed with 2 real-Keychain skips |
 | P4-T13 | verified | Build final History and recovery surfaces | SwiftUI app and fixtures | State/recovery UI tests | Seven lifecycle states remain distinct; bilingual selection is preserved; 42 Swift tests passed with 2 real-Keychain skips; Preview performs no recovery |
 | P4-T14 | verified | Build governed-memory review surfaces | SwiftUI app and Semantica-derived fixtures | Candidate/conflict/correction/delete UI tests | Preview matches the Semantica authority boundary; 46 Swift tests passed with 2 real-Keychain skips |
-| P4-T15 | in_progress | Build Agents & Tools and Permissions management surfaces | SwiftUI app and capability-manifest fixtures | Scope and approval UI tests | Herdr/holaOS capabilities are presented without reimplementation |
+| P4-T15 | verified | Build Agents & Tools and Permissions management surfaces | SwiftUI app and capability-manifest fixtures | Scope and approval UI tests | Herdr/holaOS capabilities are presented without reimplementation; 48 Swift tests passed with 2 real-Keychain skips |
 | P4-T16 | pending | Complete Models, Runtime, Privacy, and Diagnostics final states | SwiftUI app and existing contracts | Full critical-state UI tests | All settings are reachable and honest |
 | P4-T17 | pending | Run final-shape manual frontend acceptance | screenshots and review record | Light/dark, resize, keyboard, text-scale, and normal-speed walkthrough | User can test the intended final shape; preview remains non-runtime evidence |
 
@@ -310,6 +310,8 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 ```
 
 ## Completion Notes
+
+- 2026-09-03 Asia/Shanghai - P4-T15 - Claude agent - completed the Agents & Tools and Permissions management surfaces (bilingual Previews bound to the Herdr/holaOS capability boundary) - full `swift test --package-path prototypes/packaging` → 48 tests passed (2 real-Keychain skips); two new tests (agentsToolsPreviewPresentsAdapterScopeWithoutReimplementation, permissionsPreviewPresentsScopesWithoutGrantingApproval) pass; `git diff --check` clean - next P4-T16
 
 - 2026-09-03 Asia/Shanghai - P4-T14 - Claude agent - completed the governed-memory review surface (bilingual Preview bound to the Semantica authority boundary) - full `swift test --package-path prototypes/packaging` → 46 tests passed (2 real-Keychain skips); two new tests (governedMemoryReviewPreviewPresentsCandidateConflictCorrectionAndDeleteStates, governedMemoryReviewPreviewIsReadOnlyAndBoundedBySemanticaAuthority) pass; `git diff --check` clean - local commit (no push without user request) - next P4-T15
 
