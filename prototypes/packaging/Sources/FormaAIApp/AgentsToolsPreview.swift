@@ -62,7 +62,7 @@ struct AgentsToolsPreview: View {
                             .font(.callout.weight(.semibold)).foregroundStyle(tint(for: selection))
                     }
                     Spacer()
-                    Text(copy[.previewBadge]).font(.caption2.monospaced().weight(.bold))
+                    Text(copy[.agentsToolsPreviewBadge]).font(.caption2.monospaced().weight(.bold))
                         .padding(.horizontal, 8).padding(.vertical, 5)
                         .background(Color.blue.opacity(0.12), in: Capsule()).foregroundStyle(.blue)
                 }
@@ -82,8 +82,8 @@ struct AgentsToolsPreview: View {
                 .cardStyle()
 
                 VStack(alignment: .leading, spacing: 12) {
-                    Label(copy[.authorityBoundary], systemImage: "lock.shield").font(.headline)
-                    Text(copy[.authorityBoundaryBody]).font(.callout).foregroundStyle(.secondary)
+                    Label(copy[.agentsAuthorityBoundary], systemImage: "lock.shield").font(.headline)
+                    Text(copy[.agentsAuthorityBoundaryBody]).font(.callout).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .cardStyle()

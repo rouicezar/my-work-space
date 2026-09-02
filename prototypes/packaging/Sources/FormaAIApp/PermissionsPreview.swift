@@ -60,7 +60,7 @@ struct PermissionsPreview: View {
                         Text(scopeLabel(selection)).font(.callout.weight(.semibold)).foregroundStyle(tint(for: selection))
                     }
                     Spacer()
-                    Text(copy[.previewBadge]).font(.caption2.monospaced().weight(.bold))
+                    Text(copy[.permissionsPreviewBadge]).font(.caption2.monospaced().weight(.bold))
                         .padding(.horizontal, 8).padding(.vertical, 5)
                         .background(Color.blue.opacity(0.12), in: Capsule()).foregroundStyle(.blue)
                 }
@@ -69,14 +69,14 @@ struct PermissionsPreview: View {
 
                 VStack(alignment: .leading, spacing: 12) {
                     Label(copy[.approvalPolicy], systemImage: "hand.raised").font(.headline)
-                    Text(copy[.authorityBoundaryBody]).font(.callout).foregroundStyle(.secondary)
+                    Text(copy[.permissionsAuthorityBoundaryBody]).font(.callout).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .cardStyle()
 
                 VStack(alignment: .leading, spacing: 12) {
-                    Label(copy[.authorityBoundary], systemImage: "lock.shield").font(.headline)
-                    Text(copy[.authorityBoundaryBody]).font(.callout).foregroundStyle(.secondary)
+                    Label(copy[.permissionsAuthorityBoundary], systemImage: "lock.shield").font(.headline)
+                    Text(copy[.permissionsAuthorityBoundaryBody]).font(.callout).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .cardStyle()

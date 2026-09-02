@@ -1,13 +1,13 @@
 import LifecycleContract
 
 enum AgentsToolsCopyKey {
-    case agentsToolsTitle, agentsToolsSyntheticOnly, previewBadge
-    case requiredOperations, authorityBoundary, authorityBoundaryBody
+    case agentsToolsTitle, agentsToolsSyntheticOnly, agentsToolsPreviewBadge
+    case requiredOperations, agentsAuthorityBoundary, agentsAuthorityBoundaryBody
 }
 
 enum PermissionsCopyKey {
-    case permissionsTitle, permissionsSyntheticOnly
-    case approvalPolicy, authorityBoundary, authorityBoundaryBody
+    case permissionsTitle, permissionsSyntheticOnly, permissionsPreviewBadge
+    case approvalPolicy, permissionsAuthorityBoundary, permissionsAuthorityBoundaryBody
 }
 
 extension ProductCopy {
@@ -15,18 +15,18 @@ extension ProductCopy {
         switch (language, key) {
         case (.simplifiedChinese, .agentsToolsTitle): "Agents 与工具"
         case (.simplifiedChinese, .agentsToolsSyntheticOnly): "4 个合成适配器样例，用于检查最终产品如何呈现 Agent 适配范围与必需操作。"
-        case (.simplifiedChinese, .previewBadge): "预览样例"
+        case (.simplifiedChinese, .agentsToolsPreviewBadge): "预览样例"
         case (.simplifiedChinese, .requiredOperations): "必需操作"
-        case (.simplifiedChinese, .authorityBoundary): "执行权威边界"
-        case (.simplifiedChinese, .authorityBoundaryBody):
+        case (.simplifiedChinese, .agentsAuthorityBoundary): "执行权威边界"
+        case (.simplifiedChinese, .agentsAuthorityBoundaryBody):
             "Herdr 是唯一的 Agent 执行权威；适配器只把 vendor-neutral 契约翻译到具体工具，"
             + "绝不重建执行状态机。holaOS 仅作为外部安装参考展示其工作流/工具能力。"
         case (.english, .agentsToolsTitle): "Agents & Tools"
         case (.english, .agentsToolsSyntheticOnly): "Four synthetic adapter examples for reviewing how the finished product presents agent adapter scope and required operations."
-        case (.english, .previewBadge): "PREVIEW EXAMPLE"
+        case (.english, .agentsToolsPreviewBadge): "PREVIEW EXAMPLE"
         case (.english, .requiredOperations): "Required operations"
-        case (.english, .authorityBoundary): "Execution authority boundary"
-        case (.english, .authorityBoundaryBody):
+        case (.english, .agentsAuthorityBoundary): "Execution authority boundary"
+        case (.english, .agentsAuthorityBoundaryBody):
             "Herdr is the sole agent execution authority; adapters translate the vendor-neutral "
             + "contract to a specific tool and never rebuild an execution state machine. "
             + "holaOS is shown only as an external-install reference for workflow/tool capabilities."
@@ -37,16 +37,18 @@ extension ProductCopy {
         switch (language, key) {
         case (.simplifiedChinese, .permissionsTitle): "权限与审批"
         case (.simplifiedChinese, .permissionsSyntheticOnly): "6 个合成权限范围样例，用于检查最终产品如何呈现权限范围与审批策略。"
+        case (.simplifiedChinese, .permissionsPreviewBadge): "预览样例"
         case (.simplifiedChinese, .approvalPolicy): "审批策略"
-        case (.simplifiedChinese, .authorityBoundary): "权限与审批边界"
-        case (.simplifiedChinese, .authorityBoundaryBody):
+        case (.simplifiedChinese, .permissionsAuthorityBoundary): "权限与审批边界"
+        case (.simplifiedChinese, .permissionsAuthorityBoundaryBody):
             "云端传输、外部写入和强制终止都需要显式、一次性的任务绑定审批。"
             + "此预览绝不授予权限或执行审批。"
         case (.english, .permissionsTitle): "Permissions & Approvals"
         case (.english, .permissionsSyntheticOnly): "Six synthetic permission-scope examples for reviewing how the finished product presents permission scope and approval policy."
+        case (.english, .permissionsPreviewBadge): "PREVIEW EXAMPLE"
         case (.english, .approvalPolicy): "Approval policy"
-        case (.english, .authorityBoundary): "Permission and approval boundary"
-        case (.english, .authorityBoundaryBody):
+        case (.english, .permissionsAuthorityBoundary): "Permission and approval boundary"
+        case (.english, .permissionsAuthorityBoundaryBody):
             "Cloud transmission, external writes, and force termination require explicit, "
             + "one-shot, task-bound approval. This preview never grants a permission or "
             + "performs an approval."
