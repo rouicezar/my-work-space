@@ -1,5 +1,20 @@
 # Forma AI Task Handoff
 
+## 2026-09-02 - P3-T16 - Qoder takeover
+
+Executor: Qoder agent
+Starting git state: `main` clean and synchronized with `origin/main`; P3-T15 implementation/evidence commit `e562271` and closeout `110c01a` are pushed
+Trigger: user explicitly confirmed starting the P3-T16 implementation plan, then chose to widen its scope to also add Herdr process lifecycle management (start/stop/status) when asked, since none exists in production code today
+Scope: replace the hardcoded `AgentTaskViewState.parallelPreview` fixture (and the always-shown "Preview fixture · not runtime evidence" label) in `ManifestOverview` (`prototypes/packaging/Sources/FormaAIApp/FormaAIApp.swift`) with real Herdr snapshot data in runtime mode; additionally add Herdr start/stop/status lifecycle management, since `forma_ai/runtime.py`'s `RuntimeManager` currently only manages omlx/broker/memory and the `herdr-snapshot` CLI requires a caller-supplied `--socket-path` with no executable resolution/verification
+Upstream search result: `RuntimePresentationProvider` (Swift) and `HerdrPresentationProvider` (Python) already implement fail-closed snapshot/subscription projections and are unit-tested, but were never wired into any SwiftUI view; Herdr's real snapshot schema (`HerdrSessionAgent`/`HerdrAgentPayload`) exposes only `terminal_id, agent_status, workspace_id, tab_id, pane_id, focused, revision`, no human-readable title/summary
+Reusable entry point: `forma_ai/artifacts.py` (`load_component`/`select_artifact`/`verify_file`) already used by oMLX's `_installed_omlx_executable` to digest-verify a cached binary against `config/upstreams.json` — reused as-is for Herdr instead of inventing a new install-layout/activation record, since `config/product-manifest.json` already declares Herdr's `install_mode` as `verified_release_binary`
+License obligation: Apache-2.0 external binary/socket reuse only; no upstream source, assets, names, or trademarks copied
+Integration decision: Herdr remains sole authority for agent/pane/terminal state; the new lifecycle code only starts/stops/digest-verifies the official binary and fail-closed-queries its snapshot, it does not create a competing state machine or fabricate agent display fields not present in Herdr's schema. Full plan recorded at `/Users/rouice/.qoder/plans/tall-rock-cod.md`.
+Planned verification: `pytest tests/test_runtime.py tests/test_supervisor.py tests/test_herdr_adapter.py`, `swift test` for `SupervisorProtocolTests`, manual runtime-mode UI check that no "Preview fixture" label appears and Herdr-not-running is shown honestly, bilingual parity, and `git diff --check`
+Commit and push: this synchronized P3-T16 claim is committed before production changes; no push until user requests it
+Next exact action: verify the real Herdr CLI's server-start argument form (`herdr --help` / `herdr server --help`), then implement the Python lifecycle extension
+Secret/external-write status: no credentials, cloud/model calls, production/default sessions, or external network; only disposable local test resources
+
 ## 2026-09-02 - P3-T15 - Qoder exit
 
 Executor: Qoder agent
