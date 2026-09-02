@@ -31,9 +31,9 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-09-02 Asia/Shanghai
 Current phase: P3 Herdr runtime integration, continuing the user-approved relay priority P3-T10～T15 (plan goals, requirements, and audit logic unchanged)
-Current task: none (P1-T09 F5 correction verified and committed locally as `13c43d4`; push awaits explicit authorization)
-Current status: Codex's user-approved deletion of obsolete `spawn_reported_task()` and its two dedicated unit tests is verified. Production/test absence scans, 53 focused Herdr tests, full Python 296 with 1 expected skip, Swift 43 with 2 environment-gated Keychain skips, named-session residue, bilingual parity, and whitespace checks all passed. Local commit `13c43d4` contains the correction; official `agent.start` remains the sole task-launch authority.
-Next action: obtain explicit authorization to push local P1-T09 correction commit `13c43d4` and its synchronized closeout, then claim P3-T15.
+Current task: P3-T15 detach/reconnect and truthful resume
+Current status: P1-T09 correction `13c43d4` and its synchronized closeout `e7a6670` are pushed to `origin/main`. P3-T15 is in progress under Qoder takeover: prove official Herdr detach/reconnect plus native or explicit fresh-run resume, with revision/session reconciliation and stale references failing closed.
+Next action: define a failing recovery integration test over the pinned official Herdr v0.8.2 boundary before changing production code.
 Audit verdict: most product-owned runtime-like capability is justified, thin upstream adaptation, or scheduled reduction. Follow-up audit found one concrete removal candidate: obsolete `spawn_reported_task()` from the superseded client-reported fixture. F5 in `docs/research/product-runtime-capability-audit-2026-09-01.md` is resolved by its removal; no plan goal or architecture change is required.
 Default next frontend task after the audit gate: P4-T14 (bilingual governed-memory review Preview), still pending and unchanged.
 
@@ -222,7 +222,7 @@ P2 completion never waives these gates and must not be cited as evidence that an
 | P3-T12 | verified | Run two real isolated fixture agents through Herdr | integration tests and evidence | Two provider-free fixtures launched/detected by `agent.start`; distinct run/pane/terminal/name identities; parallel work, graceful cancel, artifact/output isolation; deterministic self-cleaning environment | Parallel execution is real |
 | P3-T13 | verified | Bind snapshot and event subscriptions to the workbench presentation provider | adapter, Swift protocol, UI | Forced socket loss marks presentation stale/unknown; fresh snapshot reconciles before resubscribe; live transitions then resume | UI cannot override Herdr semantic state |
 | P3-T14 | verified | Prove real wait, blocked, bounded output read, and two-stage cancellation | Herdr integration tests and upstream evidence | Official blocked truth, bounded ANSI-stripped read, replacement-terminal rejection, normalized process reconciliation, graceful interrupt, confirmed force close, post-close `agent_not_found`, and complete registry invalidation all pass | Lifecycle is upstream-backed and independently reviewed |
-| P3-T15 | pending | Prove detach/reconnect and native or explicit fresh-run resume | recovery integration tests | Revision/session reconciliation passes and stale references fail closed | Resume is truthful |
+| P3-T15 | in_progress | Prove detach/reconnect and native or explicit fresh-run resume | recovery integration tests | Revision/session reconciliation passes and stale references fail closed | Resume is truthful |
 | P3-T16 | pending | Replace preview agent cards with real Herdr data in runtime mode | Swift app and protocol tests | Runtime mode contains no fixture fallback | User sees authoritative agents |
 | P3-T17 | pending | Close the real Herdr multi-agent phase | evidence, tests, bilingual controls | Full real integration suite and manual task review | P3 milestone becomes verified |
 
@@ -311,7 +311,9 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 
 ## Completion Notes
 
-- 2026-09-02 19:16 Asia/Shanghai - P1-T09 F5 correction - Qoder agent - removed obsolete client-reported launcher remains absent and official `agent.start` is sole launch authority - absence scans; focused Herdr 53; Python 296 with 1 expected skip; Swift 43 with 2 environment-gated Keychain skips; no named-session residue; bilingual parity; `git diff --check` - local commit `13c43d4` (push not authorized) - next P3-T15 after push
+- 2026-09-02 19:16 Asia/Shanghai - P1-T09 F5 correction - Qoder agent - removed obsolete client-reported launcher remains absent and official `agent.start` is sole launch authority - absence scans; focused Herdr 53; Python 296 with 1 expected skip; Swift 43 with 2 environment-gated Keychain skips; no named-session residue; bilingual parity; `git diff --check` - `13c43d4` and synchronization closeout `e7a6670` pushed to `origin/main` - next P3-T15
+
+- 2026-09-02 19:16 Asia/Shanghai - P3-T15 - Qoder agent - claimed official Herdr detach/reconnect and native-or-fresh-run recovery proof - Herdr ledger authority/reuse/license review and bilingual takeover parity complete - synchronized claim committed and pushed before production changes - next recovery integration red test
 
 - 2026-09-02 - P3-T12 acceptance correction - Codex root agent - withdrew the shell-only/client-reported real-agent claim and proved two provider-free fixtures through official `agent.start` with pending-launch reconciliation, deterministic cleanup, parallel work, pane-exact cancel, and artifact/output isolation - 49 Herdr tests and full Python 291 passed with 1 expected opt-in skip - implementation/evidence `bc860f2`; synchronization commit follows - next P3-T13 after executing-plans checkpoint
 

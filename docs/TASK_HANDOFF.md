@@ -1,5 +1,20 @@
 # Forma AI Task Handoff
 
+## 2026-09-02 - P3-T15 - Qoder takeover
+
+Executor: Qoder agent
+Starting git state: `main` clean and synchronized with `origin/main` at `e7a6670`; P1-T09 correction `13c43d4` and its closeout `e7a6670` are pushed
+Trigger: user explicitly authorized the push, requested a clean repository, and directed Qoder to claim P3-T15
+Scope: prove official Herdr detach/reconnect and native or explicit fresh-run resume; revision/session reconciliation must pass and stale references must fail closed
+Upstream search result: the Herdr v0.8.2 capability ledger names Herdr as the authority for terminal processes, session shape, detach/reattach, and supported native agent resume through `pane.report_agent_session`; reopening must reconstruct state from snapshot/events
+Reusable entry point: pinned official Herdr binary and protocol 20 socket transport, `HerdrAdapter.resume_task`, snapshot/subscription presentation provider, existing revision/terminal identity safeguards, and disposable named-session integration harness
+License obligation: Apache-2.0 external binary/socket reuse only; no upstream source, assets, names, or trademarks copied
+Integration decision: reuse Herdr lifecycle and native resume where supported; product code may map authoritative state and offer an explicit fresh-run outcome but must not create a competing process/session state machine
+Planned verification: recovery integration red test, official disposable-session probe, focused Herdr tests, Python and Swift suites, residue, bilingual parity, and `git diff --check`
+Commit and push: this synchronized P3-T15 claim is committed and pushed before production changes
+Next exact action: write the failing recovery integration contract before production changes
+Secret/external-write status: no credentials, cloud/model calls, production/default sessions, or external network; only disposable local named sessions when tests begin
+
 ## 2026-09-02 - P1-T09 F5 correction - Qoder exit
 
 Executor: Qoder agent
@@ -7,9 +22,9 @@ Scope: verified Codex's existing removal of obsolete `spawn_reported_task()` and
 Verification: production and test absence scans passed; focused Herdr suite passed 53 tests in 19.790s; full Python suite passed 296 tests with 1 expected skip in 23.986s; Swift package passed 43 tests with 2 environment-gated Keychain skips; no `forma-p3t*` named-session residue; bilingual current-state parity and `git diff --check` passed
 Files changed: `forma_ai/herdr_adapter.py`, `tests/test_herdr_adapter.py`, `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md`, `docs/TASK_HANDOFF.md`, and their mandatory Chinese mirrors
 Upstream decision: Herdr `agent.start` remains the sole product task-launch authority; historical evidence may retain old terminology but production and test code contain no obsolete launcher reference
-Commit and push: local commit `13c43d4` (`fix: remove obsolete Herdr reported-task launcher`) created; push remains unauthorized
-Blocked items: no technical blocker; P3-T15 must wait for local commit `13c43d4` and its synchronized closeout to be pushed
-Next exact action: after explicit authorization, push the scoped correction and synchronized closeout, then claim P3-T15
+Commit and push: local commit `13c43d4` (`fix: remove obsolete Herdr reported-task launcher`) and synchronized closeout `e7a6670` are pushed to `origin/main`
+Blocked items: none for P1-T09; P3-T15 is now separately in progress
+Next exact action: execute P3-T15 recovery verification
 Secret/external-write status: no credentials, cloud/model calls, production/default sessions, or external network; disposable local sessions self-cleaned
 
 ## 2026-09-02 - P1-T09 F5 correction - Qoder takeover
