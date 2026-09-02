@@ -36,17 +36,15 @@ def _find_herdr_binary():
     return next((path for path in candidates if path and os.path.isfile(path)), None)
 
 
-@unittest.skipUnless(
-    _find_herdr_binary(), "verified Herdr artifact binary is not available"
-)
-class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
+class HerdrFixtureAgentIntegrationTestCase(unittest.TestCase):
+    PROOF_ID = "P3-T12"
     WATCHDOG_SECONDS = 45.0
 
     def _stage(self, name):
         self.current_stage = name
         elapsed = time.monotonic() - self.started_at
         print(
-            f"[P3-T12 {self.session_name}] {elapsed:05.1f}s {name}",
+            f"[{self.PROOF_ID} {self.session_name}] {elapsed:05.1f}s {name}",
             file=sys.stderr,
             flush=True,
         )
@@ -60,7 +58,7 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
 
     def _watchdog_expired(self, _signum, _frame):
         raise TimeoutError(
-            f"P3-T12 exceeded {self.WATCHDOG_SECONDS:.0f}s during "
+            f"{self.PROOF_ID} exceeded {self.WATCHDOG_SECONDS:.0f}s during "
             f"{self.current_stage}\nHerdr server output tail:\n{self._server_log_tail()}"
         )
 
@@ -70,7 +68,7 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
         except BaseException:
             self._stage(f"failed during {self.current_stage}")
             print(
-                f"[P3-T12 {self.session_name}] Herdr server output tail:\n"
+                f"[{self.PROOF_ID} {self.session_name}] Herdr server output tail:\n"
                 f"{self._server_log_tail()}",
                 file=sys.stderr,
                 flush=True,
@@ -82,8 +80,11 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
         self.current_stage = "setup"
         self.binary = _find_herdr_binary()
         self.fixture_bin = Path(__file__).parent / "fixtures" / "herdr_agent_bin"
-        self.temp_root = tempfile.TemporaryDirectory(prefix="forma-p3t12-test-")
-        self.session_name = f"forma-p3t12-test-{uuid.uuid4().hex[:8]}"
+        proof_slug = self.PROOF_ID.lower().replace("-", "")
+        self.temp_root = tempfile.TemporaryDirectory(
+            prefix=f"forma-{proof_slug}-test-"
+        )
+        self.session_name = f"forma-{proof_slug}-test-{uuid.uuid4().hex[:8]}"
         self.server_output_path = Path(self.temp_root.name) / "herdr-server-output.log"
         self.server_output_handle = self.server_output_path.open("wb")
         self.previous_alarm_handler = signal.getsignal(signal.SIGALRM)
@@ -212,6 +213,13 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
             },
         )
         self.assertEqual(response["type"], "ok")
+
+
+@unittest.skipUnless(
+    _find_herdr_binary(), "verified Herdr artifact binary is not available"
+)
+class HerdrTwoFixtureAgentIntegrationTests(HerdrFixtureAgentIntegrationTestCase):
+    PROOF_ID = "P3-T12"
 
     def test_two_agents_are_launched_and_detected_by_agent_start(self):
         self._stage("creating isolated panes")
@@ -391,6 +399,158 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
         with self.assertRaises(HerdrRequestError) as ctx:
             self.transport("agent.get", {"target": task.pane_id})
         self.assertEqual(ctx.exception.code, "agent_not_found")
+
+
+@unittest.skipUnless(
+    _find_herdr_binary(), "verified Herdr artifact binary is not available"
+)
+class HerdrDetachReconnectIntegrationTests(HerdrFixtureAgentIntegrationTestCase):
+    PROOF_ID = "P3-T15"
+
+    def test_discarded_client_reclaims_then_starts_explicit_fresh_run(self):
+        root = Path(self.temp_root.name)
+        continuing_dir = root / "continuing"
+        fresh_dir = root / "fresh"
+        fixture_home = root / "fixture-home"
+        continuing_dir.mkdir()
+        fresh_dir.mkdir()
+        fixture_home.mkdir()
+        fixture_path = f"{self.fixture_bin}:/usr/bin:/bin"
+        (fixture_home / ".bash_profile").write_text(
+            f"export PATH={fixture_path!r}\n", encoding="utf-8"
+        )
+        fixture_env = {"HOME": str(fixture_home), "PATH": fixture_path}
+
+        self._stage("client A creating continuing agent")
+        workspace = self.adapter.open_workspace(
+            cwd=str(continuing_dir),
+            label="forma-p3t15-detach",
+            env=fixture_env,
+        )
+        self._send_text(
+            workspace.root_pane_id,
+            'echo "P3T15-CONTINUING-SHELL-READY-$(date +%s)"\n',
+        )
+        self._wait_marker(
+            workspace.root_pane_id,
+            "P3T15-CONTINUING-SHELL-READY-[0-9]+",
+        )
+        claimed = self.adapter.spawn_task(
+            task_id="detach-task",
+            correlation_id="corr-detach-a",
+            agent_name="fixture-detach-a",
+            agent_kind="codex",
+            pane_id=workspace.root_pane_id,
+            startup_timeout_ms=5_000,
+        )
+        claimed = self.adapter.task_status(claimed.run_id)
+        raw_claimed = self.transport("agent.get", {"target": claimed.pane_id})[
+            "agent"
+        ]
+        self.assertIsNone(raw_claimed.get("agent_session"))
+        self._stage("client A task claimed")
+
+        client_a_adapter = self.adapter
+        client_a_transport = self.transport
+        self.adapter = None
+        self.transport = None
+        del client_a_adapter
+        del client_a_transport
+        self.assertIsNone(self.server.poll())
+
+        self._stage("client B reclaiming continuing agent")
+        self.transport = HerdrSocketTransport(
+            socket_path=self.socket_path, environ={}, request_timeout=15.0
+        )
+        self.adapter = HerdrAdapter(
+            executable_finder=lambda _name: self.binary,
+            clock=lambda: "2026-09-02T00:00:00Z",
+            request=self.transport,
+            probe=self.transport.probe,
+        )
+        reclaimed = self.adapter.reclaim_task(task=claimed)
+        self.assertEqual(reclaimed, claimed)
+        self.assertEqual(self.adapter.task_status(claimed.run_id), claimed)
+
+        listener = HerdrSubscriptionListener(socket_path=self.socket_path, environ={})
+        received = []
+        errors = []
+
+        def receive(event):
+            received.append(event)
+            listener.stop()
+
+        def subscribe():
+            try:
+                listener.subscribe(
+                    [
+                        {
+                            "type": "pane.agent_status_changed",
+                            "pane_id": claimed.pane_id,
+                        }
+                    ],
+                    receive,
+                )
+            except Exception as exc:
+                errors.append(exc)
+
+        thread = threading.Thread(target=subscribe)
+        thread.start()
+        time.sleep(0.5)
+        prompted = self.transport(
+            "agent.prompt",
+            {
+                "target": claimed.pane_id,
+                "text": "fixture-blocked",
+                "wait": {"until": ["blocked"], "timeout_ms": 5_000},
+            },
+        )
+        self.assertEqual(prompted["type"], "agent_prompted")
+        self.assertEqual(prompted["agent"]["agent_status"], "blocked")
+        thread.join(timeout=10.0)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual(errors, [])
+        self.assertEqual(len(received), 1)
+        self.assertEqual(received[0]["event"], "pane.agent_status_changed")
+        self.assertEqual(received[0]["data"]["pane_id"], claimed.pane_id)
+        self.assertEqual(received[0]["data"]["agent_status"], "blocked")
+        self._stage("client B observed continuing agent transition")
+
+        blocked = self.adapter.task_status(claimed.run_id)
+        self.assertEqual(blocked.state, "blocked")
+        self.assertGreater(blocked.revision, claimed.revision)
+        with self.assertRaises(ValueError):
+            self.adapter.reclaim_task(task=claimed)
+
+        fresh_pane = self.adapter.open_pane(
+            direction="right",
+            target_pane_id=claimed.pane_id,
+            cwd=str(fresh_dir),
+            env=fixture_env,
+        )
+        self._send_text(
+            fresh_pane.pane_id,
+            'echo "P3T15-FRESH-SHELL-READY-$(date +%s)"\n',
+        )
+        self._wait_marker(fresh_pane.pane_id, "P3T15-FRESH-SHELL-READY-[0-9]+")
+        fresh = self.adapter.start_fresh_task(
+            previous_task=claimed,
+            correlation_id="corr-detach-fresh",
+            agent_name="fixture-detach-fresh",
+            agent_kind="codex",
+            pane_id=fresh_pane.pane_id,
+            startup_timeout_ms=5_000,
+        )
+        self.assertEqual(fresh.task_id, claimed.task_id)
+        self.assertNotEqual(fresh.run_id, claimed.run_id)
+        self.assertNotEqual(fresh.pane_id, claimed.pane_id)
+        self.assertNotEqual(fresh.terminal_id, claimed.terminal_id)
+        self._send_text(fresh.pane_id, "fixture-b\n")
+        self._wait_marker(fresh.pane_id, "FIXTURE-B-DONE-[0-9]+")
+        self.assertTrue((fresh_dir / "b_start.txt").exists())
+        self.assertTrue((fresh_dir / "b_end.txt").exists())
+        self.assertNotIn("Awaiting explicit approval", self._read_pane(fresh.pane_id))
+        self._stage("explicit fresh run verified")
 
 
 @unittest.skipUnless(

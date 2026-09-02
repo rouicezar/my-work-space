@@ -1,5 +1,17 @@
 # Forma AI Task Handoff
 
+## 2026-09-02 - P3-T15 - Qoder exit
+
+Executor: Qoder agent
+Scope verified: a discarded `HerdrAdapter` client's task is reclaimed by a fresh adapter instance only after a `session.snapshot()` and a subsequent `agent.get` both exactly match the caller-held claim's workspace/pane/terminal/revision/normalized-state; any mismatch (proven live with a stale-revision reclaim attempt) fails closed with no rebinding. The caller can then explicitly choose `start_fresh_task()`, which keeps the product `task_id` but requires and verifies a distinct run/pane/terminal identity in a live isolated named session; a real subsequent `blocked` transition on the reclaimed pane was observed via a fresh event subscription established only after reclamation.
+Scope correction: native provider-session resume is NOT proven. The repository fixture never emits `agent_session`, so the previously existing `HerdrAdapter.resume_task()` was a mock-only fabrication (it accepted a caller-supplied `native_session_ref`, checked it locally, then issued an unproven second `agent.start` mislabeled `"native_resume"`). That method and its mock-only test were removed rather than kept as a false capability claim.
+Files changed: `forma_ai/herdr_adapter.py` (added `reclaim_task()`, `start_fresh_task()`, shared `_task_state()`/`_task_from_agent()` helpers; removed `resume_task()`), `tests/test_herdr_adapter.py` (added reclaim/fresh-run unit tests, removed the native-resume mock test), `tests/test_herdr_integration.py` (extracted `HerdrFixtureAgentIntegrationTestCase` base class; added `HerdrDetachReconnectIntegrationTests` with the live P3-T15 proof), `evidence/upstream/herdr-v0.8.2-detach-fresh-run-recovery-verification-2026-09-02.md` (new), `docs/research/herdr-capability-ledger.md`, `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md`, `docs/TASK_HANDOFF.md`, and their mandatory Chinese mirrors.
+Verification: focused suite (`tests.test_herdr_adapter tests.test_herdr_presentation tests.test_herdr_integration`) passed 32 tests in 30.188s, including the new live P3-T15 test in 11.667s on first run with no corrections needed; full Python suite via `python3 -m unittest discover tests -v` passed with no failures; Swift package passed 43 tests with 2 environment-gated Keychain skips; no `forma-p3t15-*` named-session residue found; bilingual current-state parity and `git diff --check` passed.
+Upstream decision: Herdr remains sole authority for terminal/pane/agent identity and state; reclamation and fresh-run are thin product-owned reconciliation and explicit-choice logic over `session.snapshot`/`agent.get`/`agent.start`, not a competing state machine. No persistent recovery store was added (deferred to P7-T02); native-provider-resume proof remains gated on a separately approved real-provider probe.
+Commit and push: not yet committed; this closeout synchronization is the pending change.
+Next exact action: commit and push this verified P3-T15 closeout after user confirmation, then begin P3-T16 (replace Preview agent cards with real Herdr runtime data).
+Secret/external-write status: no credentials, cloud/model calls, production/default sessions, or external network; only disposable local named test sessions, self-cleaned.
+
 ## 2026-09-02 - P3-T15 - Qoder takeover
 
 Executor: Qoder agent

@@ -345,6 +345,71 @@ class HerdrAdapter:
         _ = correlation_id
         return task
 
+    def reclaim_task(self, *, task: HerdrTask) -> HerdrTask:
+        snapshot = self.snapshot()
+        panes = [item for item in snapshot.panes if item.pane_id == task.pane_id]
+        agents = [item for item in snapshot.agents if item.pane_id == task.pane_id]
+        if len(panes) != 1 or len(agents) != 1:
+            raise ValueError("Herdr task is missing or duplicated during reclamation")
+        pane = panes[0]
+        agent = agents[0]
+        if (
+            pane.workspace_id != task.workspace_id
+            or pane.terminal_id != task.terminal_id
+            or pane.revision != task.revision
+            or self._task_state(pane.agent_status) != task.state
+            or agent.workspace_id != task.workspace_id
+            or agent.terminal_id != task.terminal_id
+            or agent.revision != task.revision
+            or self._task_state(agent.agent_status) != task.state
+        ):
+            raise ValueError("Herdr task identity changed during reclamation")
+        response = self._send("agent.get", {"target": task.pane_id})
+        if response.get("type") != "agent_info":
+            raise ValueError("unexpected Herdr agent.get response")
+        current = self._task_from_agent(
+            task_id=task.task_id,
+            run_id=task.run_id,
+            agent=response.get("agent"),
+        )
+        if current != task:
+            raise ValueError("Herdr task identity changed during reclamation")
+        self._task_ids_by_run_id[task.run_id] = task.task_id
+        self._pane_ids_by_run_id[task.run_id] = task.pane_id
+        self._tasks_by_run_id[task.run_id] = task
+        return task
+
+    def start_fresh_task(
+        self,
+        *,
+        previous_task: HerdrTask,
+        correlation_id: str,
+        agent_name: str,
+        agent_kind: str,
+        pane_id: str,
+        startup_timeout_ms: int = 30_000,
+    ) -> HerdrTask:
+        if pane_id == previous_task.pane_id:
+            raise ValueError("Herdr fresh run requires a different pane")
+        task = self.spawn_task(
+            task_id=previous_task.task_id,
+            correlation_id=correlation_id,
+            agent_name=agent_name,
+            agent_kind=agent_kind,
+            pane_id=pane_id,
+            startup_timeout_ms=startup_timeout_ms,
+        )
+        if (
+            task.run_id == previous_task.run_id
+            or task.pane_id == previous_task.pane_id
+            or task.terminal_id == previous_task.terminal_id
+        ):
+            self._tasks_by_run_id.pop(task.run_id, None)
+            self._task_ids_by_run_id.pop(task.run_id, None)
+            self._pane_ids_by_run_id.pop(task.run_id, None)
+            raise ValueError("Herdr fresh run did not create a new terminal identity")
+        return task
+
     def task_status(self, run_id: str) -> HerdrTask:
         task = self._get_task(run_id)
         self._tasks_by_run_id[run_id] = task
@@ -496,50 +561,6 @@ class HerdrAdapter:
             action="force_close",
             state="force_closed",
             revision=expected_revision,
-        )
-
-    def resume_task(
-        self,
-        *,
-        run_id: str,
-        correlation_id: str,
-        expected_revision: int,
-        native_session_ref: dict[str, str],
-        agent_name: str,
-        agent_kind: str,
-    ) -> HerdrLifecycleResult:
-        task_id = self._task_ids_by_run_id[run_id]
-        pane_id = self._pane_ids_by_run_id[run_id]
-        current = self._send("agent.get", {"target": pane_id})
-        if current["type"] != "agent_info":
-            raise ValueError("unexpected Herdr agent.get response")
-        current_agent = current["agent"]
-        if not isinstance(current_agent, dict):
-            raise ValueError("Herdr response is missing agent data")
-        if int(current_agent["revision"]) != expected_revision:
-            raise ValueError("Herdr task revision changed before resume")
-        if current_agent.get("agent_session") != native_session_ref:
-            raise ValueError("Herdr native session reference changed before resume")
-
-        restarted = self._send(
-            "agent.start",
-            {"name": agent_name, "kind": agent_kind, "pane_id": pane_id},
-        )
-        if restarted["type"] != "agent_started":
-            raise ValueError("unexpected Herdr agent.start response")
-        task = self._task_from_agent(
-            task_id=task_id,
-            run_id=run_id,
-            agent=restarted["agent"],
-        )
-        self._tasks_by_run_id[run_id] = task
-        _ = correlation_id
-        return HerdrLifecycleResult(
-            task_id=task_id,
-            run_id=run_id,
-            action="native_resume",
-            state=task.state,
-            revision=task.revision,
         )
 
     def snapshot(self) -> HerdrSessionSnapshot:
@@ -703,18 +724,22 @@ class HerdrAdapter:
         return self._request(method, params)
 
     @staticmethod
-    def _task_from_agent(
-        *, task_id: str, run_id: str, agent: object
-    ) -> HerdrTask:
-        if not isinstance(agent, dict):
-            raise ValueError("Herdr response is missing agent data")
-        state = {
+    def _task_state(agent_status: str) -> str:
+        return {
             "unknown": "starting",
             "working": "running",
             "idle": "running",
             "blocked": "blocked",
             "done": "succeeded",
-        }.get(str(agent["agent_status"]), "unknown")
+        }.get(agent_status, "unknown")
+
+    @staticmethod
+    def _task_from_agent(
+        *, task_id: str, run_id: str, agent: object
+    ) -> HerdrTask:
+        if not isinstance(agent, dict):
+            raise ValueError("Herdr response is missing agent data")
+        state = HerdrAdapter._task_state(str(agent["agent_status"]))
         return HerdrTask(
             task_id=task_id,
             run_id=run_id,

@@ -303,44 +303,116 @@ class HerdrAdapterTaskTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "task identity changed"):
             adapter.task_status(task.run_id)
 
-    def test_native_resume_reconciles_session_and_revision_before_start(self):
+    def test_reclaim_snapshots_before_rebinding_exact_task_identity(self):
+        def initial_request(method, params):
+            self.assertEqual(method, "agent.start")
+            self.assertEqual(params["pane_id"], "pane-001")
+            return {
+                "type": "agent_started",
+                "agent": self._agent_info(pane_id="pane-001", revision=1),
+            }
+
+        original = HerdrAdapter(request=initial_request).spawn_task(
+            task_id="task-001",
+            correlation_id="corr-001",
+            agent_name="forma-task-001",
+            agent_kind="codex",
+            pane_id="pane-001",
+        )
         calls = []
-        session_ref = {
-            "source": "integration",
-            "agent": "codex",
-            "kind": "id",
-            "value": "session-001",
-        }
-        start_count = 0
+
+        def reconnecting_request(method, params):
+            calls.append((method, params))
+            if method == "session.snapshot":
+                agent = self._agent_info(pane_id="pane-001", revision=1)
+                return {
+                    "type": "session_snapshot",
+                    "snapshot": {
+                        "version": "0.8.2",
+                        "protocol": 20,
+                        "workspaces": [],
+                        "tabs": [],
+                        "panes": [agent],
+                        "agents": [agent],
+                        "layouts": [],
+                    },
+                }
+            if method == "agent.get":
+                self.assertEqual(params, {"target": "pane-001"})
+                return {
+                    "type": "agent_info",
+                    "agent": self._agent_info(pane_id="pane-001", revision=1),
+                }
+            self.fail(f"unexpected method: {method}")
+
+        reconnected = HerdrAdapter(request=reconnecting_request)
+
+        reclaimed = reconnected.reclaim_task(task=original)
+        refreshed = reconnected.task_status(original.run_id)
+
+        self.assertEqual(reclaimed, original)
+        self.assertEqual(refreshed, original)
+        self.assertEqual(
+            [method for method, _params in calls],
+            ["session.snapshot", "agent.get", "agent.get"],
+        )
+
+    def test_reclaim_rejects_stale_revision_before_agent_lookup(self):
+        def initial_request(method, _params):
+            self.assertEqual(method, "agent.start")
+            return {
+                "type": "agent_started",
+                "agent": self._agent_info(pane_id="pane-001", revision=1),
+            }
+
+        original = HerdrAdapter(request=initial_request).spawn_task(
+            task_id="task-001",
+            correlation_id="corr-001",
+            agent_name="forma-task-001",
+            agent_kind="codex",
+            pane_id="pane-001",
+        )
+        calls = []
+
+        def reconnecting_request(method, _params):
+            calls.append(method)
+            if method == "session.snapshot":
+                stale_agent = self._agent_info(pane_id="pane-001", revision=2)
+                return {
+                    "type": "session_snapshot",
+                    "snapshot": {
+                        "version": "0.8.2",
+                        "protocol": 20,
+                        "workspaces": [],
+                        "tabs": [],
+                        "panes": [stale_agent],
+                        "agents": [stale_agent],
+                        "layouts": [],
+                    },
+                }
+            self.fail(f"unexpected method: {method}")
+
+        with self.assertRaises(ValueError):
+            HerdrAdapter(request=reconnecting_request).reclaim_task(task=original)
+
+        self.assertEqual(calls, ["session.snapshot"])
+
+    def test_fresh_run_requires_a_new_pane_and_terminal(self):
+        calls = []
 
         def request(method, params):
-            nonlocal start_count
             calls.append((method, params))
             if method == "agent.start":
-                start_count += 1
-                revision = start_count
                 return {
                     "type": "agent_started",
                     "agent": self._agent_info(
-                        pane_id="pane-001",
-                        revision=revision,
-                        session_ref=session_ref if revision == 1 else None,
-                    ),
-                    "argv": ["codex"],
-                }
-            if method == "agent.get":
-                return {
-                    "type": "agent_info",
-                    "agent": self._agent_info(
-                        pane_id="pane-001",
-                        revision=1,
-                        session_ref=session_ref,
+                        pane_id=params["pane_id"], revision=1
                     ),
                 }
             self.fail(f"unexpected method: {method}")
 
         adapter = HerdrAdapter(request=request)
-        task = adapter.spawn_task(
+        original = adapter.spawn_task(
             task_id="task-001",
             correlation_id="corr-001",
             agent_name="forma-task-001",
@@ -348,24 +420,37 @@ class HerdrAdapterTaskTests(unittest.TestCase):
             pane_id="pane-001",
         )
 
-        result = adapter.resume_task(
-            run_id=task.run_id,
-            correlation_id="corr-resume-001",
-            expected_revision=1,
-            native_session_ref=session_ref,
+        with self.assertRaises(ValueError):
+            adapter.start_fresh_task(
+                previous_task=original,
+                correlation_id="corr-fresh-001",
+                agent_name="forma-task-001",
+                agent_kind="codex",
+                pane_id="pane-001",
+            )
+        fresh = adapter.start_fresh_task(
+            previous_task=original,
+            correlation_id="corr-fresh-001",
             agent_name="forma-task-001",
             agent_kind="codex",
+            pane_id="pane-002",
         )
 
-        self.assertEqual(result.action, "native_resume")
-        self.assertEqual(result.state, "starting")
+        self.assertEqual(fresh.task_id, original.task_id)
+        self.assertNotEqual(fresh.run_id, original.run_id)
+        self.assertNotEqual(fresh.pane_id, original.pane_id)
+        self.assertNotEqual(fresh.terminal_id, original.terminal_id)
         self.assertEqual(
-            [method for method, _params in calls],
-            ["agent.start", "agent.get", "agent.start"],
-        )
-        self.assertEqual(
-            calls[-1][1],
-            {"name": "forma-task-001", "kind": "codex", "pane_id": "pane-001"},
+            calls[-1],
+            (
+                "agent.start",
+                {
+                    "name": "forma-task-001",
+                    "kind": "codex",
+                    "pane_id": "pane-002",
+                    "timeout_ms": 30000,
+                },
+            ),
         )
 
     @staticmethod
