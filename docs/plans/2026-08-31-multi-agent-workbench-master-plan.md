@@ -31,9 +31,10 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-09-02 Asia/Shanghai
 Current phase: P3 Herdr runtime integration, continuing the user-approved relay priority P3-T10～T15 (plan goals, requirements, and audit logic unchanged)
-Current task: P3-T16 (in_progress) replace Preview agent cards with real Herdr runtime data
-Current status: Claimed P3-T16. User explicitly approved widening this task's scope to also add Herdr process lifecycle management (start/stop/status), which does not exist in production code today (`RuntimeManager` only manages omlx/broker/memory; `herdr-snapshot` CLI requires a caller-supplied `--socket-path` and never resolves/verifies a Herdr executable). Plan written to `/Users/rouice/.qoder/plans/tall-rock-cod.md` and approved: (A) resolve the installed Herdr executable by reusing the existing `forma_ai/artifacts.py` digest-verification machinery against `config/upstreams.json` (no new install-layout/activation record — Herdr's manifest `install_mode` is already `verified_release_binary`), (B) add `herdr_process_spec` to `forma_ai/processes.py`, (C) extend `RuntimeRecord`/`RuntimeManager` to a 4th "herdr" role, (D) change the `herdr-snapshot` CLI from `--socket-path` to `--root` with a fail-closed pre-check on `herdr_alive`, (E)-(H) matching Python/Swift tests, (G) redesign `AgentTaskViewState` to only show fields genuinely present in Herdr's snapshot (drop fabricated title/agentKind/summary) and wire a real `loadAgentActivity()` loader into `ManifestOverview`, replacing the hardcoded "Preview fixture · not runtime evidence" label.
-Next action: verify the real Herdr CLI's server-start argument form (`herdr --help` / `herdr server --help`), then implement Python lifecycle extension (runtime.py/processes.py/supervisor.py) with tests, then Swift protocol/view wiring with tests, then full verification and bilingual closeout.
+Current task: P3-T16 (verified) replace Preview agent cards with real Herdr data + add Herdr lifecycle management. Next task: P3-T17 (pending) close the real Herdr multi-agent phase.
+Current status: P3-T16 verified by the pi agent (2026-09-03). The widened scope is fully implemented and machine-verified: (A) `forma_ai/artifacts.py` reuse resolves and digest-verifies the cached Herdr binary against `config/upstreams.json` via `_installed_herdr_executable`; (B) `herdr_process_spec` builds the headless-server launch `("--session", name, "server")` — confirmed to match the project's own live Herdr integration-test harness which launches `[binary, "--session", name, "server"]`; (C) `RuntimeRecord`/`RuntimeManager` gained a 4th "herdr" role (start-first, stop-first, status `herdr_alive`, rollback on failure); (D) `herdr-snapshot` switched to `--root` and fails closed (returns `HERDR_NOT_RUNNING`/stale without connecting when `herdr_alive` is false); (E)-(H) Python and Swift tests added; (G) `AgentTaskViewState.parallelPreview` and the "Preview fixture · not runtime evidence" label removed, and `ManifestOverview` loads real Herdr snapshot data through `RuntimePresentationProvider.herdrSnapshot(rootURL:)` with fail-closed disconnect/empty states and only schema-present fields (pane/workspace/tab/terminal/state/revision).
+Pre-closeout verification (pi agent): focused pytest `tests/test_processes.py tests/test_runtime.py tests/test_supervisor.py` → 65 passed + 7 subtests; full `python3 -m unittest discover tests` → 311 tests OK (1 expected opt-in Semantica skip); full `swift test --package-path prototypes/packaging` → 44 tests passed (2 real-Keychain environment-gated skips); `git diff --check` clean; no `forma-*` named-session residue. The runtime-card requirement (no fixture fallback, authoritative Herdr data) and fail-closed snapshot requirement are both met by tested code.
+Next action: begin P3-T17 (close the real Herdr multi-agent phase) — run the full real integration suite and manual task review, then the P3 milestone can be marked verified.
 Audit verdict: most product-owned runtime-like capability is justified, thin upstream adaptation, or scheduled reduction. Follow-up audit found one concrete removal candidate: obsolete `spawn_reported_task()` from the superseded client-reported fixture. F5 in `docs/research/product-runtime-capability-audit-2026-09-01.md` is resolved by its removal; no plan goal or architecture change is required.
 Default next frontend task after the audit gate: P4-T14 (bilingual governed-memory review Preview), still pending and unchanged.
 
@@ -109,7 +110,7 @@ Execution order:
 ## Upstream Reuse Ledger
 
 | Upstream | Role | Reuse mode | Must not do | Verification gate |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | Semantica | Governed memory, decisions, provenance | Reuse via REST/MCP/package where licensed | Create a competing long-term memory authority | Memory write/read contract test plus audit event |
 | holaOS | Workflow/application capability source plus optional external interface | Reuse licensed non-visual code/APIs in personal development; retain adapter boundary for distribution | Copy, rebadge, or bundle restricted frontend assets in public release | Capability/reuse ledger, notices, and adapter smoke test |
 | Herdr | Core multi-agent execution runtime | Pin and integrate CLI/socket/API | Treat multi-agent as cosmetic UI only | Parallel task execution, cancel, resume, reconnect tests |
@@ -120,7 +121,7 @@ Execution order:
 Status values: `not_started`, `mapped`, `implemented`, `verified`.
 
 | ID | Capability | Reference source | Product target | Status | Evidence |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | CAP-01 | New task conversation | Codex/holaOS-style workbench | First screen starts a real task with local/cloud routing | not_started | None |
 | CAP-02 | Multi-agent parallel work | Herdr/holaOS/Codex | Multiple visible workers with owner, state, logs, and artifacts | not_started | None |
 | CAP-03 | Agent command and review loop | Codex-style task execution | User can assign, inspect, interrupt, resume, and review | not_started | None |
@@ -137,7 +138,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 ## Milestone Tracker
 
 | Phase | Goal | Status | Exit Gate |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | P0 | Correct governance and stop product drift | verified | Tracker, handoff, role documents, and upstream-first reuse rules agree |
 | P1 | Inventory upstream capabilities and licenses | verified | Reuse decisions for all four upstreams have evidence |
 | P2 | Freeze the vendor-neutral adapter protocol and assign concrete conformance gates | verified | Generic identity, health, capability, policy, audit, and agent-lifecycle contracts pass machine tests; every concrete adapter has a named downstream conformance owner |
@@ -153,10 +154,10 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 ### P0: Governance Correction
 
 | ID | Status | Action | Files | Command | Expected Evidence |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | P0-T01 | verified | Create this master plan and tracker | `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md` | `test -f docs/plans/2026-08-31-multi-agent-workbench-master-plan.md` | File exists |
 | P0-T02 | verified | Create the takeover handoff document | `docs/TASK_HANDOFF.md` | `test -f docs/TASK_HANDOFF.md` | File exists |
-| P0-T03 | verified | Update startup and completion rules | `AGENTS.md` | `rg -n "Execution control documents|Task Handoff" AGENTS.md` | Required rules found |
+| P0-T03 | verified | Update startup and completion rules | `AGENTS.md` | `rg -n "Execution control documents | Task Handoff" AGENTS.md` | Required rules found |
 | P0-T04 | verified | Verify documentation-only diff | This file, `docs/TASK_HANDOFF.md`, `AGENTS.md` | `git diff --check -- AGENTS.md docs/plans/2026-08-31-multi-agent-workbench-master-plan.md docs/TASK_HANDOFF.md` | No whitespace errors |
 | P0-T05 | verified | Commit governance docs only | Same files | `git add AGENTS.md docs/plans/2026-08-31-multi-agent-workbench-master-plan.md docs/TASK_HANDOFF.md` then `git commit -m "docs: add workbench execution control"` | Commit `3756677` created without staging implementation work |
 | P0-T06 | verified | Push governance docs | Same files | `git push` | Governance documentation commits are ready to push with this completion update |
@@ -169,13 +170,13 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 ### P1: Upstream Capability and License Inventory
 
 | ID | Status | Action | Files | Command | Expected Evidence |
-|---|---|---|---|---|---|
-| P1-T01 | verified | List available local upstream checkouts and pins | `docs/research/upstream-matrix.md` | `rg --files . | rg "(hola|herdr|semantica|omlx)"` | Local sources, installed oMLX artifact, declared pins, search boundaries, and gaps documented |
-| P1-T02 | verified | Refresh Semantica API/capability evidence | `docs/research/upstream-matrix.md` | `rg -n "semantica|mcp|server|memory" .` | Commit, release digests, entry points, dependencies, capability reuse map, and product boundary documented from official v0.6.7 sources |
+| --- | --- | --- | --- | --- | --- |
+| P1-T01 | verified | List available local upstream checkouts and pins | `docs/research/upstream-matrix.md` | `rg --files . | rg "(hola | herdr | semantica | omlx)"` | Local sources, installed oMLX artifact, declared pins, search boundaries, and gaps documented |
+| P1-T02 | verified | Refresh Semantica API/capability evidence | `docs/research/upstream-matrix.md` | `rg -n "semantica | mcp | server | memory" .` | Commit, release digests, entry points, dependencies, capability reuse map, and product boundary documented from official v0.6.7 sources |
 | P1-T03 | verified | Refresh holaOS capability and reusable-implementation map | `docs/research/holaos-capability-ledger.md` | `test -f docs/research/holaos-capability-ledger.md` | Capability map distinguishes reusable code, required notices, visual assets, and distribution restrictions |
 | P1-T04 | verified | Refresh Herdr socket/CLI capability map | `docs/research/herdr-capability-ledger.md` | `test -f docs/research/herdr-capability-ledger.md` | Multi-agent capabilities mapped |
-| P1-T05 | verified | Refresh oMLX API and model capability evidence | `docs/research/upstream-matrix.md` | `rg -n "omlx|OpenAI-compatible|/v1" docs/research/upstream-matrix.md` | Runtime assumptions updated |
-| P1-T06 | verified | Reconcile license matrix with public open-source intent | `docs/research/license-matrix.md` | `rg -n "public|redistribution|holaOS" docs/research/license-matrix.md` | Public distribution constraints explicit |
+| P1-T05 | verified | Refresh oMLX API and model capability evidence | `docs/research/upstream-matrix.md` | `rg -n "omlx | OpenAI-compatible | /v1" docs/research/upstream-matrix.md` | Runtime assumptions updated |
+| P1-T06 | verified | Reconcile license matrix with public open-source intent | `docs/research/license-matrix.md` | `rg -n "public | redistribution | holaOS" docs/research/license-matrix.md` | Public distribution constraints explicit |
 | P1-T07 | verified | Add a reuse decision record for each upstream | `docs/decisions.md` | `rg -n "Reuse decision" docs/decisions.md` | Four decisions recorded |
 | P1-T08 | verified | Commit upstream inventory docs | Research docs, `docs/decisions.md` | `git diff --check` then `git commit` | Commit includes only inventory docs |
 | P1-T09 | verified | Audit all product code against the four upstream capability maps before further runtime implementation | `forma_ai`, Swift sources, four capability ledgers, reuse decisions, `docs/research/product-runtime-capability-audit-2026-09-01.md` | Per-capability upstream entry point, license, and integration-decision scan | Every product-owned runtime-like capability is justified, reduced to a thin adapter/policy layer, or scheduled for removal — 41-row matrix recorded in `docs/research/product-runtime-capability-audit-2026-09-01.md`; findings F1-F4 all owned by existing tasks |
@@ -183,7 +184,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 ### P2: Adapter Protocol Contract
 
 | ID | Status | Action | Files | Command | Expected Evidence |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | P2-T01 | verified | Write failing test for adapter identity and health envelope | `tests/test_adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Fails because contract is absent |
 | P2-T02 | verified | Add minimal protocol dataclasses | `forma_ai/adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Identity/health tests pass |
 | P2-T03 | verified | Write failing test for capability declaration | `tests/test_adapter_contract.py` | `python -m unittest tests.test_adapter_contract -v` | Fails on missing capabilities |
@@ -196,7 +197,7 @@ Status values: `not_started`, `mapped`, `implemented`, `verified`.
 Concrete adapter conformance is deliberately outside the P2 completion claim. A protocol document or generic unit test cannot make a concrete adapter compatible. The following ownership is mandatory, and the corresponding phase cannot close until its real or faithfully mockable boundary tests pass:
 
 | Concrete boundary | Downstream owner | Required evidence before conformance may be claimed |
-|---|---|---|
+| --- | --- | --- |
 | Herdr plus Codex/Claude/compatible agent execution | P3-T01 through P3-T09 | Official CLI/socket/API discovery, two parallel tasks, stable states, cancel, resume, reconnect/recovery, artifacts, and audit mapping |
 | Separately installed holaOS non-visual interface | P4-T07A | Upstream entry point and license decision plus identity/health/capability smoke test through the generic contract; no uncleared frontend/assets bundled |
 | oMLX local inference and DeepSeek/OpenAI-compatible cloud execution | P5-T01 through P5-T07 | Real oMLX completion or embedding response; credential state, preview, explicit approval, low-cost DeepSeek response, routing decision, and audit evidence |
@@ -207,7 +208,7 @@ P2 completion never waives these gates and must not be cited as evidence that an
 ### P3: Herdr Core Multi-Agent Runtime
 
 | ID | Status | Action | Files | Command | Expected Evidence |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | P3-T01 | verified | Write failing Herdr adapter availability test | `tests/test_herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Fails before adapter exists |
 | P3-T02 | verified | Add Herdr adapter skeleton using adapter contract | `forma_ai/herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Availability test passes |
 | P3-T03 | verified | Write failing test for spawning two mock tasks | `tests/test_herdr_adapter.py` | `python -m unittest tests.test_herdr_adapter -v` | Fails on missing spawn |
@@ -223,13 +224,13 @@ P2 completion never waives these gates and must not be cited as evidence that an
 | P3-T13 | verified | Bind snapshot and event subscriptions to the workbench presentation provider | adapter, Swift protocol, UI | Forced socket loss marks presentation stale/unknown; fresh snapshot reconciles before resubscribe; live transitions then resume | UI cannot override Herdr semantic state |
 | P3-T14 | verified | Prove real wait, blocked, bounded output read, and two-stage cancellation | Herdr integration tests and upstream evidence | Official blocked truth, bounded ANSI-stripped read, replacement-terminal rejection, normalized process reconciliation, graceful interrupt, confirmed force close, post-close `agent_not_found`, and complete registry invalidation all pass | Lifecycle is upstream-backed and independently reviewed |
 | P3-T15 | verified | Prove detach/reconnect and native or explicit fresh-run resume | recovery integration tests | Revision/session reconciliation passes and stale references fail closed | Resume is truthful: fresh-run/reclaim proven live; native provider resume remains unverified and unclaimed |
-| P3-T16 | in_progress | Replace preview agent cards with real Herdr data in runtime mode; scope widened by user approval to also add Herdr process lifecycle management (start/stop/status), previously absent | Swift app and protocol tests; forma_ai/runtime.py, forma_ai/processes.py, scripts/supervisor.py | Runtime mode contains no fixture fallback; herdr-snapshot fails closed when Herdr is not running | User sees authoritative agents |
+| P3-T16 | verified | Replace preview agent cards with real Herdr data in runtime mode; scope widened by user approval to also add Herdr process lifecycle management (start/stop/status), previously absent | Swift app and protocol tests; forma_ai/runtime.py, forma_ai/processes.py, scripts/supervisor.py | Runtime mode contains no fixture fallback; herdr-snapshot fails closed when Herdr is not running | User sees authoritative agents |
 | P3-T17 | pending | Close the real Herdr multi-agent phase | evidence, tests, bilingual controls | Full real integration suite and manual task review | P3 milestone becomes verified |
 
 ### P4: Independent Workbench Product Experience
 
 | ID | Status | Action | Files | Command | Expected Evidence |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | P4-T01 | verified | Write UI contract test for first-screen task composer | `prototypes/packaging/Tests/LifecycleContractTests/ProductManifestTests.swift` | `swift test --package-path prototypes/packaging` | Baseline 30 tests passed with 2 skipped; new target fails because `WorkbenchSurfaceContract` is absent |
 | P4-T02 | verified | Move daily work surface above setup/recovery | `prototypes/packaging/Sources/FormaAIApp/FormaAIApp.swift` | `swift test --package-path prototypes/packaging` | Target contract passed; full Swift package passed 31 tests with 2 real-Keychain tests skipped |
 | P4-T03 | verified | Add model/provider selection contract | Lifecycle contract tests | `swift test --package-path prototypes/packaging` | Filtered test fails because `WorkbenchSurfaceContract` has no `modelSelection` member |
@@ -256,7 +257,7 @@ P2 completion never waives these gates and must not be cited as evidence that an
 ### P5: Local and Cloud Model Cooperation
 
 | ID | Status | Action | Files | Command | Expected Evidence |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | P5-T01 | pending | Reproduce current DeepSeek failure with test credential only | `evidence/cloud/deepseek-YYYY-MM-DD.md` | Approved low-cost test command | Error or success captured without secret |
 | P5-T02 | pending | Add failing test for DeepSeek output budget handling | `tests/test_deepseek_adapter.py` | `python -m unittest tests.test_deepseek_adapter -v` | Fails on invalid small response path |
 | P5-T03 | pending | Fix DeepSeek low-cost chat completion path | `forma_ai/deepseek_adapter.py` | `python -m unittest tests.test_deepseek_adapter -v` | Tests pass |
@@ -268,7 +269,7 @@ P2 completion never waives these gates and must not be cited as evidence that an
 ### P6: Semantica Governed Memory
 
 | ID | Status | Action | Files | Command | Expected Evidence |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | P6-T01 | pending | Audit existing memory code against pinned Semantica capabilities | memory code, Semantica ledger, ADR | Upstream entry-point and duplication matrix | Storage/retrieval authority remains Semantica |
 | P6-T02 | pending | Remove, stop expanding, or justify every duplicated memory behavior | memory code and decisions | Focused tests and diff review | Product code is only the required governance/policy shell |
 | P6-T03 | pending | Verify the pinned real Semantica runtime and embedding dependency | runtime evidence | Import, version, save/load, and real embedding probe | Upstream runtime is real |
@@ -280,7 +281,7 @@ P2 completion never waives these gates and must not be cited as evidence that an
 ### P7: History, Cancel, Resume, Recovery
 
 | ID | Status | Action | Files | Command | Expected Evidence |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | P7-T01 | pending | Define the product metadata projection over Herdr authority | projection contract and tests | Authority-boundary red test | Projection cannot declare runtime completion or resumability |
 | P7-T02 | pending | Persist task intent, correlations, approvals, artifact metadata, and last accepted Herdr revision | product metadata projection | Restart tests | No duplicate Agent/process state machine exists |
 | P7-T03 | pending | Reconstruct runtime truth from fresh Herdr snapshot/events | Supervisor/projection tests | Stale local data becomes unknown until reconciled | Herdr remains authoritative |
@@ -292,7 +293,7 @@ P2 completion never waives these gates and must not be cited as evidence that an
 ### P8: Distribution and Public-Source Hardening
 
 | ID | Status | Action | Files | Command | Expected Evidence |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | P8-T01 | pending | Add public distribution checklist | `docs/distribution/public-release-checklist.md` | `test -f docs/distribution/public-release-checklist.md` | Checklist exists |
 | P8-T02 | pending | Add license notice collection task | `docs/distribution/notices.md` | `test -f docs/distribution/notices.md` | Notices started |
 | P8-T03 | pending | Add secrets scan command to release checklist | Release docs | Release command documented | Secrets gate explicit |
@@ -310,6 +311,8 @@ YYYY-MM-DD HH:mm Asia/Shanghai - TASK-ID - executor - result - evidence - commit
 ```
 
 ## Completion Notes
+
+- 2026-09-03 Asia/Shanghai - P3-T16 - pi agent - completed the widened P3-T16 (real Herdr runtime agent cards + Herdr lifecycle management) and verified no fixture fallback + fail-closed herdr-snapshot - focused pytest 65+7 subtests; full Python 311 (1 expected opt-in Semantica skip); Swift 44 tests (2 real-Keychain skips); `git diff --check` clean; no named-session residue - local commit (no push without user request) - next P3-T17
 
 - 2026-09-02 19:16 Asia/Shanghai - P1-T09 F5 correction - Qoder agent - removed obsolete client-reported launcher remains absent and official `agent.start` is sole launch authority - absence scans; focused Herdr 53; Python 296 with 1 expected skip; Swift 43 with 2 environment-gated Keychain skips; no named-session residue; bilingual parity; `git diff --check` - `13c43d4` and synchronization closeout `e7a6670` pushed to `origin/main` - next P3-T15
 
