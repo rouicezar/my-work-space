@@ -11,6 +11,7 @@ struct DailyWorkbenchPreview: View {
     @State private var transitionStage: PreviewTransitionStage = .compose
     @State private var destination: PreviewDestination = .newTask
     @State private var historySelection: HistoryPreviewTaskState = .interrupted
+    @State private var memorySelection: GovernedMemoryReviewState = .candidate
 
     var body: some View {
         let copy = ProductCopy(language: language)
@@ -39,7 +40,9 @@ struct DailyWorkbenchPreview: View {
 
     @ViewBuilder
     private func mainContent(_ copy: ProductCopy) -> some View {
-        if destination == .history {
+        if destination == .settings {
+            GovernedMemoryReviewPreview(language: language, selection: $memorySelection)
+        } else if destination == .history {
             HistoryRecoveryPreview(language: language, selection: $historySelection)
         } else if transitionStage == .compose {
             composer(copy)
@@ -90,7 +93,7 @@ struct DailyWorkbenchPreview: View {
             VStack(alignment: .leading, spacing: 6) {
                 navigationRow(copy[.newTask], "square.and.pencil", destination: .newTask)
                 navigationRow(copy[.history], "clock.arrow.circlepath", destination: .history)
-                navigationRow(copy[.settings], "gearshape", destination: nil)
+                navigationRow(copy[.settings], "gearshape", destination: .settings)
             }
 
             VStack(alignment: .leading, spacing: 10) {
@@ -257,10 +260,10 @@ struct DailyWorkbenchPreview: View {
                 .buttonStyle(.plain).help(copy[.collapseSupervision])
             }
             VStack(alignment: .leading, spacing: 8) {
-                Image(systemName: destination == .history ? "clock.arrow.circlepath" : (transitionStage == .compose ? "pause.circle" : "play.circle.fill"))
-                    .font(.title).foregroundStyle(destination == .history || transitionStage != .compose ? Color.blue : Color.secondary)
-                Text(destination == .history ? copy.stateTitle(historySelection) : (transitionStage == .compose ? copy[.noActiveTask] : copy.stageTitle(transitionStage))).font(.headline)
-                Text(destination == .history ? copy[.truthBoundaryBody] : (transitionStage == .compose ? copy[.supervisionExplanation] : copy[.previewStateNotice]))
+                Image(systemName: destination == .settings ? "brain.head.profile" : (destination == .history ? "clock.arrow.circlepath" : (transitionStage == .compose ? "pause.circle" : "play.circle.fill")))
+                    .font(.title).foregroundStyle(destination == .settings || destination == .history || transitionStage != .compose ? Color.blue : Color.secondary)
+                Text(destination == .settings ? copy.memoryStateTitle(memorySelection) : (destination == .history ? copy.stateTitle(historySelection) : (transitionStage == .compose ? copy[.noActiveTask] : copy.stageTitle(transitionStage)))).font(.headline)
+                Text(destination == .settings ? copy[.memorySyntheticOnly] : (destination == .history ? copy[.truthBoundaryBody] : (transitionStage == .compose ? copy[.supervisionExplanation] : copy[.previewStateNotice])))
                     .font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -268,7 +271,7 @@ struct DailyWorkbenchPreview: View {
             Divider()
             statusRow(
                 copy[.agentStatus],
-                destination == .history ? copy.agentSummary(historySelection) : (transitionStage == .compose ? copy[.waitingForTask] : copy.stageTitle(transitionStage)),
+                destination == .settings ? copy.memoryProvenance(memorySelection) : (destination == .history ? copy.agentSummary(historySelection) : (transitionStage == .compose ? copy[.waitingForTask] : copy.stageTitle(transitionStage))),
                 "person.2"
             )
             statusRow(
@@ -306,4 +309,5 @@ private enum PreviewComposerRoute: Hashable {
 private enum PreviewDestination: Hashable {
     case newTask
     case history
+    case settings
 }

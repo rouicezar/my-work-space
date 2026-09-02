@@ -240,6 +240,54 @@ public struct HistoryRecoveryPreviewContract: Sendable {
     )
 }
 
+public enum GovernedMemoryReviewState: String, CaseIterable, Sendable, Equatable, Hashable, Identifiable {
+    case candidate
+    case confirmed
+    case conflict
+    case correction
+    case deleted
+
+    public var id: String { rawValue }
+}
+
+public enum GovernedMemoryReviewSection: Sendable, Equatable {
+    case recordList
+    case recordDetail
+    case provenance
+    case authorityBoundary
+}
+
+public struct GovernedMemoryReviewContract: Sendable {
+    public let states: [GovernedMemoryReviewState]
+    public let sections: [GovernedMemoryReviewSection]
+    public let supportedLanguages: [ProductLanguage]
+    public let allowedInteraction: PreviewInteraction
+    public let languageSwitchPreservesSelection: Bool
+    public let readsPersistentMemory: Bool
+    public let runtimeActionsAllowed: Bool
+    public let performsPromote: Bool
+    public let performsCorrect: Bool
+    public let performsDelete: Bool
+
+    public static let productDefault = GovernedMemoryReviewContract(
+        states: GovernedMemoryReviewState.allCases,
+        sections: [
+            .recordList,
+            .recordDetail,
+            .provenance,
+            .authorityBoundary,
+        ],
+        supportedLanguages: [.simplifiedChinese, .english],
+        allowedInteraction: .showNextPreviewState,
+        languageSwitchPreservesSelection: true,
+        readsPersistentMemory: false,
+        runtimeActionsAllowed: false,
+        performsPromote: false,
+        performsCorrect: false,
+        performsDelete: false
+    )
+}
+
 public struct PreviewAgent: Identifiable, Sendable, Equatable {
     public let id: String
     public let role: String
@@ -305,14 +353,69 @@ public struct ProductPreviewProvider: Sendable {
 
     private static func makeScenarios(notice: String) -> [ProductPreviewScenario] {
         [
-            scenario("empty-workbench", "Start a private task", "Inspect the final empty workbench without user data.", .newTask, .empty, notice: notice),
-            scenario("local-complete", "Completed locally", "Review evidence, validation, and a final local result.", .newTask, .completed, task: task("local-complete", route: .local, agents: [agent("research", "Research", .completed)], artifacts: [artifact("brief", "Validated brief", "Passed")], result: "A validated sample result."), notice: notice),
-            scenario("parallel-blocked", "Parallel work needs approval", "Supervise three upstream-shaped agents and one scoped approval.", .newTask, .blocked, task: task("parallel-blocked", route: .localParallel, agents: [agent("research", "Research", .completed), agent("draft", "Draft", .running), agent("publish", "Publish", .blocked)], approvals: [approval("publish", "Allow publishing", "One synthetic destination")]), notice: notice),
-            scenario("partial-evidence", "Evidence is incomplete", "Keep valid artifacts visible without claiming completion.", .newTask, .partial, task: task("partial-evidence", route: .local, artifacts: [artifact("notes", "Source notes", "Passed")], unresolved: ["One source remains unverified"]), notice: notice),
-            scenario("cloud-proposal", "Cloud proposal", "Preview the exact one-time transmission decision before anything is sent.", .newTask, .approvalRequired, task: task("cloud-proposal", route: .cloudProposal, approvals: [approval("cloud", "Review cloud request", "Synthetic prompt, model, location, and maximum cost")]), notice: notice),
-            scenario("interrupted-recovery", "Interrupted task", "Compare reconciled resume and fresh-run choices as presentation only.", .history, .interrupted, task: task("interrupted-recovery", route: .localParallel, unresolved: ["Runtime state must be reconciled before resume"]), history: ["preview-history-interrupted"], notice: notice),
-            scenario("memory-governance", "Memory review", "Inspect candidate, confirmed, conflict, correction, and delete states.", .settings, .memoryReview, task: task("memory-governance", route: .governedMemory), settings: ["candidate", "confirmed", "conflict", "correction", "delete"], notice: notice),
-            scenario("component-unavailable", "Capability unavailable", "Show an honest missing capability and recovery guidance.", .settings, .unavailable, task: task("component-unavailable", route: .unavailable, unresolved: ["Required component is not available"]), settings: ["diagnostics", "recovery guidance"], notice: notice),
+            scenario(
+                "empty-workbench", "Start a private task",
+                "Inspect the final empty workbench without user data.", .newTask, .empty,
+                notice: notice
+            ),
+            scenario(
+                "local-complete", "Completed locally",
+                "Review evidence, validation, and a final local result.", .newTask, .completed,
+                task: task("local-complete", route: .local,
+                           agents: [agent("research", "Research", .completed)],
+                           artifacts: [artifact("brief", "Validated brief", "Passed")],
+                           result: "A validated sample result."),
+                notice: notice
+            ),
+            scenario(
+                "parallel-blocked", "Parallel work needs approval",
+                "Supervise three upstream-shaped agents and one scoped approval.", .newTask, .blocked,
+                task: task("parallel-blocked", route: .localParallel,
+                           agents: [agent("research", "Research", .completed),
+                                    agent("draft", "Draft", .running),
+                                    agent("publish", "Publish", .blocked)],
+                           approvals: [approval("publish", "Allow publishing", "One synthetic destination")]),
+                notice: notice
+            ),
+            scenario(
+                "partial-evidence", "Evidence is incomplete",
+                "Keep valid artifacts visible without claiming completion.", .newTask, .partial,
+                task: task("partial-evidence", route: .local,
+                           artifacts: [artifact("notes", "Source notes", "Passed")],
+                           unresolved: ["One source remains unverified"]),
+                notice: notice
+            ),
+            scenario(
+                "cloud-proposal", "Cloud proposal",
+                "Preview the exact one-time transmission decision before anything is sent.", .newTask, .approvalRequired,
+                task: task("cloud-proposal", route: .cloudProposal,
+                           approvals: [approval("cloud", "Review cloud request",
+                                                  "Synthetic prompt, model, location, and maximum cost")]),
+                notice: notice
+            ),
+            scenario(
+                "interrupted-recovery", "Interrupted task",
+                "Compare reconciled resume and fresh-run choices as presentation only.", .history, .interrupted,
+                task: task("interrupted-recovery", route: .localParallel,
+                           unresolved: ["Runtime state must be reconciled before resume"]),
+                history: ["preview-history-interrupted"],
+                notice: notice
+            ),
+            scenario(
+                "memory-governance", "Memory review",
+                "Inspect candidate, confirmed, conflict, correction, and delete states.", .settings, .memoryReview,
+                task: task("memory-governance", route: .governedMemory),
+                settings: ["candidate", "confirmed", "conflict", "correction", "delete"],
+                notice: notice
+            ),
+            scenario(
+                "component-unavailable", "Capability unavailable",
+                "Show an honest missing capability and recovery guidance.", .settings, .unavailable,
+                task: task("component-unavailable", route: .unavailable,
+                           unresolved: ["Required component is not available"]),
+                settings: ["diagnostics", "recovery guidance"],
+                notice: notice
+            ),
         ]
     }
 
@@ -327,7 +430,11 @@ public struct ProductPreviewProvider: Sendable {
         settings: [String] = [],
         notice: String
     ) -> ProductPreviewScenario {
-        ProductPreviewScenario(schemaVersion: 1, scenarioID: "preview-\(suffix)", title: title, summary: summary, activeDestination: destination, state: state, task: task, history: history, settings: settings, notice: notice)
+        ProductPreviewScenario(
+            schemaVersion: 1, scenarioID: "preview-\(suffix)", title: title, summary: summary,
+            activeDestination: destination, state: state, task: task,
+            history: history, settings: settings, notice: notice
+        )
     }
 
     private static func task(
@@ -339,7 +446,11 @@ public struct ProductPreviewProvider: Sendable {
         result: String? = nil,
         unresolved: [String] = []
     ) -> PreviewTaskPresentation {
-        PreviewTaskPresentation(id: "preview-task-\(suffix)", goal: "Synthetic goal for \(suffix)", route: route, agents: agents, approvals: approvals, artifacts: artifacts, result: result, unresolvedItems: unresolved)
+        PreviewTaskPresentation(
+            id: "preview-task-\(suffix)", goal: "Synthetic goal for \(suffix)", route: route,
+            agents: agents, approvals: approvals, artifacts: artifacts, result: result,
+            unresolvedItems: unresolved
+        )
     }
 
     private static func agent(_ suffix: String, _ role: String, _ state: PreviewAgentState) -> PreviewAgent {

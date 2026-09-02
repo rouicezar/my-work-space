@@ -142,3 +142,34 @@ import Testing
     #expect(history.performsCancellation == false)
     #expect(history.performsForceTermination == false)
 }
+
+@Test func governedMemoryReviewPreviewPresentsCandidateConflictCorrectionAndDeleteStates() {
+    let memory = GovernedMemoryReviewContract.productDefault
+
+    #expect(memory.states == [
+        .candidate,
+        .confirmed,
+        .conflict,
+        .correction,
+        .deleted,
+    ])
+    #expect(memory.sections == [
+        .recordList,
+        .recordDetail,
+        .provenance,
+        .authorityBoundary,
+    ])
+    #expect(memory.supportedLanguages == [.simplifiedChinese, .english])
+    #expect(memory.allowedInteraction == .showNextPreviewState)
+    #expect(memory.languageSwitchPreservesSelection == true)
+}
+
+@Test func governedMemoryReviewPreviewIsReadOnlyAndBoundedBySemanticaAuthority() {
+    let memory = GovernedMemoryReviewContract.productDefault
+
+    #expect(memory.readsPersistentMemory == false)
+    #expect(memory.runtimeActionsAllowed == false)
+    #expect(memory.performsPromote == false)
+    #expect(memory.performsCorrect == false)
+    #expect(memory.performsDelete == false)
+}
