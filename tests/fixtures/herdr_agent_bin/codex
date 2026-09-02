@@ -18,6 +18,13 @@ while IFS= read -r line; do
         sleep 2
         date +%s > b_end.txt
         printf 'FIXTURE-B-DONE-%s\n' "$(date +%s)"
+    elif [[ "$line" == "fixture-blocked" ]]; then
+        printf '\033]0;Action Required\007'
+        printf 'Awaiting explicit approval\n'
+        trap '' INT
+        while true; do
+            read -r -t 1 || true
+        done
     else
         printf 'FIXTURE-DONE:%s\n' "$line"
     fi

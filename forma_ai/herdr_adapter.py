@@ -10,6 +10,7 @@ from typing import Callable
 from .adapter_contract import AdapterIdentity, HealthEnvelope
 from .herdr_transport import (
     HerdrProtocolError,
+    HerdrRequestError,
     HerdrTransportError,
     validate_pong,
 )
@@ -39,8 +40,32 @@ class HerdrTask:
     run_id: str
     workspace_id: str
     pane_id: str
+    terminal_id: str
     state: str
     revision: int
+
+
+@dataclass(frozen=True)
+class HerdrTaskOutput:
+    task_id: str
+    run_id: str
+    pane_id: str
+    text: str
+    truncated: bool
+
+
+@dataclass(frozen=True)
+class HerdrProcessInfo:
+    pane_id: str
+    shell_pid: int
+    foreground_process_ids: tuple[int, ...]
+
+
+@dataclass(frozen=True)
+class HerdrCancellationClaim:
+    revision: int
+    terminal_id: str
+    foreground_process_ids: tuple[int, ...]
 
 
 @dataclass(frozen=True)
@@ -144,6 +169,7 @@ class HerdrAdapter:
         self._task_ids_by_run_id: dict[str, str] = {}
         self._pane_ids_by_run_id: dict[str, str] = {}
         self._tasks_by_run_id: dict[str, HerdrTask] = {}
+        self._cancellation_claims_by_run_id: dict[str, HerdrCancellationClaim] = {}
 
     def availability(self) -> HerdrAvailability:
         executable_path = self._executable_finder("herdr")
@@ -358,18 +384,80 @@ class HerdrAdapter:
         return task
 
     def task_status(self, run_id: str) -> HerdrTask:
-        task_id = self._task_ids_by_run_id[run_id]
-        pane_id = self._pane_ids_by_run_id[run_id]
-        response = self._send("agent.get", {"target": pane_id})
-        if response["type"] != "agent_info":
-            raise ValueError("unexpected Herdr agent.get response")
-        task = self._task_from_agent(
-            task_id=task_id,
-            run_id=run_id,
-            agent=response["agent"],
-        )
+        task = self._get_task(run_id)
         self._tasks_by_run_id[run_id] = task
         return task
+
+    def wait_for_task(
+        self,
+        *,
+        run_id: str,
+        until: tuple[str, ...],
+        timeout_ms: int | None,
+    ) -> HerdrTask:
+        task = self._claimed_task(run_id)
+        response = self._send(
+            "agent.wait",
+            {
+                "target": task.pane_id,
+                "until": list(until),
+                "timeout_ms": timeout_ms,
+            },
+        )
+        if response.get("type") != "agent_info":
+            raise ValueError("unexpected Herdr agent.wait response")
+        waited = self._task_from_agent(
+            task_id=task.task_id,
+            run_id=run_id,
+            agent=response.get("agent"),
+        )
+        if waited.pane_id != task.pane_id or waited.terminal_id != task.terminal_id:
+            raise ValueError("Herdr task identity changed while waiting")
+        self._tasks_by_run_id[run_id] = waited
+        return waited
+
+    def read_task_output(
+        self,
+        *,
+        run_id: str,
+        source: str,
+        lines: int,
+    ) -> HerdrTaskOutput:
+        if not 1 <= lines <= 200:
+            raise ValueError("Herdr task output lines must be between 1 and 200")
+        task = self._claimed_task(run_id)
+        response = self._send(
+            "agent.read",
+            {
+                "target": task.pane_id,
+                "source": source,
+                "lines": lines,
+                "format": "text",
+                "strip_ansi": True,
+            },
+        )
+        if response.get("type") != "pane_read":
+            raise ValueError("unexpected Herdr agent.read response")
+        read = response.get("read")
+        if not isinstance(read, dict):
+            raise ValueError("Herdr agent.read response is missing read data")
+        if read.get("pane_id") != task.pane_id:
+            raise ValueError("Herdr agent.read returned a different pane")
+        text = read.get("text")
+        truncated = read.get("truncated")
+        if not isinstance(text, str) or not isinstance(truncated, bool):
+            raise ValueError("Herdr agent.read response has invalid output data")
+        return HerdrTaskOutput(
+            task_id=task.task_id,
+            run_id=run_id,
+            pane_id=task.pane_id,
+            text=text,
+            truncated=truncated,
+        )
+
+    def task_process_info(self, *, run_id: str) -> HerdrProcessInfo:
+        task = self._claimed_task(run_id)
+        return self._process_info(task.pane_id)
 
     def cancel_task(
         self,
@@ -378,21 +466,73 @@ class HerdrAdapter:
         correlation_id: str,
         expected_revision: int,
     ) -> HerdrLifecycleResult:
-        task = self._tasks_by_run_id[run_id]
-        if task.revision != expected_revision:
-            raise ValueError("Herdr task revision changed before cancel")
+        task, process_info = self._reconcile_task(
+            run_id=run_id,
+            expected_revision=expected_revision,
+        )
         response = self._send(
             "pane.send_keys",
             {"pane_id": task.pane_id, "keys": ["ctrl+c"]},
         )
-        if response["type"] != "ok":
+        if response.get("type") != "ok":
             raise ValueError("unexpected Herdr pane.send_keys response")
+        self._tasks_by_run_id[run_id] = task
+        self._cancellation_claims_by_run_id[run_id] = HerdrCancellationClaim(
+            revision=expected_revision,
+            terminal_id=task.terminal_id,
+            foreground_process_ids=process_info.foreground_process_ids,
+        )
         _ = correlation_id
         return HerdrLifecycleResult(
             task_id=task.task_id,
             run_id=run_id,
             action="graceful_interrupt",
             state="cancel_requested",
+            revision=expected_revision,
+        )
+
+    def force_cancel_task(
+        self,
+        *,
+        run_id: str,
+        correlation_id: str,
+        expected_revision: int,
+        force_confirmed: bool,
+    ) -> HerdrLifecycleResult:
+        if not force_confirmed:
+            raise ValueError("Herdr force cancellation requires explicit confirmation")
+        claim = self._cancellation_claims_by_run_id.get(run_id)
+        if claim is None or claim.revision != expected_revision:
+            raise ValueError("Herdr force cancellation requires a matching graceful claim")
+        task, process_info = self._reconcile_task(
+            run_id=run_id,
+            expected_revision=expected_revision,
+        )
+        if (
+            task.terminal_id != claim.terminal_id
+            or process_info.foreground_process_ids != claim.foreground_process_ids
+        ):
+            raise ValueError("Herdr task identity changed before force cancellation")
+        response = self._send("pane.close", {"pane_id": task.pane_id})
+        if response.get("type") != "ok":
+            raise ValueError("unexpected Herdr pane.close response")
+        try:
+            self._send("agent.get", {"target": task.pane_id})
+        except HerdrRequestError as exc:
+            if exc.code != "agent_not_found":
+                raise
+        else:
+            raise ValueError("Herdr pane still contains an agent after force cancellation")
+        self._cancellation_claims_by_run_id.pop(run_id, None)
+        self._tasks_by_run_id.pop(run_id, None)
+        self._task_ids_by_run_id.pop(run_id, None)
+        self._pane_ids_by_run_id.pop(run_id, None)
+        _ = correlation_id
+        return HerdrLifecycleResult(
+            task_id=task.task_id,
+            run_id=run_id,
+            action="force_close",
+            state="force_closed",
             revision=expected_revision,
         )
 
@@ -524,6 +664,75 @@ class HerdrAdapter:
             raise ValueError("Herdr waited event is missing event data")
         return HerdrSessionEvent(kind=str(event["event"]), data=dict(data))
 
+    def _claimed_task(self, run_id: str) -> HerdrTask:
+        task = self._tasks_by_run_id.get(run_id)
+        if task is None:
+            raise ValueError("Herdr task is not claimed")
+        return task
+
+    def _get_task(self, run_id: str) -> HerdrTask:
+        known = self._claimed_task(run_id)
+        response = self._send("agent.get", {"target": known.pane_id})
+        if response.get("type") != "agent_info":
+            raise ValueError("unexpected Herdr agent.get response")
+        current = self._task_from_agent(
+            task_id=known.task_id,
+            run_id=run_id,
+            agent=response.get("agent"),
+        )
+        if (
+            current.workspace_id != known.workspace_id
+            or current.pane_id != known.pane_id
+            or current.terminal_id != known.terminal_id
+        ):
+            raise ValueError("Herdr task identity changed")
+        return current
+
+    def _process_info(self, pane_id: str) -> HerdrProcessInfo:
+        response = self._send("pane.process_info", {"pane_id": pane_id})
+        if response.get("type") != "pane_process_info":
+            raise ValueError("unexpected Herdr pane.process_info response")
+        process_info = response.get("process_info")
+        if not isinstance(process_info, dict):
+            raise ValueError("Herdr pane.process_info response is missing process data")
+        if process_info.get("pane_id") != pane_id:
+            raise ValueError("Herdr pane.process_info returned a different pane")
+        shell_pid = process_info.get("shell_pid")
+        processes = process_info.get("foreground_processes")
+        if type(shell_pid) is not int or not isinstance(processes, list):
+            raise ValueError("Herdr pane.process_info response has invalid process data")
+        process_ids: list[int] = []
+        for process in processes:
+            if not isinstance(process, dict) or type(process.get("pid")) is not int:
+                raise ValueError("Herdr pane.process_info response has invalid process data")
+            process_ids.append(process["pid"])
+        return HerdrProcessInfo(
+            pane_id=pane_id,
+            shell_pid=shell_pid,
+            foreground_process_ids=tuple(sorted(process_ids)),
+        )
+
+    def _reconcile_task(
+        self,
+        *,
+        run_id: str,
+        expected_revision: int,
+    ) -> tuple[HerdrTask, HerdrProcessInfo]:
+        claimed = self._claimed_task(run_id)
+        if claimed.revision != expected_revision:
+            raise ValueError("Herdr task revision changed before cancel")
+        current = self._get_task(run_id)
+        if (
+            current.pane_id != claimed.pane_id
+            or current.terminal_id != claimed.terminal_id
+            or current.revision != expected_revision
+        ):
+            raise ValueError("Herdr task identity changed before cancel")
+        process_info = self._process_info(current.pane_id)
+        if not process_info.foreground_process_ids:
+            raise ValueError("Herdr task has no foreground process to cancel")
+        return current, process_info
+
     def _send(
         self, method: str, params: dict[str, object]
     ) -> dict[str, object]:
@@ -549,6 +758,7 @@ class HerdrAdapter:
             run_id=run_id,
             workspace_id=str(agent["workspace_id"]),
             pane_id=str(agent["pane_id"]),
+            terminal_id=str(agent["terminal_id"]),
             state=state,
             revision=int(agent["revision"]),
         )

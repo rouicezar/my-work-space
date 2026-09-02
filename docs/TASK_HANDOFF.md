@@ -1,5 +1,75 @@
 # Forma AI Task Handoff
 
+## 2026-09-02 - P3-T14 - independent review exit
+
+Executor: Codex root agent
+Scope: independently review Qoder's uncommitted P3-T14 batch, repair the missing Chinese handoff mirror, close cancellation-safety findings, and reverify the full batch
+Findings corrected: `task_status()` could silently rebind a claimed run to a replacement terminal in the same pane, defeating later cancellation identity checks; confirmed force close left stale run-to-task and run-to-pane registries; foreground-process ordering could create unstable equality checks
+Actions: fail closed on refreshed workspace/pane/terminal replacement; normalize foreground process ids; remove every run registry after confirmed force close; add replacement-terminal and post-close invalidation regression coverage; expand the evidence boundary so the fixture is not presented as a real model loop
+Verification: targeted regressions 2 passed; focused Herdr suite 55 passed in 19.705s; full Python 298 passed with 1 expected skip in 24.352s; Swift package 43 passed with 2 environment-gated Keychain skips; `git diff --check` passed. A stopped historical P3-T13 test-session directory was found and deleted through the exact Herdr session command; no P3-T12/T13/T14 named-session residue remains.
+Files changed: Qoder's P3-T14 adapter/tests/fixture/ledger/evidence/control batch plus independent-review corrections in the adapter, tests, evidence, and four controls
+Commit and push: pending immediately after this synchronized exit record
+Blocked items: none for P3-T14; P3-T12 test diagnostics still require a separate correction before P3-T15, and the fixture remains lifecycle evidence rather than a real model-Agent proof
+Next exact action: commit and push this verified batch, then claim the P3-T12 diagnostic-hardening correction
+Secret/external-write status: no credentials, cloud/model calls, production/default Herdr sessions, or destructive broad operations; one exact stopped test session was deleted
+
+## 2026-09-02 - P3-T14 - independent review takeover
+
+Executor: Codex root agent
+Starting git state: `main` and `origin/main` at `21884e7` with Qoder's uncommitted P3-T14 batch; the Chinese handoff exit mirror was missing
+Trigger: user approved the six-step correction sequence beginning with mirror repair, independent diff review, and P3-T12 diagnostic hardening
+Scope: repair the P3-T14 mirror, independently review every uncommitted P3-T14 change, fix all commit-blocking findings, verify, commit, and push before any P3-T15 claim
+Review finding: `task_status()` refreshed and overwrote a claimed run without rejecting workspace/pane/terminal replacement, so a later cancel could target a replacement Agent in a reused pane; force close also left stale run-to-task and run-to-pane registry entries
+Correction: fail closed when refreshed workspace, pane, or terminal identity differs; normalize process IDs for stable reconciliation; remove every run registry after confirmed force close; add regression coverage
+Planned verification: targeted regression tests, full Herdr focused suite, full Python suite, full Swift package, repeated live P3-T12 proof, bilingual parity, and `git diff --check`
+Commit and push: pending
+Next exact action: run focused verification, finish evidence/control corrections, then run full verification before committing
+Secret/external-write status: no credentials, cloud/model calls, production/default Herdr sessions, or destructive operations; only disposable local Herdr test sessions
+
+## 2026-09-02 - P3-T14 - Qoder exit
+
+Executor: Qoder agent
+Scope: official Herdr v0.8.2 wait, real blocked state, bounded ANSI-stripped output read, revision/identity-checked graceful interrupt, and explicit force-close escalation
+Actions: added task-level `agent.wait`, bounded `agent.read`, and `pane.process_info` mappings; retained Herdr terminal identity with the claimed task; required current revision, terminal identity, and foreground-process reconciliation before `ctrl+c`; required a matching graceful claim, `force_confirmed=true`, fresh identical reconciliation, `pane.close`, and post-close `agent_not_found` before reporting a force close. Added a provider-free blocked fixture and live acceptance test.
+Upstream evidence: the bundled schema and disposable named-session probes established that `agent.wait` returns `agent_info`, `agent.read` returns `pane_read`, unmatched status is a `timeout`, and `pane.close` is confirmed by `agent_not_found`. The real blocked path uses the official Codex detector's `osc_title_blocked` rule, not client-reported state.
+Verification: new lifecycle unit tests 3 passed; Herdr adapter tests 26 passed; live Herdr integration tests 3 passed; full Python suite 297 passed with 1 expected skip; Swift package 43 passed with 2 environment-gated Keychain skips; `git diff --check` passed; no `forma-p3t14-*` named-session residue remained.
+Evidence: `evidence/upstream/herdr-v0.8.2-lifecycle-read-cancel-verification-2026-09-02.md`; ledger updated at `docs/research/herdr-capability-ledger.md`.
+Files changed: `forma_ai/herdr_adapter.py`, `tests/test_herdr_adapter.py`, `tests/test_herdr_integration.py`, `tests/fixtures/herdr_agent_bin/codex`, Herdr ledger/evidence, both English controls, and the Chinese progress mirror.
+Commit and push: not requested; no commit or push was performed.
+Blocked items: P3-T14 implementation has no blocker, but the Chinese handoff exit mirror at `/Users/rouice/Library/Mobile Documents/iCloud~md~obsidian/Documents/MyNote/00_资源库/11_项目开发/Forma AI/Forma AI-任务交接-中文.md` was not written because the external iCloud-vault permission classifier blocked the edit. Catch-up: after authorization, prepend the equivalent P3-T14 Qoder exit record from this entry before starting product work, committing, or claiming P3-T15. Provider-native resume/detach remain P3-T15; runtime-card replacement remains P3-T16.
+Next exact action: obtain the Chinese handoff mirror write authorization and apply that catch-up, then request a commit decision for this verified batch; once authorized, commit it and then claim P3-T15 for detach/reconnect and native or explicitly fresh-run resume.
+Secret/external-write status: no credentials, cloud/model calls, production/default Herdr session, external network request, or persistent user configuration change; only automatically cleaned disposable local sessions and temporary fixtures.
+
+## 2026-09-02 - P3-T14 - Qoder takeover
+
+Executor: Qoder agent
+Starting git state: `main` has Codex's uncommitted P3-T14 control-document claim; no runtime code or test change is present
+Trigger: user requested that Qoder resume after inspecting the Codex takeover changes
+Scope: prove real wait, blocked, bounded artifact/output read, revision-checked graceful cancel, and explicit force-cancel escalation through official Herdr v0.8.2 surfaces
+Upstream search result: the Codex checkpoint records bundled protocol-20 schema entries for `agent.wait(target, timeout_ms, until)`, `agent.read(target, source, lines, format, strip_ansi)`, `pane.read`, `pane.process_info`, `pane.send_keys`, and `pane.close`; Qoder must probe live response/state semantics before implementation
+Reusable entry point: pinned Herdr binary/socket transport, existing run/pane/revision registry, provider-free official `agent.start` fixture, and isolated named-session test harness
+License obligation: Apache-2.0 external binary/socket reuse only; no upstream source, assets, names, or trademarks copied
+Integration decision: Herdr remains lifecycle/output authority; Forma adds only bounded-read and cancellation policy. Graceful interrupt requires matching claimed revision; force close requires a second explicit escalation plus fresh pane/agent reconciliation and fails closed on stale identity
+Planned verification: schema/live probe; red unit tests; live blocked/wait/bounded-read/graceful/force proof; focused and full Python; bilingual parity; `git diff --check`
+Commit and push: pending
+Next exact action: probe real `agent.wait`/`agent.read`/`pane.process_info`/`pane.close` response and error semantics in a disposable named session
+Secret/external-write status: no credentials, cloud/model calls, production sessions, or default Herdr session; disposable local named sessions only
+
+## 2026-09-02 - P3-T14 - takeover
+
+Executor: Codex root agent
+Starting git state: `main` clean and synchronized with `origin/main` at `21884e7`
+Trigger: user explicitly authorized P3-T14 and deferred manual testing until P3-T14～T16 plus the local-Qwen loop are complete
+Scope: prove real wait, blocked, bounded artifact/output read, revision-checked graceful cancel, and explicit force-cancel escalation through official Herdr v0.8.2 surfaces
+Upstream search result: bundled protocol-20 schema confirms `agent.wait(target, timeout_ms, until)`, `agent.read(target, source, lines, format, strip_ansi)`, `pane.read`, `pane.process_info`, `pane.send_keys`, and `pane.close`; live response/state details still require a disposable-session probe before implementation
+Reusable entry point: pinned Herdr binary/socket transport, existing run/pane/revision registry, provider-free official `agent.start` fixture, and isolated named-session test harness
+License obligation: Apache-2.0 external binary/socket reuse only; no upstream source, assets, names, or trademarks copied
+Integration decision: Herdr remains lifecycle/output authority; Forma adds only bounded-read and cancellation policy. Graceful interrupt requires matching claimed revision; force close requires a second explicit escalation plus fresh pane/agent reconciliation and fails closed on stale identity
+Planned verification: schema/live probe; red unit tests; live blocked/wait/bounded-read/graceful/force proof; focused and full Python; bilingual parity; `git diff --check`
+Commit and push: pending
+Next exact action: probe real `agent.wait`/`agent.read`/`pane.process_info`/`pane.close` response and error semantics in a disposable named session
+Secret/external-write status: no credentials, cloud/model calls, production sessions, or default Herdr session; disposable local named sessions only
+
 ## 2026-09-02 - P3-T13 - exit
 
 Executor: Codex root agent

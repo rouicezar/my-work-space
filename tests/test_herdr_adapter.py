@@ -236,6 +236,20 @@ class HerdrAdapterTaskTests(unittest.TestCase):
                     "agent": self._agent_info(pane_id="pane-001", revision=1),
                     "argv": ["codex"],
                 }
+            if method == "agent.get":
+                return {
+                    "type": "agent_info",
+                    "agent": self._agent_info(pane_id="pane-001", revision=1),
+                }
+            if method == "pane.process_info":
+                return {
+                    "type": "pane_process_info",
+                    "process_info": {
+                        "pane_id": "pane-001",
+                        "shell_pid": 7,
+                        "foreground_processes": [{"pid": 42}],
+                    },
+                }
             if method == "pane.send_keys":
                 return {"type": "ok"}
             self.fail(f"unexpected method: {method}")
@@ -260,6 +274,34 @@ class HerdrAdapterTaskTests(unittest.TestCase):
         self.assertEqual(result.action, "graceful_interrupt")
         self.assertEqual(result.state, "cancel_requested")
         self.assertEqual(calls[-1], ("pane.send_keys", {"pane_id": "pane-001", "keys": ["ctrl+c"]}))
+
+    def test_status_rejects_replacement_terminal_before_it_can_be_cancelled(self):
+        def request(method, params):
+            if method == "agent.start":
+                return {
+                    "type": "agent_started",
+                    "agent": self._agent_info(
+                        pane_id="pane-001",
+                        revision=1,
+                    ),
+                }
+            if method == "agent.get":
+                replacement = self._agent_info(pane_id="pane-001", revision=2)
+                replacement["terminal_id"] = "terminal-replacement"
+                return {"type": "agent_info", "agent": replacement}
+            self.fail(f"unexpected method: {method}")
+
+        adapter = HerdrAdapter(request=request)
+        task = adapter.spawn_task(
+            task_id="task-001",
+            correlation_id="corr-001",
+            agent_name="forma-task-001",
+            agent_kind="codex",
+            pane_id="pane-001",
+        )
+
+        with self.assertRaisesRegex(ValueError, "task identity changed"):
+            adapter.task_status(task.run_id)
 
     def test_native_resume_reconciles_session_and_revision_before_start(self):
         calls = []
@@ -500,6 +542,15 @@ class HerdrAdapterFixtureTests(unittest.TestCase):
                         "revision": 3,
                     },
                 }
+            if method == "pane.process_info":
+                return {
+                    "type": "pane_process_info",
+                    "process_info": {
+                        "pane_id": "w1:p1",
+                        "shell_pid": 7,
+                        "foreground_processes": [{"pid": 42}],
+                    },
+                }
             self.fail(f"unexpected method: {method}")
 
         adapter = HerdrAdapter(request=request)
@@ -523,6 +574,230 @@ class HerdrAdapterFixtureTests(unittest.TestCase):
             calls[-1],
             ("pane.send_keys", {"pane_id": "w1:p1", "keys": ["ctrl+c"]}),
         )
+
+
+class HerdrAdapterLifecyclePolicyTests(unittest.TestCase):
+    @staticmethod
+    def _agent(*, terminal_id="terminal-001", state="idle", revision=1):
+        return {
+            "terminal_id": terminal_id,
+            "agent_status": state,
+            "workspace_id": "workspace-001",
+            "tab_id": "tab-001",
+            "pane_id": "pane-001",
+            "focused": False,
+            "revision": revision,
+        }
+
+    @staticmethod
+    def _process_info(*, process_ids=(42,)):
+        return {
+            "type": "pane_process_info",
+            "process_info": {
+                "pane_id": "pane-001",
+                "shell_pid": 7,
+                "foreground_processes": [
+                    {"pid": process_id} for process_id in process_ids
+                ],
+            },
+        }
+
+    def _spawn(self, adapter):
+        return adapter.spawn_task(
+            task_id="task-001",
+            correlation_id="corr-001",
+            agent_name="fixture-agent",
+            agent_kind="codex",
+            pane_id="pane-001",
+        )
+
+    def test_wait_and_bounded_read_map_official_agent_surfaces(self):
+        calls = []
+
+        def request(method, params):
+            calls.append((method, params))
+            if method == "agent.start":
+                return {
+                    "type": "agent_started",
+                    "agent": self._agent(),
+                }
+            if method == "agent.wait":
+                return {
+                    "type": "agent_info",
+                    "agent": self._agent(state="blocked", revision=2),
+                }
+            if method == "agent.read":
+                return {
+                    "type": "pane_read",
+                    "read": {
+                        "pane_id": "pane-001",
+                        "workspace_id": "workspace-001",
+                        "tab_id": "tab-001",
+                        "revision": 0,
+                        "source": "recent",
+                        "format": "text",
+                        "text": "Awaiting approval\\n",
+                        "truncated": True,
+                    },
+                }
+            self.fail(f"unexpected method: {method}")
+
+        adapter = HerdrAdapter(request=request)
+        task = self._spawn(adapter)
+
+        blocked = adapter.wait_for_task(
+            run_id=task.run_id,
+            until=("blocked",),
+            timeout_ms=1_000,
+        )
+        output = adapter.read_task_output(
+            run_id=task.run_id,
+            source="recent",
+            lines=3,
+        )
+
+        self.assertEqual(blocked.state, "blocked")
+        self.assertEqual(blocked.revision, 2)
+        self.assertEqual(output.text, "Awaiting approval\\n")
+        self.assertTrue(output.truncated)
+        self.assertEqual(
+            calls,
+            [
+                (
+                    "agent.start",
+                    {
+                        "name": "fixture-agent",
+                        "kind": "codex",
+                        "pane_id": "pane-001",
+                        "timeout_ms": 30_000,
+                    },
+                ),
+                (
+                    "agent.wait",
+                    {
+                        "target": "pane-001",
+                        "until": ["blocked"],
+                        "timeout_ms": 1_000,
+                    },
+                ),
+                (
+                    "agent.read",
+                    {
+                        "target": "pane-001",
+                        "source": "recent",
+                        "lines": 3,
+                        "format": "text",
+                        "strip_ansi": True,
+                    },
+                ),
+            ],
+        )
+
+    def test_force_close_requires_confirmed_graceful_claim(self):
+        calls = []
+
+        def request(method, params):
+            calls.append((method, params))
+            if method == "agent.start":
+                return {
+                    "type": "agent_started",
+                    "agent": self._agent(state="blocked"),
+                }
+            if method == "agent.get":
+                if calls.count(("agent.get", {"target": "pane-001"})) == 3:
+                    raise HerdrRequestError("agent_not_found", "agent target pane-001 not found")
+                return {"type": "agent_info", "agent": self._agent(state="blocked")}
+            if method == "pane.process_info":
+                return self._process_info()
+            if method == "pane.send_keys":
+                return {"type": "ok"}
+            if method == "pane.close":
+                return {"type": "ok"}
+            self.fail(f"unexpected method: {method}")
+
+        adapter = HerdrAdapter(request=request)
+        task = self._spawn(adapter)
+        graceful = adapter.cancel_task(
+            run_id=task.run_id,
+            correlation_id="corr-graceful",
+            expected_revision=1,
+        )
+
+        with self.assertRaises(ValueError):
+            adapter.force_cancel_task(
+                run_id=task.run_id,
+                correlation_id="corr-force",
+                expected_revision=1,
+                force_confirmed=False,
+            )
+        forced = adapter.force_cancel_task(
+            run_id=task.run_id,
+            correlation_id="corr-force",
+            expected_revision=1,
+            force_confirmed=True,
+        )
+
+        self.assertEqual(graceful.action, "graceful_interrupt")
+        self.assertEqual(forced.action, "force_close")
+        self.assertEqual(forced.state, "force_closed")
+        with self.assertRaisesRegex(ValueError, "task is not claimed"):
+            adapter.task_status(task.run_id)
+        self.assertEqual(
+            [method for method, _params in calls],
+            [
+                "agent.start",
+                "agent.get",
+                "pane.process_info",
+                "pane.send_keys",
+                "agent.get",
+                "pane.process_info",
+                "pane.close",
+                "agent.get",
+            ],
+        )
+
+    def test_force_close_rejects_changed_terminal_before_pane_close(self):
+        calls = []
+        get_count = 0
+
+        def request(method, params):
+            nonlocal get_count
+            calls.append((method, params))
+            if method == "agent.start":
+                return {
+                    "type": "agent_started",
+                    "agent": self._agent(terminal_id="terminal-original", state="blocked"),
+                }
+            if method == "agent.get":
+                get_count += 1
+                terminal_id = "terminal-original" if get_count == 1 else "terminal-replacement"
+                return {
+                    "type": "agent_info",
+                    "agent": self._agent(terminal_id=terminal_id, state="blocked"),
+                }
+            if method == "pane.process_info":
+                return self._process_info()
+            if method == "pane.send_keys":
+                return {"type": "ok"}
+            self.fail(f"unexpected method: {method}")
+
+        adapter = HerdrAdapter(request=request)
+        task = self._spawn(adapter)
+        adapter.cancel_task(
+            run_id=task.run_id,
+            correlation_id="corr-graceful",
+            expected_revision=1,
+        )
+
+        with self.assertRaises(ValueError):
+            adapter.force_cancel_task(
+                run_id=task.run_id,
+                correlation_id="corr-force",
+                expected_revision=1,
+                force_confirmed=True,
+            )
+
+        self.assertNotIn("pane.close", [method for method, _params in calls])
 
 
 class HerdrAdapterProbeTests(unittest.TestCase):

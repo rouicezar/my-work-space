@@ -236,6 +236,84 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
         self.assertNotIn("FIXTURE-B-DONE", text_a)
         self.assertNotIn("FIXTURE-A-FINISHED", text_b)
 
+    def test_blocked_agent_wait_read_and_explicit_force_close(self):
+        root = Path(self.temp_root.name)
+        workdir = root / "blocked"
+        workdir.mkdir()
+        fixture_home = root / "blocked-home"
+        fixture_home.mkdir()
+        fixture_path = f"{self.fixture_bin}:/usr/bin:/bin"
+        (fixture_home / ".bash_profile").write_text(
+            f"export PATH={fixture_path!r}\n", encoding="utf-8"
+        )
+        workspace = self.adapter.open_workspace(
+            cwd=str(workdir),
+            label="forma-p3t14-blocked",
+            env={"HOME": str(fixture_home), "PATH": fixture_path},
+        )
+        self._send_text(
+            workspace.root_pane_id,
+            'echo "P3T14-BLOCKED-READY-$(date +%s)"\n',
+        )
+        self._wait_marker(
+            workspace.root_pane_id,
+            "P3T14-BLOCKED-READY-[0-9]+",
+        )
+        time.sleep(0.75)
+        task = self.adapter.spawn_task(
+            task_id="blocked",
+            correlation_id="corr-blocked",
+            agent_name="fixture-blocked",
+            agent_kind="codex",
+            pane_id=workspace.root_pane_id,
+            startup_timeout_ms=5_000,
+        )
+        prompted = self.transport(
+            "agent.prompt",
+            {
+                "target": task.pane_id,
+                "text": "fixture-blocked",
+                "wait": {"until": ["blocked"], "timeout_ms": 5_000},
+            },
+        )
+        self.assertEqual(prompted["type"], "agent_prompted")
+        self.assertEqual(prompted["agent"]["agent_status"], "blocked")
+
+        blocked = self.adapter.wait_for_task(
+            run_id=task.run_id,
+            until=("blocked",),
+            timeout_ms=1_000,
+        )
+        self.assertEqual(blocked.state, "blocked")
+        output = self.adapter.read_task_output(
+            run_id=task.run_id,
+            source="recent",
+            lines=50,
+        )
+        self.assertLessEqual(len(output.text.splitlines()), 50)
+        self.assertNotIn("\x1b", output.text)
+        self.assertIn("Awaiting explicit approval", output.text)
+        process = self.adapter.task_process_info(run_id=task.run_id)
+        self.assertTrue(process.foreground_process_ids)
+
+        graceful = self.adapter.cancel_task(
+            run_id=task.run_id,
+            correlation_id="corr-graceful",
+            expected_revision=blocked.revision,
+        )
+        self.assertEqual(graceful.action, "graceful_interrupt")
+        forced = self.adapter.force_cancel_task(
+            run_id=task.run_id,
+            correlation_id="corr-force",
+            expected_revision=blocked.revision,
+            force_confirmed=True,
+        )
+        self.assertEqual(forced.action, "force_close")
+        self.assertEqual(forced.state, "force_closed")
+        with self.assertRaises(HerdrRequestError) as ctx:
+            self.transport("agent.get", {"target": task.pane_id})
+        self.assertEqual(ctx.exception.code, "agent_not_found")
+
 
 @unittest.skipUnless(
     _find_herdr_binary(), "verified Herdr artifact binary is not available"
