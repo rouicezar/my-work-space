@@ -7,9 +7,9 @@ Scope: verified Codex's existing removal of obsolete `spawn_reported_task()` and
 Verification: production and test absence scans passed; focused Herdr suite passed 53 tests in 19.790s; full Python suite passed 296 tests with 1 expected skip in 23.986s; Swift package passed 43 tests with 2 environment-gated Keychain skips; no `forma-p3t*` named-session residue; bilingual current-state parity and `git diff --check` passed
 Files changed: `forma_ai/herdr_adapter.py`, `tests/test_herdr_adapter.py`, `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md`, `docs/TASK_HANDOFF.md`, and their mandatory Chinese mirrors
 Upstream decision: Herdr `agent.start` remains the sole product task-launch authority; historical evidence may retain old terminology but production and test code contain no obsolete launcher reference
-Commit and push: pending explicit user authorization
-Blocked items: no technical blocker; P3-T15 must wait for this verified batch to be committed and pushed
-Next exact action: after explicit authorization, commit and push the scoped correction, then claim P3-T15
+Commit and push: local commit `13c43d4` (`fix: remove obsolete Herdr reported-task launcher`) created; push remains unauthorized
+Blocked items: no technical blocker; P3-T15 must wait for local commit `13c43d4` and its synchronized closeout to be pushed
+Next exact action: after explicit authorization, push the scoped correction and synchronized closeout, then claim P3-T15
 Secret/external-write status: no credentials, cloud/model calls, production/default sessions, or external network; disposable local sessions self-cleaned
 
 ## 2026-09-02 - P1-T09 F5 correction - Qoder takeover
