@@ -15,6 +15,17 @@ Commit and push: local commit + push (user instructed commit/push).
 Next exact action: add the four contracts to LifecycleContract, then views + localization, wire, add tests, verify.
 Secret/external-write status: no credentials, cloud/model calls, production/default sessions, or external network; only repo-local preview fixtures.
 
+## 2026-09-03 - P4-T16 - Claude exit
+
+Executor: Claude agent
+Scope verified: the Models, Runtime, Privacy, and Diagnostics final states are complete as bilingual Previews bound to the existing contracts — `ModelsProvidersContract` (3 route states, `downloadsModel=false`, `cloudDisabledByDefault=true`), `LocalRuntimeContract` (5 honest runtime states, `startsRuntime=false`, `reportsHonestState=true`), `DataPrivacyContract` (`storesSecretsInKeychain=true`, `readsUserData=false`), `DiagnosticsRecoveryContract` (`performsRecovery=false`, `honestDegradation=true`), views, and shared localization, wired into the `DailyWorkbenchPreview` Settings section navigator (now seven sections: memory / agents & tools / permissions / models & providers / local runtime / data & privacy / diagnostics).
+Evidence: four new Swift tests pass; full `swift test --package-path prototypes/packaging` → 52 tests passed (2 real-Keychain environment-gated skips); `git diff --check` clean.
+Upstream decision: oMLX/Herdr remain the managed runtime; the Preview renders honest states without runtime start/stop, model download, or recovery.
+Files changed: `ProductPreviewProvider.swift`, `DailyWorkbenchPreview.swift`, `SettingsFinalStatesLocalization.swift`, `SettingsFinalStatesPreview.swift`, `ProductPreviewProviderTests.swift`, `docs/plans/2026-08-31-multi-agent-workbench-master-plan.md`, `docs/TASK_HANDOFF.md`, and the mandatory Chinese mirrors.
+Commit and push: local commits (claim, feat, fix); push follows the user's commit+push instruction.
+Next exact action: P4-T17 (final-shape manual frontend acceptance).
+Secret/external-write status: no credentials, cloud/model calls, production/default sessions, or external network; only repo-local preview fixtures.
+
 ## 2026-09-03 - P4-T15 - Claude takeover
 
 Executor: Claude agent
