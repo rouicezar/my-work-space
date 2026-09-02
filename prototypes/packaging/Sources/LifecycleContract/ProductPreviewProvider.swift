@@ -288,6 +288,86 @@ public struct GovernedMemoryReviewContract: Sendable {
     )
 }
 
+public enum AgentAdapterKind: String, CaseIterable, Sendable, Equatable, Hashable, Identifiable {
+    case herdrTerminal
+    case codexCompatible
+    case claudeCompatible
+    case holaOSReference
+
+    public var id: String { rawValue }
+}
+
+public enum AgentsToolsSection: Sendable, Equatable {
+    case agentList
+    case agentDetail
+    case requiredOperations
+    case authorityBoundary
+}
+
+public struct AgentsToolsContract: Sendable {
+    public let agentKinds: [AgentAdapterKind]
+    public let requiredOperations: [String]
+    public let sections: [AgentsToolsSection]
+    public let supportedLanguages: [ProductLanguage]
+    public let allowedInteraction: PreviewInteraction
+    public let languageSwitchPreservesSelection: Bool
+    public let runtimeActionsAllowed: Bool
+    public let performsDispatch: Bool
+    public let reimplementsUpstream: Bool
+
+    public static let productDefault = AgentsToolsContract(
+        agentKinds: AgentAdapterKind.allCases,
+        requiredOperations: ["discover", "dispatch", "status", "handoff", "cancel", "resume", "artifacts", "audit"],
+        sections: [.agentList, .agentDetail, .requiredOperations, .authorityBoundary],
+        supportedLanguages: [.simplifiedChinese, .english],
+        allowedInteraction: .showNextPreviewState,
+        languageSwitchPreservesSelection: true,
+        runtimeActionsAllowed: false,
+        performsDispatch: false,
+        reimplementsUpstream: false
+    )
+}
+
+public enum PermissionScope: String, CaseIterable, Sendable, Equatable, Hashable, Identifiable {
+    case read
+    case write
+    case send
+    case delete
+    case execute
+    case credential
+
+    public var id: String { rawValue }
+}
+
+public enum PermissionsSection: Sendable, Equatable {
+    case scopeList
+    case scopeDetail
+    case approvalPolicy
+    case authorityBoundary
+}
+
+public struct PermissionsContract: Sendable {
+    public let scopes: [PermissionScope]
+    public let sections: [PermissionsSection]
+    public let supportedLanguages: [ProductLanguage]
+    public let allowedInteraction: PreviewInteraction
+    public let languageSwitchPreservesSelection: Bool
+    public let runtimeActionsAllowed: Bool
+    public let performsApproval: Bool
+    public let grantsPermission: Bool
+
+    public static let productDefault = PermissionsContract(
+        scopes: PermissionScope.allCases,
+        sections: [.scopeList, .scopeDetail, .approvalPolicy, .authorityBoundary],
+        supportedLanguages: [.simplifiedChinese, .english],
+        allowedInteraction: .showNextPreviewState,
+        languageSwitchPreservesSelection: true,
+        runtimeActionsAllowed: false,
+        performsApproval: false,
+        grantsPermission: false
+    )
+}
+
 public struct PreviewAgent: Identifiable, Sendable, Equatable {
     public let id: String
     public let role: String

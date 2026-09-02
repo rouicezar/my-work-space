@@ -173,3 +173,30 @@ import Testing
     #expect(memory.performsCorrect == false)
     #expect(memory.performsDelete == false)
 }
+
+@Test func agentsToolsPreviewPresentsAdapterScopeWithoutReimplementation() {
+    let agents = AgentsToolsContract.productDefault
+
+    #expect(agents.agentKinds == [.herdrTerminal, .codexCompatible, .claudeCompatible, .holaOSReference])
+    #expect(agents.requiredOperations == ["discover", "dispatch", "status", "handoff", "cancel", "resume", "artifacts", "audit"])
+    #expect(agents.sections == [.agentList, .agentDetail, .requiredOperations, .authorityBoundary])
+    #expect(agents.supportedLanguages == [.simplifiedChinese, .english])
+    #expect(agents.allowedInteraction == .showNextPreviewState)
+    #expect(agents.languageSwitchPreservesSelection == true)
+    #expect(agents.runtimeActionsAllowed == false)
+    #expect(agents.performsDispatch == false)
+    #expect(agents.reimplementsUpstream == false)
+}
+
+@Test func permissionsPreviewPresentsScopesWithoutGrantingApproval() {
+    let permissions = PermissionsContract.productDefault
+
+    #expect(permissions.scopes == [.read, .write, .send, .delete, .execute, .credential])
+    #expect(permissions.sections == [.scopeList, .scopeDetail, .approvalPolicy, .authorityBoundary])
+    #expect(permissions.supportedLanguages == [.simplifiedChinese, .english])
+    #expect(permissions.allowedInteraction == .showNextPreviewState)
+    #expect(permissions.languageSwitchPreservesSelection == true)
+    #expect(permissions.runtimeActionsAllowed == false)
+    #expect(permissions.performsApproval == false)
+    #expect(permissions.grantsPermission == false)
+}

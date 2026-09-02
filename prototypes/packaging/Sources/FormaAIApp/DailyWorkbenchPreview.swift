@@ -12,6 +12,9 @@ struct DailyWorkbenchPreview: View {
     @State private var destination: PreviewDestination = .newTask
     @State private var historySelection: HistoryPreviewTaskState = .interrupted
     @State private var memorySelection: GovernedMemoryReviewState = .candidate
+    @State private var settingsSection: PreviewSettingsSection = .memory
+    @State private var agentSelection: AgentAdapterKind = .herdrTerminal
+    @State private var permissionSelection: PermissionScope = .write
 
     var body: some View {
         let copy = ProductCopy(language: language)
@@ -41,7 +44,7 @@ struct DailyWorkbenchPreview: View {
     @ViewBuilder
     private func mainContent(_ copy: ProductCopy) -> some View {
         if destination == .settings {
-            GovernedMemoryReviewPreview(language: language, selection: $memorySelection)
+            settingsSurface(copy)
         } else if destination == .history {
             HistoryRecoveryPreview(language: language, selection: $historySelection)
         } else if transitionStage == .compose {
@@ -54,6 +57,51 @@ struct DailyWorkbenchPreview: View {
                 onAdvance: advanceTransition,
                 onBackToEdit: { transitionStage = .compose }
             )
+        }
+    }
+
+    @ViewBuilder
+    private func settingsSurface(_ copy: ProductCopy) -> some View {
+        HStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 6) {
+                settingsSectionRow(.memory, copy[.memoryTitle], "brain.head.profile")
+                settingsSectionRow(.agentsTools, copy[.agentsToolsTitle], "rectangle.3.group")
+                settingsSectionRow(.permissions, copy[.permissionsTitle], "hand.raised")
+                Spacer()
+            }
+            .padding(16).frame(width: 170).background(.thinMaterial)
+            Divider()
+            settingsSectionContent
+        }
+    }
+
+    private func settingsSectionRow(_ section: PreviewSettingsSection, _ title: String, _ symbol: String) -> some View {
+        let selected = section == settingsSection
+        return Button {
+            settingsSection = section
+        } label: {
+            HStack(spacing: 9) {
+                Image(systemName: symbol).frame(width: 18)
+                Text(title).font(.callout.weight(selected ? .semibold : .regular))
+                Spacer()
+            }
+            .contentShape(Rectangle())
+        }
+        .padding(.horizontal, 10).padding(.vertical, 8)
+        .foregroundStyle(selected ? Color.white : Color.primary)
+        .background(selected ? Color.blue : Color.clear, in: RoundedRectangle(cornerRadius: 9))
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var settingsSectionContent: some View {
+        switch settingsSection {
+        case .memory:
+            GovernedMemoryReviewPreview(language: language, selection: $memorySelection)
+        case .agentsTools:
+            AgentsToolsPreview(language: language, selection: $agentSelection)
+        case .permissions:
+            PermissionsPreview(language: language, selection: $permissionSelection)
         }
     }
 
@@ -260,10 +308,10 @@ struct DailyWorkbenchPreview: View {
                 .buttonStyle(.plain).help(copy[.collapseSupervision])
             }
             VStack(alignment: .leading, spacing: 8) {
-                Image(systemName: destination == .settings ? "brain.head.profile" : (destination == .history ? "clock.arrow.circlepath" : (transitionStage == .compose ? "pause.circle" : "play.circle.fill")))
+                Image(systemName: destination == .settings ? settingsSectionSymbol : (destination == .history ? "clock.arrow.circlepath" : (transitionStage == .compose ? "pause.circle" : "play.circle.fill")))
                     .font(.title).foregroundStyle(destination == .settings || destination == .history || transitionStage != .compose ? Color.blue : Color.secondary)
-                Text(destination == .settings ? copy.memoryStateTitle(memorySelection) : (destination == .history ? copy.stateTitle(historySelection) : (transitionStage == .compose ? copy[.noActiveTask] : copy.stageTitle(transitionStage)))).font(.headline)
-                Text(destination == .settings ? copy[.memorySyntheticOnly] : (destination == .history ? copy[.truthBoundaryBody] : (transitionStage == .compose ? copy[.supervisionExplanation] : copy[.previewStateNotice])))
+                Text(destination == .settings ? settingsSectionTitle : (destination == .history ? copy.stateTitle(historySelection) : (transitionStage == .compose ? copy[.noActiveTask] : copy.stageTitle(transitionStage)))).font(.headline)
+                Text(destination == .settings ? settingsSectionSummary : (destination == .history ? copy[.truthBoundaryBody] : (transitionStage == .compose ? copy[.supervisionExplanation] : copy[.previewStateNotice])))
                     .font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -271,7 +319,7 @@ struct DailyWorkbenchPreview: View {
             Divider()
             statusRow(
                 copy[.agentStatus],
-                destination == .settings ? copy.memoryProvenance(memorySelection) : (destination == .history ? copy.agentSummary(historySelection) : (transitionStage == .compose ? copy[.waitingForTask] : copy.stageTitle(transitionStage))),
+                destination == .settings ? settingsSectionStatus : (destination == .history ? copy.agentSummary(historySelection) : (transitionStage == .compose ? copy[.waitingForTask] : copy.stageTitle(transitionStage))),
                 "person.2"
             )
             statusRow(
@@ -294,6 +342,41 @@ struct DailyWorkbenchPreview: View {
         }
     }
 
+    private var settingsSectionSymbol: String {
+        switch settingsSection {
+        case .memory: "brain.head.profile"
+        case .agentsTools: "rectangle.3.group"
+        case .permissions: "hand.raised"
+        }
+    }
+
+    private var settingsSectionTitle: String {
+        let copy = ProductCopy(language: language)
+        switch settingsSection {
+        case .memory: copy.memoryStateTitle(memorySelection)
+        case .agentsTools: copy.agentKindTitle(agentSelection)
+        case .permissions: copy.permissionScopeTitle(permissionSelection)
+        }
+    }
+
+    private var settingsSectionSummary: String {
+        let copy = ProductCopy(language: language)
+        switch settingsSection {
+        case .memory: copy[.memorySyntheticOnly]
+        case .agentsTools: copy[.agentsToolsSyntheticOnly]
+        case .permissions: copy[.permissionsSyntheticOnly]
+        }
+    }
+
+    private var settingsSectionStatus: String {
+        let copy = ProductCopy(language: language)
+        switch settingsSection {
+        case .memory: copy.memoryProvenance(memorySelection)
+        case .agentsTools: copy.agentKindDetail(agentSelection)
+        case .permissions: copy.permissionScopeDetail(permissionSelection)
+        }
+    }
+
     private func advanceTransition() {
         let stages = ComposeToExecutionPreviewContract.productDefault.stages
         guard let index = stages.firstIndex(of: transitionStage), index + 1 < stages.count else { return }
@@ -310,4 +393,10 @@ private enum PreviewDestination: Hashable {
     case newTask
     case history
     case settings
+}
+
+private enum PreviewSettingsSection: Hashable {
+    case memory
+    case agentsTools
+    case permissions
 }
