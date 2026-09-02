@@ -1,7 +1,9 @@
 """Live Herdr integration proofs against the verified Herdr binary."""
 
 import os
+import signal
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -38,11 +40,55 @@ def _find_herdr_binary():
     _find_herdr_binary(), "verified Herdr artifact binary is not available"
 )
 class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
+    WATCHDOG_SECONDS = 45.0
+
+    def _stage(self, name):
+        self.current_stage = name
+        elapsed = time.monotonic() - self.started_at
+        print(
+            f"[P3-T12 {self.session_name}] {elapsed:05.1f}s {name}",
+            file=sys.stderr,
+            flush=True,
+        )
+
+    def _server_log_tail(self, lines=40):
+        path = getattr(self, "server_output_path", None)
+        if path is None or not path.exists():
+            return "server output unavailable"
+        text = path.read_text(encoding="utf-8", errors="replace")
+        return "\n".join(text.splitlines()[-lines:]) or "server output empty"
+
+    def _watchdog_expired(self, _signum, _frame):
+        raise TimeoutError(
+            f"P3-T12 exceeded {self.WATCHDOG_SECONDS:.0f}s during "
+            f"{self.current_stage}\nHerdr server output tail:\n{self._server_log_tail()}"
+        )
+
+    def _callTestMethod(self, method):
+        try:
+            return super()._callTestMethod(method)
+        except BaseException:
+            self._stage(f"failed during {self.current_stage}")
+            print(
+                f"[P3-T12 {self.session_name}] Herdr server output tail:\n"
+                f"{self._server_log_tail()}",
+                file=sys.stderr,
+                flush=True,
+            )
+            raise
+
     def setUp(self):
+        self.started_at = time.monotonic()
+        self.current_stage = "setup"
         self.binary = _find_herdr_binary()
         self.fixture_bin = Path(__file__).parent / "fixtures" / "herdr_agent_bin"
         self.temp_root = tempfile.TemporaryDirectory(prefix="forma-p3t12-test-")
         self.session_name = f"forma-p3t12-test-{uuid.uuid4().hex[:8]}"
+        self.server_output_path = Path(self.temp_root.name) / "herdr-server-output.log"
+        self.server_output_handle = self.server_output_path.open("wb")
+        self.previous_alarm_handler = signal.getsignal(signal.SIGALRM)
+        signal.signal(signal.SIGALRM, self._watchdog_expired)
+        signal.setitimer(signal.ITIMER_REAL, self.WATCHDOG_SECONDS)
         self.socket_path = os.path.join(
             os.path.expanduser("~"),
             ".config",
@@ -53,6 +99,7 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
         )
         self.server = None
         try:
+            self._stage("starting Herdr server")
             server_env = os.environ.copy()
             server_env["SHELL"] = "/bin/bash"
             server_env["PATH"] = (
@@ -60,8 +107,8 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
             )
             self.server = subprocess.Popen(
                 [self.binary, "--session", self.session_name, "server"],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                stdout=self.server_output_handle,
+                stderr=subprocess.STDOUT,
                 env=server_env,
             )
             deadline = time.monotonic() + 15.0
@@ -73,8 +120,9 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
                         f"Herdr test server exited early with {self.server.returncode}"
                     )
                 time.sleep(0.1)
+            self._stage("Herdr socket ready")
             self.transport = HerdrSocketTransport(
-                socket_path=self.socket_path, environ={}, request_timeout=60.0
+                socket_path=self.socket_path, environ={}, request_timeout=15.0
             )
             self.adapter = HerdrAdapter(
                 executable_finder=lambda _name: self.binary,
@@ -83,19 +131,32 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
                 probe=self.transport.probe,
             )
         except Exception:
+            print(self._server_log_tail(), file=sys.stderr, flush=True)
             self.tearDown()
             raise
 
     def tearDown(self):
+        cleanup_errors = []
+        if hasattr(self, "started_at") and hasattr(self, "session_name"):
+            self._stage("cleanup started")
         for args in (
             ["session", "stop", self.session_name, "--json"],
             ["session", "delete", self.session_name, "--json"],
         ):
-            subprocess.run(
-                [self.binary, *args],
-                capture_output=True,
-                timeout=30,
-            )
+            try:
+                completed = subprocess.run(
+                    [self.binary, *args],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                if completed.returncode != 0:
+                    cleanup_errors.append(
+                        f"{' '.join(args)} exited {completed.returncode}: "
+                        f"{completed.stderr.strip() or completed.stdout.strip()}"
+                    )
+            except subprocess.TimeoutExpired:
+                cleanup_errors.append(f"{' '.join(args)} exceeded 10s")
         if self.server is not None and self.server.poll() is None:
             self.server.terminate()
             try:
@@ -104,7 +165,16 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
                 self.server.kill()
                 self.server.wait(timeout=5)
         if hasattr(self, "temp_root"):
+            if hasattr(self, "server_output_handle"):
+                self.server_output_handle.close()
             self.temp_root.cleanup()
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        if hasattr(self, "previous_alarm_handler"):
+            signal.signal(signal.SIGALRM, self.previous_alarm_handler)
+        if hasattr(self, "started_at") and hasattr(self, "session_name"):
+            self._stage("cleanup finished")
+        if cleanup_errors:
+            self.fail("; ".join(cleanup_errors))
 
     def _send_text(self, pane_id, text):
         response = self.transport(
@@ -119,7 +189,7 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
                 "pane_id": pane_id,
                 "source": "recent",
                 "match": {"type": "regex", "value": pattern},
-                "timeout_ms": 20000,
+                "timeout_ms": 10000,
             },
         )
         self.assertEqual(response["type"], "output_matched")
@@ -144,6 +214,7 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
         self.assertEqual(response["type"], "ok")
 
     def test_two_agents_are_launched_and_detected_by_agent_start(self):
+        self._stage("creating isolated panes")
         root = Path(self.temp_root.name)
         dir_a = root / "real-a"
         dir_b = root / "real-b"
@@ -173,6 +244,7 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
         )
         self._wait_marker(workspace.root_pane_id, "REAL-A-SHELL-READY-[0-9]+")
         self._wait_marker(pane_b.pane_id, "REAL-B-SHELL-READY-[0-9]+")
+        self._stage("both panes ready")
 
         try:
             task_a = self.adapter.spawn_task(
@@ -185,13 +257,16 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
             )
         except Exception as exc:
             raise AssertionError(self._read_pane(workspace.root_pane_id)) from exc
+        self._stage("agent A detected")
         task_b = self.adapter.spawn_task(
             task_id="real-b",
             correlation_id="corr-real-b",
             agent_name="fixture-real-b",
             agent_kind="codex",
             pane_id=pane_b.pane_id,
+            startup_timeout_ms=5_000,
         )
+        self._stage("agent B detected")
 
         self.assertNotEqual(task_a.run_id, task_b.run_id)
         self.assertNotEqual(task_a.pane_id, task_b.pane_id)
@@ -210,6 +285,7 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
         self._send_text(task_a.pane_id, "fixture-a\n")
         self._send_text(task_b.pane_id, "fixture-b\n")
         self._wait_marker(task_b.pane_id, "FIXTURE-B-DONE-[0-9]+")
+        self._stage("parallel completion marker observed")
         running_a = self.adapter.task_status(task_a.run_id)
         cancel = self.adapter.cancel_task(
             run_id=task_a.run_id,
@@ -217,6 +293,7 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
             expected_revision=running_a.revision,
         )
         self.assertEqual(cancel.action, "graceful_interrupt")
+        self._stage("agent A cancellation requested")
         self._send_text(task_a.pane_id, 'echo "REAL-A-BACK-$(date +%s)"\n')
         self._wait_marker(task_a.pane_id, "REAL-A-BACK-[0-9]+")
 
@@ -235,6 +312,7 @@ class HerdrTwoFixtureAgentIntegrationTests(unittest.TestCase):
         text_b = self._read_pane(task_b.pane_id)
         self.assertNotIn("FIXTURE-B-DONE", text_a)
         self.assertNotIn("FIXTURE-A-FINISHED", text_b)
+        self._stage("isolation assertions complete")
 
     def test_blocked_agent_wait_read_and_explicit_force_close(self):
         root = Path(self.temp_root.name)

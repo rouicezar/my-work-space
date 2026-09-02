@@ -31,10 +31,10 @@ This is the authoritative execution and progress tracker for the Forma AI projec
 
 Updated: 2026-09-02 Asia/Shanghai
 Current phase: P3 Herdr runtime integration, continuing the user-approved relay priority P3-T10～T15 (plan goals, requirements, and audit logic unchanged)
-Current task: none (P3-T14 independently reviewed and verified; commit and push pending)
-Current status: P3-T14 verified — the missing Chinese handoff exit is repaired. Independent review corrected a cancellation-safety defect by rejecting workspace/pane/terminal replacement during status refresh, normalized process reconciliation, and removed all run registries after confirmed force close. Focused Herdr 55, full Python 298 with 1 expected skip, and Swift 43 with 2 environment-gated skips passed.
-Next action: commit and push the verified P3-T14 batch, then claim a P3-T12 diagnostic-hardening correction to add bounded stage visibility and repeated stability proof before P3-T15.
-Audit verdict: every product-owned runtime-like capability is justified, already a thin adapter over an upstream entry point, or scheduled for reduction inside existing downstream tasks (P3-T10+, P5, P6-T01+); no plan goal, requirement, or audit gate change is required; per-capability matrix with file/line evidence: `docs/research/product-runtime-capability-audit-2026-09-01.md`
+Current task: none (P3-T12 diagnostic hardening verified; commit and push pending)
+Current status: P3-T12 correction verified — live stages are visible, server log tails survive failure, request/marker/start/cleanup timeouts are bounded, and a 45-second whole-test watchdog names the stuck stage. Ten consecutive live runs passed in 100.312s; focused Herdr 55, full Python 298 with 1 expected skip, and Swift 43 with 2 environment-gated skips passed with no named-session residue.
+Next action: commit and push the P3-T12 diagnostic batch. Before P3-T15, resolve the upstream-first audit stop on obsolete `spawn_reported_task()`; it is unused outside two unit tests and duplicates the selected official `agent.start` launch path.
+Audit verdict: most product-owned runtime-like capability is justified, thin upstream adaptation, or scheduled reduction. Follow-up audit found one concrete removal candidate: obsolete `spawn_reported_task()` from the superseded client-reported fixture. F5 in `docs/research/product-runtime-capability-audit-2026-09-01.md` must be resolved before P3-T15; no plan goal or architecture change is required.
 Default next frontend task after the audit gate: P4-T14 (bilingual governed-memory review Preview), still pending and unchanged.
 
 Current Git fact at P0-T10 takeover:
