@@ -353,27 +353,27 @@ struct DailyWorkbenchPreview: View {
     private var settingsSectionTitle: String {
         let copy = ProductCopy(language: language)
         switch settingsSection {
-        case .memory: copy.memoryStateTitle(memorySelection)
-        case .agentsTools: copy.agentKindTitle(agentSelection)
-        case .permissions: copy.permissionScopeTitle(permissionSelection)
+        case .memory: return copy.memoryStateTitle(memorySelection)
+        case .agentsTools: return copy.agentKindTitle(agentSelection)
+        case .permissions: return copy.permissionScopeTitle(permissionSelection)
         }
     }
 
     private var settingsSectionSummary: String {
         let copy = ProductCopy(language: language)
         switch settingsSection {
-        case .memory: copy[.memorySyntheticOnly]
-        case .agentsTools: copy[.agentsToolsSyntheticOnly]
-        case .permissions: copy[.permissionsSyntheticOnly]
+        case .memory: return copy[.memorySyntheticOnly]
+        case .agentsTools: return copy[.agentsToolsSyntheticOnly]
+        case .permissions: return copy[.permissionsSyntheticOnly]
         }
     }
 
     private var settingsSectionStatus: String {
         let copy = ProductCopy(language: language)
         switch settingsSection {
-        case .memory: copy.memoryProvenance(memorySelection)
-        case .agentsTools: copy.agentKindDetail(agentSelection)
-        case .permissions: copy.permissionScopeDetail(permissionSelection)
+        case .memory: return copy.memoryProvenance(memorySelection)
+        case .agentsTools: return copy.agentKindDetail(agentSelection)
+        case .permissions: return copy.permissionScopeDetail(permissionSelection)
         }
     }
 
