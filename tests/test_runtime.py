@@ -212,6 +212,76 @@ class RuntimeManagerTests(unittest.TestCase):
         self.assertEqual(failed.exception.code, "MEMORY_START_TIMEOUT")
         self.assertEqual(self.controller.terminated, ["memory", "broker", "omlx"])
 
+    def test_start_requires_herdr_probe_when_herdr_is_configured(self):
+        with self.assertRaises(RuntimeManagerError) as failed:
+            self.manager.start(
+                correlation_id="request-1",
+                omlx=service(self.root, "omlx", "a"),
+                broker=service(self.root, "broker", "b"),
+                memory=service(self.root, "memory", "c"),
+                herdr=service(self.root, "herdr", "d"),
+                omlx_probe=lambda: True,
+                broker_probe=lambda: True,
+                memory_probe=lambda: True,
+            )
+        self.assertEqual(failed.exception.code, "HERDR_PROBE_REQUIRED")
+        self.assertEqual(self.controller.spawned, [])
+
+    def test_start_spawns_herdr_first_and_stop_terminates_it_first(self):
+        record = self.manager.start(
+            correlation_id="request-1",
+            omlx=service(self.root, "omlx", "a"),
+            broker=service(self.root, "broker", "b"),
+            memory=service(self.root, "memory", "c"),
+            herdr=service(self.root, "herdr", "d"),
+            omlx_probe=lambda: True,
+            broker_probe=lambda: True,
+            memory_probe=lambda: True,
+            herdr_probe=lambda: True,
+        )
+        self.assertEqual(record.phase, "running")
+        self.assertIsNotNone(record.herdr)
+        self.assertEqual(
+            [item[0].role for item in self.controller.spawned], ["herdr", "omlx", "broker", "memory"],
+        )
+        status = self.manager.status()
+        self.assertTrue(status["herdr_alive"])
+        stopped = self.manager.stop()
+        self.assertEqual(stopped.phase, "stopped")
+        self.assertEqual(self.controller.terminated, ["herdr", "memory", "broker", "omlx"])
+
+    def test_herdr_failure_rolls_back_previously_started_herdr_process(self):
+        with self.assertRaises(RuntimeManagerError) as failed:
+            self.manager.start(
+                correlation_id="request-1",
+                omlx=service(self.root, "omlx", "a"),
+                broker=service(self.root, "broker", "b"),
+                memory=service(self.root, "memory", "c"),
+                herdr=service(self.root, "herdr", "d"),
+                omlx_probe=lambda: True,
+                broker_probe=lambda: True,
+                memory_probe=lambda: True,
+                herdr_probe=lambda: False,
+                timeout=0.001,
+            )
+        self.assertEqual(failed.exception.code, "HERDR_START_TIMEOUT")
+        self.assertEqual(self.controller.terminated, ["herdr"])
+        self.assertEqual(self.manager.load_optional().phase, "failed")
+
+    def test_status_is_unaffected_by_herdr_when_herdr_was_never_configured(self):
+        self.manager.start(
+            correlation_id="request-1",
+            omlx=service(self.root, "omlx", "a"),
+            broker=service(self.root, "broker", "b"),
+            memory=service(self.root, "memory", "c"),
+            omlx_probe=lambda: True,
+            broker_probe=lambda: True,
+            memory_probe=lambda: True,
+        )
+        status = self.manager.status()
+        self.assertEqual(status["phase"], "running")
+        self.assertFalse(status["herdr_alive"])
+
 
 if __name__ == "__main__":
     unittest.main()

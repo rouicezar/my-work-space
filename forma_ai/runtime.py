@@ -43,6 +43,7 @@ class RuntimeRecord:
     omlx: ProcessRecord | None
     broker: ProcessRecord | None
     memory: ProcessRecord | None
+    herdr: ProcessRecord | None
     error: dict[str, str] | None
     revision: int
     created_at: str
@@ -181,7 +182,8 @@ class RuntimeManager:
         try:
             data = json.loads(self.state_path.read_text(encoding="utf-8"))
             data.setdefault("memory", None)
-            for name in ("omlx", "broker", "memory"):
+            data.setdefault("herdr", None)
+            for name in ("omlx", "broker", "memory", "herdr"):
                 if data.get(name):
                     data[name] = ProcessRecord(**data[name])
             return RuntimeRecord(**data)
@@ -193,13 +195,15 @@ class RuntimeManager:
         if record is None:
             return {
                 "phase": "stopped", "record": None, "omlx_alive": False,
-                "broker_alive": False, "memory_alive": False,
+                "broker_alive": False, "memory_alive": False, "herdr_alive": False,
             }
         omlx_alive = bool(record.omlx and self.controller.matches(record.omlx))
         broker_alive = bool(record.broker and self.controller.matches(record.broker))
         memory_alive = bool(record.memory and self.controller.matches(record.memory))
+        herdr_alive = bool(record.herdr and self.controller.matches(record.herdr))
         effective = record.phase
-        if record.phase == "running" and not (omlx_alive and broker_alive and memory_alive):
+        herdr_ok = record.herdr is None or herdr_alive
+        if record.phase == "running" and not (omlx_alive and broker_alive and memory_alive and herdr_ok):
             effective = "degraded"
         return {
             "phase": effective,
@@ -207,6 +211,7 @@ class RuntimeManager:
             "omlx_alive": omlx_alive,
             "broker_alive": broker_alive,
             "memory_alive": memory_alive,
+            "herdr_alive": herdr_alive,
         }
 
     def start(
@@ -219,33 +224,44 @@ class RuntimeManager:
         broker_probe: Probe,
         memory: dict[str, object],
         memory_probe: Probe,
+        herdr: dict[str, object] | None = None,
+        herdr_probe: Probe | None = None,
         omlx_adopt: Callable[[], ProcessRecord] | None = None,
         timeout: float = 60.0,
     ) -> RuntimeRecord:
+        if herdr is not None and herdr_probe is None:
+            raise RuntimeManagerError("HERDR_PROBE_REQUIRED", "herdr_probe is required when herdr is configured")
         existing = self.load_optional()
         if existing and existing.phase == "running":
+            herdr_ok = existing.herdr is None or self.controller.matches(existing.herdr)
             if (
                 existing.omlx and existing.broker and existing.memory
                 and self.controller.matches(existing.omlx)
                 and self.controller.matches(existing.broker)
                 and self.controller.matches(existing.memory)
+                and herdr_ok
             ):
                 return existing
             raise RuntimeManagerError("RUNTIME_RECOVERY_REQUIRED", "recorded runtime is degraded")
         if existing and any(
             process and self.controller.matches(process)
-            for process in (existing.memory, existing.broker, existing.omlx)
+            for process in (existing.memory, existing.broker, existing.omlx, existing.herdr)
         ):
             raise RuntimeManagerError("RUNTIME_RECOVERY_REQUIRED", "managed process remains active")
 
         created = utc_now()
-        record = RuntimeRecord(1, "starting", correlation_id, None, None, None, None, 1, created, created)
+        record = RuntimeRecord(1, "starting", correlation_id, None, None, None, None, None, 1, created, created)
         self._persist(record)
         omlx_launcher: ProcessRecord | None = None
         omlx_record: ProcessRecord | None = None
         broker_record: ProcessRecord | None = None
         memory_record: ProcessRecord | None = None
+        herdr_record: ProcessRecord | None = None
         try:
+            if herdr is not None:
+                herdr_record = self._spawn_from_config("herdr", herdr)
+                record = self._advance(record, herdr=herdr_record)
+                self._wait(herdr_probe, timeout, "HERDR_START_TIMEOUT")
             omlx_launcher = self._spawn_from_config("omlx", omlx)
             omlx_record = omlx_launcher
             record = self._advance(record, omlx=omlx_launcher)
@@ -264,7 +280,7 @@ class RuntimeManager:
         except Exception as exc:
             cleanup_error = None
             seen: set[int] = set()
-            for process in (memory_record, broker_record, omlx_record, omlx_launcher):
+            for process in (memory_record, broker_record, omlx_record, omlx_launcher, herdr_record):
                 if process and process.pid in seen:
                     continue
                 if process:
@@ -285,13 +301,15 @@ class RuntimeManager:
         record = self.load_optional()
         if record is None:
             now = utc_now()
-            stopped = RuntimeRecord(1, "stopped", "none", None, None, None, None, 1, now, now)
+            stopped = RuntimeRecord(1, "stopped", "none", None, None, None, None, None, 1, now, now)
             self._persist(stopped)
             return stopped
-        for process in (record.memory, record.broker, record.omlx):
+        for process in (record.herdr, record.memory, record.broker, record.omlx):
             if process and self.controller.matches(process):
                 self.controller.terminate(process, timeout)
-        stopped = self._next(record, phase="stopped", omlx=None, broker=None, memory=None, error=None)
+        stopped = self._next(
+            record, phase="stopped", omlx=None, broker=None, memory=None, herdr=None, error=None,
+        )
         self._persist(stopped)
         return stopped
 
@@ -316,7 +334,7 @@ class RuntimeManager:
     def _next(self, record: RuntimeRecord, **updates: object) -> RuntimeRecord:
         data = asdict(record)
         data.update(updates)
-        for name in ("omlx", "broker", "memory"):
+        for name in ("omlx", "broker", "memory", "herdr"):
             value = data.get(name)
             if isinstance(value, dict):
                 data[name] = ProcessRecord(**value)

@@ -39,7 +39,7 @@ struct ManifestOverview: View {
     @State private var prompt = ""
     @State private var currentTaskPrompt = ""
     @State private var taskState: WorkbenchTaskState = .idle
-    @State private var agentTasks: [AgentTaskViewState]
+    @State private var agentActivityState: AgentActivityViewState = .loading
     @State private var selectedSettingsSection: LifecycleContract.SettingsSection = .general
     @State private var cloudSetupState: CloudSetupViewState = .loading
     @State private var deepSeekAPIKey = ""
@@ -51,14 +51,24 @@ struct ManifestOverview: View {
     @State private var runtimeState: RuntimeViewState = .loading
 
     init(
-        surfaceContract: WorkbenchSurfaceContract = .productDefault,
-        agentTaskFixture: [AgentTaskViewState] = []
+        surfaceContract: WorkbenchSurfaceContract = .productDefault
     ) {
         self.surfaceContract = surfaceContract
         _section = State(initialValue: WorkspaceSection(surfaceContract.initialDestination))
-        _agentTasks = State(initialValue: agentTaskFixture)
         _selectedModelChoice = State(initialValue: surfaceContract.modelSelection.defaultChoice)
     }
+
+#if DEBUG
+    init(
+        surfaceContract: WorkbenchSurfaceContract = .productDefault,
+        agentActivityFixture: RuntimePresentationState
+    ) {
+        self.surfaceContract = surfaceContract
+        _section = State(initialValue: WorkspaceSection(surfaceContract.initialDestination))
+        _selectedModelChoice = State(initialValue: surfaceContract.modelSelection.defaultChoice)
+        _agentActivityState = State(initialValue: .ready(agentActivityFixture))
+    }
+#endif
 
     var body: some View {
         NavigationSplitView {
@@ -99,6 +109,7 @@ struct ManifestOverview: View {
             await loadModelPlan()
             await loadEmbeddingPlan()
             await loadRuntimeStatus()
+            await loadAgentActivity()
             await loadCloudSettings()
         }
     }
@@ -119,9 +130,7 @@ struct ManifestOverview: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    if !agentTasks.isEmpty {
-                        agentActivity
-                    }
+                    agentActivity
                     switch taskState {
                     case .idle:
                         VStack(spacing: 14) {
@@ -213,39 +222,81 @@ struct ManifestOverview: View {
                 Label("Parallel agents", systemImage: "rectangle.3.group")
                     .font(.headline)
                 Spacer()
-                Text("Preview fixture · not runtime evidence")
+                Text(agentActivityStatusLabel)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-            ForEach(agentTasks) { agent in
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: agent.state.symbol)
-                        .foregroundStyle(agent.state.color)
-                        .frame(width: 18)
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text(agent.title).font(.subheadline.weight(.semibold))
-                            Text(agent.agentKind).font(.caption).foregroundStyle(.secondary)
-                            Spacer()
-                            Text(agent.state.title)
-                                .font(.caption.weight(.medium))
-                                .foregroundStyle(agent.state.color)
+            switch agentActivityState {
+            case .loading:
+                ProgressView().controlSize(.small)
+            case .ready(let state) where state.agents.isEmpty:
+                Text(agentActivityEmptyMessage(state))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            case .ready(let state):
+                ForEach(state.agents, id: \.paneID) { agent in
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: agentStatusSymbol(agent.state))
+                            .foregroundStyle(agentStatusColor(agent.state))
+                            .frame(width: 18)
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text("Pane \(agent.paneID)").font(.subheadline.weight(.semibold))
+                                Spacer()
+                                Text(agent.state.capitalized)
+                                    .font(.caption.weight(.medium))
+                                    .foregroundStyle(agentStatusColor(agent.state))
+                            }
+                            Text("Workspace \(agent.workspaceID) · Tab \(agent.tabID) · Terminal \(agent.terminalID)")
+                                .font(.caption2.monospaced())
+                                .foregroundStyle(.tertiary)
+                                .textSelection(.enabled)
                         }
-                        Text(agent.summary)
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                        Text("Task \(agent.taskID) · Run \(agent.runID) · Pane \(agent.paneID)")
-                            .font(.caption2.monospaced())
-                            .foregroundStyle(.tertiary)
-                            .textSelection(.enabled)
                     }
+                    .padding(12)
+                    .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
                 }
-                .padding(12)
-                .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 12))
             }
         }
         .padding(16)
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var agentActivityStatusLabel: String {
+        switch agentActivityState {
+        case .loading: return "Checking Herdr…"
+        case .ready(let state):
+            if state.freshness == "fresh" { return "Live from Herdr" }
+            if state.reason == "HERDR_NOT_RUNNING" { return "Herdr not running" }
+            if let reason = state.reason { return "Disconnected: \(reason)" }
+            return "Disconnected"
+        }
+    }
+
+    private func agentActivityEmptyMessage(_ state: RuntimePresentationState) -> String {
+        if state.reason == "HERDR_NOT_RUNNING" { return "Start the local runtime to see live agent activity." }
+        if state.freshness == "fresh" { return "No agents are active right now." }
+        return "Agent activity is unavailable."
+    }
+
+    private func agentStatusSymbol(_ status: String) -> String {
+        switch status {
+        case "working": "bolt.horizontal.circle.fill"
+        case "blocked": "exclamationmark.circle.fill"
+        case "idle": "moon.circle.fill"
+        case "done": "checkmark.circle.fill"
+        default: "questionmark.circle.fill"
+        }
+    }
+
+    private func agentStatusColor(_ status: String) -> Color {
+        switch status {
+        case "working": .blue
+        case "blocked": .orange
+        case "idle": .secondary
+        case "done": .green
+        default: .secondary
+        }
     }
 
     private var composer: some View {
@@ -1231,6 +1282,33 @@ struct ManifestOverview: View {
     }
 
     @MainActor
+    private func loadAgentActivity() async {
+        guard let context = installationContext() else {
+            var provider = RuntimePresentationProvider()
+            provider.markDisconnected(reason: "not_connected")
+            agentActivityState = .ready(provider.state)
+            return
+        }
+        agentActivityState = await Task.detached { () -> AgentActivityViewState in
+            do {
+                let snapshot = try SupervisorClient(executableURL: context.supervisor)
+                    .herdrSnapshot(rootURL: context.root)
+                var provider = RuntimePresentationProvider()
+                if snapshot.freshness == "fresh" {
+                    try provider.apply(snapshot: snapshot)
+                } else {
+                    provider.markDisconnected(reason: snapshot.reason ?? "stale")
+                }
+                return .ready(provider.state)
+            } catch {
+                var provider = RuntimePresentationProvider()
+                provider.markDisconnected(reason: String(describing: error))
+                return .ready(provider.state)
+            }
+        }.value
+    }
+
+    @MainActor
     private func startRuntime() async {
         guard let context = installationContext() else {
             runtimeState = .failed("Supervisor context is unavailable.")
@@ -1242,6 +1320,8 @@ struct ManifestOverview: View {
                 let secrets = try RuntimeSecretCoordinator().ensure()
                 let result = try SupervisorClient(executableURL: context.supervisor).startRuntime(
                     rootURL: context.root,
+                    osMajor: ProcessInfo.processInfo.operatingSystemVersion.majorVersion,
+                    architecture: Self.hostArchitecture,
                     omlxAPIKey: secrets.omlxAPIKey,
                     brokerToken: secrets.brokerToken,
                     memoryToken: secrets.memoryToken
@@ -1252,6 +1332,16 @@ struct ManifestOverview: View {
             }
         }.value
     }
+
+    nonisolated private static let hostArchitecture: String = {
+        #if arch(arm64)
+        return "aarch64"
+        #elseif arch(x86_64)
+        return "x86_64"
+        #else
+        return "unknown"
+        #endif
+    }()
 
     @MainActor
     private func stopRuntime() async {
@@ -1553,63 +1643,9 @@ private enum WorkbenchTaskState: Sendable {
     }
 }
 
-struct AgentTaskViewState: Identifiable, Sendable {
-    let taskID: String
-    let runID: String
-    let paneID: String
-    let title: String
-    let agentKind: String
-    let state: AgentExecutionState
-    let summary: String
-
-    var id: String { runID }
-
-    static let parallelPreview: [AgentTaskViewState] = [
-        AgentTaskViewState(
-            taskID: "fixture-task-research",
-            runID: "fixture-run-codex",
-            paneID: "fixture-pane-001",
-            title: "Review upstream capability map",
-            agentKind: "Codex",
-            state: .running,
-            summary: "Inspecting verified adapter entry points."
-        ),
-        AgentTaskViewState(
-            taskID: "fixture-task-design",
-            runID: "fixture-run-claude",
-            paneID: "fixture-pane-002",
-            title: "Draft workbench interaction states",
-            agentKind: "Claude",
-            state: .blocked,
-            summary: "Waiting for an explicit user approval."
-        ),
-    ]
-}
-
-enum AgentExecutionState: Sendable {
-    case running
-    case blocked
-
-    var title: String {
-        switch self {
-        case .running: "Running"
-        case .blocked: "Needs attention"
-        }
-    }
-
-    var symbol: String {
-        switch self {
-        case .running: "bolt.horizontal.circle.fill"
-        case .blocked: "exclamationmark.circle.fill"
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .running: .blue
-        case .blocked: .orange
-        }
-    }
+private enum AgentActivityViewState: Sendable {
+    case loading
+    case ready(RuntimePresentationState)
 }
 
 private enum CloudSetupViewState: Sendable {
@@ -1633,7 +1669,22 @@ private struct TaskContext: Sendable {
 #if DEBUG
 struct ParallelAgentWorkbenchPreview: PreviewProvider {
     static var previews: some View {
-        ManifestOverview(agentTaskFixture: AgentTaskViewState.parallelPreview)
+        ManifestOverview(agentActivityFixture: RuntimePresentationState(
+            freshness: "fresh",
+            reason: nil,
+            agents: [
+                RuntimePresentedAgent(
+                    paneID: "pane-001", terminalID: "terminal-001",
+                    workspaceID: "workspace-001", tabID: "tab-001",
+                    state: "working", revision: 1
+                ),
+                RuntimePresentedAgent(
+                    paneID: "pane-002", terminalID: "terminal-002",
+                    workspaceID: "workspace-001", tabID: "tab-002",
+                    state: "blocked", revision: 3
+                ),
+            ]
+        ))
     }
 }
 #endif

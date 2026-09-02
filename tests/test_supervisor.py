@@ -46,17 +46,37 @@ class SupervisorProtocolTests(unittest.TestCase):
             ),), layouts=(),
         )
         request_id = str(uuid.uuid4())
-        args = supervisor.parser().parse_args([
-            "--request-id", request_id, "herdr-snapshot",
-            "--socket-path", "/tmp/forma-herdr.sock",
-        ])
-        with patch.object(supervisor.HerdrAdapter, "snapshot", return_value=expected):
-            response = supervisor.run(args)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "Product"
+            args = supervisor.parser().parse_args([
+                "--request-id", request_id, "herdr-snapshot",
+                "--root", str(root),
+            ])
+            with patch.object(supervisor.RuntimeManager, "status", return_value={"herdr_alive": True}), \
+                 patch.object(supervisor.HerdrAdapter, "snapshot", return_value=expected):
+                response = supervisor.run(args)
 
         self.assertEqual(response["command"], "herdr-snapshot")
         self.assertEqual(response["payload"]["freshness"], "fresh")
         self.assertEqual(response["payload"]["agents"][0]["pane_id"], "pane-1")
         self.assertEqual(response["payload"]["agents"][0]["revision"], 9)
+
+    def test_herdr_snapshot_fails_closed_without_connecting_when_herdr_not_running(self):
+        request_id = str(uuid.uuid4())
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "Product"
+            args = supervisor.parser().parse_args([
+                "--request-id", request_id, "herdr-snapshot",
+                "--root", str(root),
+            ])
+            with patch.object(supervisor.RuntimeManager, "status", return_value={"herdr_alive": False}), \
+                 patch.object(supervisor.HerdrAdapter, "snapshot") as snapshot:
+                response = supervisor.run(args)
+            snapshot.assert_not_called()
+
+        self.assertEqual(response["payload"]["freshness"], "stale")
+        self.assertEqual(response["payload"]["reason"], "HERDR_NOT_RUNNING")
+        self.assertEqual(response["payload"]["agents"], [])
 
     def task_submit_args(self, root: Path, cloud_catalog: Path, request_id: str):
         return supervisor.parser().parse_args([
@@ -443,6 +463,63 @@ class SupervisorProtocolTests(unittest.TestCase):
         }), encoding="utf-8")
         return manifest
 
+    def write_herdr_upstreams(self, directory: Path, payload: bytes) -> Path:
+        manifest = directory / "upstreams.json"
+        manifest.write_text(json.dumps({
+            "components": [{
+                "id": "herdr", "release": "v0.8.2", "artifacts": [{
+                    "id": "macos-aarch64", "name": "herdr-macos-aarch64", "platform": "macos",
+                    "architecture": "aarch64",
+                    "minimum_macos_major": 11, "maximum_macos_major": 99,
+                    "size_bytes": len(payload), "sha256": hashlib.sha256(payload).hexdigest(),
+                    "url": "https://github.com/herdrdev/herdr/releases/download/v0.8.2/herdr-macos-aarch64"
+                }]
+            }]
+        }), encoding="utf-8")
+        return manifest
+
+    def test_installed_herdr_executable_resolves_verified_cached_binary(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            payload = b"fixture-herdr-binary"
+            upstreams = self.write_herdr_upstreams(base, payload)
+            root = base / "Product"
+            downloads = root / "cache" / "downloads"
+            downloads.mkdir(parents=True)
+            executable = downloads / "herdr-macos-aarch64"
+            executable.write_bytes(payload)
+            executable.chmod(0o755)
+            resolved = supervisor._installed_herdr_executable(
+                root, upstreams, os_major=15, architecture="aarch64",
+            )
+            self.assertEqual(resolved, executable)
+
+    def test_installed_herdr_executable_rejects_digest_mismatch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            payload = b"fixture-herdr-binary"
+            upstreams = self.write_herdr_upstreams(base, payload)
+            root = base / "Product"
+            downloads = root / "cache" / "downloads"
+            downloads.mkdir(parents=True)
+            executable = downloads / "herdr-macos-aarch64"
+            executable.write_bytes(b"tampered-binary-contents")
+            executable.chmod(0o755)
+            with self.assertRaisesRegex(ValueError, "digest verification"):
+                supervisor._installed_herdr_executable(
+                    root, upstreams, os_major=15, architecture="aarch64",
+                )
+
+    def test_installed_herdr_executable_rejects_missing_binary(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            upstreams = self.write_herdr_upstreams(base, b"fixture-herdr-binary")
+            root = base / "Product"
+            with self.assertRaisesRegex(ValueError, "missing or unsafe"):
+                supervisor._installed_herdr_executable(
+                    root, upstreams, os_major=15, architecture="aarch64",
+                )
+
     def test_preflight_wraps_authoritative_report_and_correlation(self):
         request_id = str(uuid.uuid4())
         expected = {"schema_version": 1, "status": "supported"}
@@ -756,6 +833,7 @@ class SupervisorProtocolTests(unittest.TestCase):
             root = Path(directory) / "Product"
             args = supervisor.parser().parse_args([
                 "--request-id", str(uuid.uuid4()), "start-runtime", "--root", str(root),
+                "--os-major", "15", "--architecture", "aarch64",
             ])
             with patch.dict("os.environ", {}, clear=True):
                 with self.assertRaisesRegex(ValueError, "runtime secrets"):
@@ -795,6 +873,7 @@ class SupervisorProtocolTests(unittest.TestCase):
             root = Path(directory).resolve() / "Product"
             args = supervisor.parser().parse_args([
                 "--request-id", str(uuid.uuid4()), "start-runtime", "--root", str(root),
+                "--os-major", "15", "--architecture", "aarch64",
             ])
             spec = SimpleNamespace(
                 executable="/fixture/omlx", arguments=(),
@@ -803,7 +882,7 @@ class SupervisorProtocolTests(unittest.TestCase):
                 working_directory=str(root / "state/runtime/omlx"),
             )
             now = "2026-08-30T00:00:00+00:00"
-            runtime = RuntimeRecord(1, "running", args.request_id, None, None, None, None, 1, now, now)
+            runtime = RuntimeRecord(1, "running", args.request_id, None, None, None, None, None, 1, now, now)
             environment = {
                 "OMLX_API_KEY": "o" * 40,
                 "FORMA_AI_BROKER_TOKEN": "b" * 40,
@@ -814,6 +893,7 @@ class SupervisorProtocolTests(unittest.TestCase):
                 "query: ", "passage: ",
             )
             with patch.dict("os.environ", environment, clear=True), \
+                 patch.object(supervisor, "_installed_herdr_executable", return_value=Path("/fixture/herdr")), \
                  patch.object(supervisor, "_installed_omlx_executable", return_value=Path("/fixture/omlx")), \
                  patch.object(supervisor, "omlx_process_spec", return_value=spec), \
                  patch.object(supervisor, "load_approved_embedding_route", return_value=route), \
@@ -831,6 +911,23 @@ class SupervisorProtocolTests(unittest.TestCase):
             self.assertNotIn("m" * 40, memory["arguments"])
             self.assertEqual(memory["environment"]["OMLX_API_KEY"], "o" * 40)
             self.assertEqual(memory["environment"]["FORMA_AI_MEMORY_TOKEN"], "m" * 40)
+            herdr = start.call_args.kwargs["herdr"]
+            self.assertEqual(herdr["executable"], Path("/fixture/herdr"))
+            self.assertEqual(herdr["arguments"], ("--session", "forma-workbench", "server"))
+            self.assertTrue(callable(start.call_args.kwargs["herdr_probe"]))
+
+    def test_runtime_status_reports_herdr_alive(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "Product"
+            args = supervisor.parser().parse_args([
+                "--request-id", str(uuid.uuid4()), "runtime-status", "--root", str(root),
+            ])
+            with patch.object(supervisor.RuntimeManager, "status", return_value={
+                "phase": "running", "record": None, "omlx_alive": True,
+                "broker_alive": True, "memory_alive": True, "herdr_alive": True,
+            }):
+                response = supervisor.run(args)
+            self.assertTrue(response["payload"]["herdr_alive"])
 
     def test_memory_liveness_probe_reads_versioned_result_envelope(self):
         class Response:

@@ -14,7 +14,7 @@ import uuid
 from dataclasses import asdict, replace
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(REPOSITORY_ROOT) not in sys.path:
@@ -33,7 +33,7 @@ from forma_ai.models import (
 )
 from forma_ai.model_downloads import download_model_snapshot
 from forma_ai.broker import BrokerPolicy, JsonlAuditSink, OMLXBroker, OMLXUpstream, create_server
-from forma_ai.processes import omlx_process_spec
+from forma_ai.processes import herdr_process_spec, omlx_process_spec
 from forma_ai.runtime import RuntimeManager, SubprocessController
 from forma_ai.semantica_runtime import SemanticaLayout, SemanticaRuntimeInspector
 from forma_ai.governed_memory import GovernedMemory
@@ -60,7 +60,12 @@ from forma_ai.task_orchestrator import (
     plan_unified_task,
 )
 from forma_ai.herdr_adapter import HerdrAdapter
-from forma_ai.herdr_transport import HerdrSocketTransport
+from forma_ai.herdr_transport import (
+    HerdrProtocolError,
+    HerdrSocketTransport,
+    HerdrTransportError,
+    resolve_socket_path,
+)
 
 
 SCHEMA_VERSION = 1
@@ -68,6 +73,7 @@ DEFAULT_UPSTREAMS = REPOSITORY_ROOT / "config/upstreams.json"
 DEFAULT_MODELS = REPOSITORY_ROOT / "config/models.json"
 DEFAULT_MODEL_ID = "qwen3-0.6b-4bit-alpha"
 DEFAULT_EMBEDDING_MODEL_ID = "multilingual-e5-small-mlx-alpha"
+HERDR_SESSION_NAME = "forma-workbench"
 DEFAULT_CLOUD_PROVIDERS = REPOSITORY_ROOT / "config/cloud-providers.json"
 DEFAULT_LOCAL_PROFILES = REPOSITORY_ROOT / "config/local-model-profiles.json"
 DEFAULT_HARDWARE_PROFILES = REPOSITORY_ROOT / "config/hardware-profiles.yaml"
@@ -139,6 +145,9 @@ def parser() -> argparse.ArgumentParser:
             command.add_argument("--omlx-port", type=int, default=8000)
             command.add_argument("--broker-port", type=int, default=43110)
             command.add_argument("--memory-port", type=int, default=43111)
+            command.add_argument("--os-major", type=int, required=True)
+            command.add_argument("--architecture", required=True)
+            command.add_argument("--upstreams", type=Path, default=DEFAULT_UPSTREAMS)
         if name in {"sample-task", "local-task"}:
             command.add_argument("--broker-port", type=int, default=43110)
     semantica_status = commands.add_parser("semantica-status")
@@ -192,7 +201,7 @@ def parser() -> argparse.ArgumentParser:
     )
     task_submit.add_argument("--cloud-catalog", type=Path, default=DEFAULT_CLOUD_PROVIDERS)
     herdr_snapshot = commands.add_parser("herdr-snapshot")
-    herdr_snapshot.add_argument("--socket-path", type=Path, required=True)
+    herdr_snapshot.add_argument("--root", type=Path, required=True)
     return result
 
 
@@ -206,14 +215,25 @@ def validate_request_id(value: str) -> str:
 def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, Any]:
     request_id = validate_request_id(args.request_id)
     if args.command == "herdr-snapshot":
-        if not args.socket_path.is_absolute():
-            raise ValueError("Herdr socket path must be absolute")
-        transport = HerdrSocketTransport(
-            socket_path=str(args.socket_path), environ={}
-        )
-        snapshot = HerdrAdapter(
-            request=transport, probe=transport.probe
-        ).snapshot()
+        _validate_product_root(args.root)
+        status = RuntimeManager(args.root).status()
+        if not status.get("herdr_alive"):
+            return envelope(
+                command=args.command,
+                request_id=request_id,
+                status="ok",
+                payload={
+                    "schema_version": 1,
+                    "freshness": "stale",
+                    "reason": "HERDR_NOT_RUNNING",
+                    "version": None,
+                    "protocol": None,
+                    "agents": [],
+                },
+            )
+        socket_path = resolve_socket_path(environ={"HERDR_SESSION": HERDR_SESSION_NAME})
+        transport = HerdrSocketTransport(socket_path=socket_path, environ={})
+        snapshot = HerdrAdapter(request=transport, probe=transport.probe).snapshot()
         return envelope(
             command=args.command,
             request_id=request_id,
@@ -572,6 +592,14 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
     if args.command == "start-runtime":
         _validate_runtime_ports(args.omlx_port, args.broker_port, args.memory_port)
         omlx_key, broker_token, memory_token = _runtime_secrets()
+        herdr_executable = _installed_herdr_executable(
+            args.root, args.upstreams, os_major=args.os_major, architecture=args.architecture,
+        )
+        herdr_spec = herdr_process_spec(
+            executable=herdr_executable, root=args.root, session_name=HERDR_SESSION_NAME,
+        )
+        for path in (Path(herdr_spec.working_directory), Path(herdr_spec.environment["HOME"])):
+            path.mkdir(parents=True, exist_ok=True)
         executable = _installed_omlx_executable(args.root)
         spec = omlx_process_spec(executable=executable, app_support=args.root, port=args.omlx_port)
         for path in (
@@ -636,6 +664,13 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
         }
         record = RuntimeManager(args.root).start(
             correlation_id=request_id,
+            herdr={
+                "executable": herdr_spec.executable,
+                "arguments": herdr_spec.arguments,
+                "environment": herdr_spec.environment,
+                "working_directory": herdr_spec.working_directory,
+                "log_path": args.root / "logs/herdr/server.log",
+            },
             omlx={
                 "executable": spec.executable,
                 "arguments": spec.arguments,
@@ -657,6 +692,7 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
                 "working_directory": args.root / "state/runtime/memory",
                 "log_path": args.root / "logs/memory/server.log",
             },
+            herdr_probe=_herdr_probe(HERDR_SESSION_NAME),
             omlx_probe=lambda: _http_ready(args.omlx_port, omlx_key),
             broker_probe=lambda: _http_ready(args.broker_port, broker_token),
             memory_probe=lambda: _http_ready(args.memory_port, memory_token, "/live"),
@@ -841,6 +877,31 @@ def _installed_omlx_executable(root: Path) -> Path:
     return executable
 
 
+def _installed_herdr_executable(
+    root: Path, upstreams: Path, *, os_major: int, architecture: str,
+) -> Path:
+    """Resolve and re-verify the digest-pinned Herdr binary before every launch.
+
+    Herdr has no app-bundle activation record (unlike oMLX); its manifest
+    `install_mode` is `verified_release_binary`, so the cached download itself
+    is re-hashed against `config/upstreams.json` on each resolution instead.
+    """
+    if not upstreams.is_absolute() or not upstreams.is_file():
+        raise ValueError("upstream manifest must be an existing absolute file")
+    expected = select_artifact(
+        load_component(upstreams, "herdr"),
+        platform="macos",
+        os_major=os_major,
+        architecture=architecture,
+    )
+    executable = OMLXInstallLayout(root).downloads / expected.name
+    if not executable.is_file() or executable.is_symlink() or not os.access(executable, os.X_OK):
+        raise ValueError("Herdr runtime executable is missing or unsafe")
+    if not verify_file(executable, expected).valid:
+        raise ValueError("Herdr runtime executable failed digest verification")
+    return executable
+
+
 def _runtime_secrets() -> tuple[str, str, str]:
     omlx_key, broker_token = _broker_secrets()
     memory_token = _memory_secret()
@@ -895,6 +956,18 @@ def _http_ready(port: int, token: str, path: str = "/health") -> bool:
             return response.status == 200 and str(status).lower() in {"ok", "healthy"}
     except (OSError, ValueError, urllib.error.URLError, json.JSONDecodeError):
         return False
+
+
+def _herdr_probe(session_name: str) -> Callable[[], bool]:
+    def probe() -> bool:
+        socket_path = resolve_socket_path(environ={"HERDR_SESSION": session_name})
+        try:
+            HerdrSocketTransport(socket_path=socket_path, environ={}).probe()
+            return True
+        except (HerdrTransportError, HerdrProtocolError, OSError):
+            return False
+
+    return probe
 
 
 def _adopt_omlx_server(port: int, log_path: Path):

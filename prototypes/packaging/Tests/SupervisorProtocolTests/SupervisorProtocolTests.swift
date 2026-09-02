@@ -31,19 +31,27 @@ import RuntimeSecurity
     defer { try? FileManager.default.removeItem(at: temporary) }
     let executable = temporary.appendingPathComponent("fixture-supervisor")
     let response = #"{"schema_version":1,"command":"herdr-snapshot","request_id":"00000000-0000-0000-0000-000000000001","status":"ok","payload":{"schema_version":1,"freshness":"fresh","reason":null,"version":"0.8.2","protocol":20,"agents":[{"terminal_id":"terminal-1","agent_status":"working","workspace_id":"workspace-1","tab_id":"tab-1","pane_id":"pane-1","focused":true,"revision":9}]},"error":null,"emitted_at":"2026-09-02T00:00:00+00:00"}"#
-    try "#!/bin/sh\nprintf '%s' '\(response)'\n".write(
-        to: executable, atomically: true, encoding: .utf8
-    )
+    let script = """
+    #!/bin/sh
+    case " $* " in *" --socket-path "*) exit 9;; esac
+    case " $* " in *" --root "*) ;; *) exit 8;; esac
+    printf '%s' '\(response)'
+    """
+    try script.write(to: executable, atomically: true, encoding: .utf8)
     try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
     let payload = try SupervisorClient(executableURL: executable).herdrSnapshot(
-        socketURL: URL(fileURLWithPath: "/tmp/herdr.sock"),
+        rootURL: temporary.appendingPathComponent("Product"),
         requestID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
     )
     var provider = RuntimePresentationProvider()
     try provider.apply(snapshot: payload)
     #expect(provider.state.freshness == "fresh")
     #expect(provider.state.agents == [
-        RuntimePresentedAgent(paneID: "pane-1", terminalID: "terminal-1", state: "working", revision: 9)
+        RuntimePresentedAgent(
+            paneID: "pane-1", terminalID: "terminal-1",
+            workspaceID: "workspace-1", tabID: "tab-1",
+            state: "working", revision: 9
+        )
     ])
 
     provider.markDisconnected(reason: "socket_lost")
@@ -232,6 +240,8 @@ import RuntimeSecurity
     let script = """
     #!/bin/sh
     case " $* " in *fixture-omlx-secret*|*fixture-broker-secret*|*fixture-memory-secret*) exit 9;; esac
+    case " $* " in *" --os-major "*) ;; *) exit 10;; esac
+    case " $* " in *" --architecture "*) ;; *) exit 11;; esac
     [ "$OMLX_API_KEY" = "fixture-omlx-secret-with-at-least-32-characters" ] || exit 8
     [ "$FORMA_AI_BROKER_TOKEN" = "fixture-broker-secret-with-at-least-32-characters" ] || exit 7
     [ "$FORMA_AI_MEMORY_TOKEN" = "fixture-memory-secret-with-at-least-32-characters" ] || exit 6
@@ -241,12 +251,30 @@ import RuntimeSecurity
     try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
     let payload = try SupervisorClient(executableURL: executable).startRuntime(
         rootURL: temporary.appendingPathComponent("Product"),
+        osMajor: 15,
+        architecture: "aarch64",
         omlxAPIKey: "fixture-omlx-secret-with-at-least-32-characters",
         brokerToken: "fixture-broker-secret-with-at-least-32-characters",
         memoryToken: "fixture-memory-secret-with-at-least-32-characters",
         requestID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
     )
     #expect(payload.runtime.phase == "running")
+}
+
+@Test func runtimeStatusDecodesHerdrAliveField() throws {
+    let temporary = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(at: temporary, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: temporary) }
+    let executable = temporary.appendingPathComponent("fixture-supervisor")
+    let response = #"{"schema_version":1,"command":"runtime-status","request_id":"00000000-0000-0000-0000-000000000001","status":"ok","payload":{"schema_version":1,"phase":"running","record":null,"omlx_alive":true,"broker_alive":true,"memory_alive":true,"herdr_alive":true},"error":null,"emitted_at":"2026-09-02T00:00:00+00:00"}"#
+    try "#!/bin/sh\nprintf '%s' '\(response)'\n".write(to: executable, atomically: true, encoding: .utf8)
+    try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
+    let payload = try SupervisorClient(executableURL: executable).runtimeStatus(
+        rootURL: temporary.appendingPathComponent("Product"),
+        requestID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+    )
+    #expect(payload.herdrAlive)
 }
 
 @Test func cloudPreviewBodyUsesStandardInputAndExecutionKeyUsesEnvironment() throws {
@@ -445,6 +473,16 @@ func realKeychainRuntimeSampleAuditAndStop() throws {
 
     let started = try client.startRuntime(
         rootURL: root,
+        osMajor: ProcessInfo.processInfo.operatingSystemVersion.majorVersion,
+        architecture: {
+            #if arch(arm64)
+            return "aarch64"
+            #elseif arch(x86_64)
+            return "x86_64"
+            #else
+            return "unknown"
+            #endif
+        }(),
         omlxAPIKey: secrets.omlxAPIKey,
         brokerToken: secrets.brokerToken,
         memoryToken: secrets.memoryToken

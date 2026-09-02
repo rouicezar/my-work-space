@@ -264,6 +264,7 @@ public struct RuntimeStatusPayload: Decodable, Sendable {
     public let omlxAlive: Bool
     public let brokerAlive: Bool
     public let memoryAlive: Bool?
+    public let herdrAlive: Bool
 
     enum CodingKeys: String, CodingKey {
         case schemaVersion = "schema_version"
@@ -271,6 +272,7 @@ public struct RuntimeStatusPayload: Decodable, Sendable {
         case omlxAlive = "omlx_alive"
         case brokerAlive = "broker_alive"
         case memoryAlive = "memory_alive"
+        case herdrAlive = "herdr_alive"
     }
 }
 
@@ -331,14 +333,34 @@ public struct HerdrSnapshotPayload: Decodable, Sendable {
 public struct RuntimePresentedAgent: Sendable, Equatable {
     public let paneID: String
     public let terminalID: String
+    public let workspaceID: String
+    public let tabID: String
     public let state: String
     public let revision: Int
+
+    public init(
+        paneID: String, terminalID: String, workspaceID: String, tabID: String,
+        state: String, revision: Int
+    ) {
+        self.paneID = paneID
+        self.terminalID = terminalID
+        self.workspaceID = workspaceID
+        self.tabID = tabID
+        self.state = state
+        self.revision = revision
+    }
 }
 
 public struct RuntimePresentationState: Sendable, Equatable {
     public let freshness: String
     public let reason: String?
     public let agents: [RuntimePresentedAgent]
+
+    public init(freshness: String, reason: String?, agents: [RuntimePresentedAgent]) {
+        self.freshness = freshness
+        self.reason = reason
+        self.agents = agents
+    }
 }
 
 public struct RuntimePresentationProvider: Sendable {
@@ -359,6 +381,7 @@ public struct RuntimePresentationProvider: Sendable {
             agents: snapshot.agents
                 .map { RuntimePresentedAgent(
                     paneID: $0.paneID, terminalID: $0.terminalID,
+                    workspaceID: $0.workspaceID, tabID: $0.tabID,
                     state: $0.agentStatus, revision: $0.revision
                 ) }
                 .sorted { $0.paneID < $1.paneID }
@@ -371,6 +394,7 @@ public struct RuntimePresentationProvider: Sendable {
             reason: reason,
             agents: state.agents.map { RuntimePresentedAgent(
                 paneID: $0.paneID, terminalID: $0.terminalID,
+                workspaceID: $0.workspaceID, tabID: $0.tabID,
                 state: "unknown", revision: $0.revision
             ) }
         )
@@ -872,18 +896,20 @@ public struct SupervisorClient: Sendable {
     }
 
     public func herdrSnapshot(
-        socketURL: URL,
+        rootURL: URL,
         requestID: UUID = UUID()
     ) throws -> HerdrSnapshotPayload {
         try request(
             command: "herdr-snapshot",
-            arguments: ["--socket-path", socketURL.path],
+            arguments: ["--root", rootURL.path],
             requestID: requestID
         )
     }
 
     public func startRuntime(
         rootURL: URL,
+        osMajor: Int,
+        architecture: String,
         omlxAPIKey: String,
         brokerToken: String,
         memoryToken: String,
@@ -891,7 +917,11 @@ public struct SupervisorClient: Sendable {
     ) throws -> RuntimeCommandPayload {
         try request(
             command: "start-runtime",
-            arguments: ["--root", rootURL.path],
+            arguments: [
+                "--root", rootURL.path,
+                "--os-major", String(osMajor),
+                "--architecture", architecture,
+            ],
             requestID: requestID,
             environmentOverrides: [
                 "OMLX_API_KEY": omlxAPIKey,

@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from forma_ai.processes import ProcessPolicyError, omlx_process_spec
+from forma_ai.processes import ProcessPolicyError, herdr_process_spec, omlx_process_spec
 
 
 class OMLXProcessSpecTests(unittest.TestCase):
@@ -49,6 +49,33 @@ class OMLXProcessSpecTests(unittest.TestCase):
         self.assertNotIn("OMLX_API_KEY", audit["environment"])
         self.assertNotIn("example-key-value", repr(audit))
         self.assertFalse(audit["inherit_parent_environment"])
+
+
+class HerdrProcessSpecTests(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(tempfile.gettempdir()) / "FormaAITest"
+        self.executable = self.root / "cache" / "downloads" / "herdr-macos-aarch64"
+
+    def test_spec_uses_named_session_server_form_with_no_secrets(self):
+        spec = herdr_process_spec(
+            executable=self.executable, root=self.root, session_name="forma-workbench",
+        )
+        self.assertEqual(spec.arguments, ("--session", "forma-workbench", "server"))
+        self.assertEqual(spec.environment["HERDR_SESSION"], "forma-workbench")
+        self.assertEqual(spec.environment["HOME"], str(self.root / "state" / "homes" / "herdr"))
+        self.assertEqual(spec.working_directory, self.root / "state" / "runtime" / "herdr")
+        self.assertEqual(spec.secret_environment_names, ())
+
+    def test_relative_paths_are_rejected(self):
+        with self.assertRaisesRegex(ProcessPolicyError, "absolute"):
+            herdr_process_spec(executable=Path("herdr"), root=self.root, session_name="forma-workbench")
+        with self.assertRaisesRegex(ProcessPolicyError, "absolute"):
+            herdr_process_spec(executable=self.executable, root=Path("Product"), session_name="forma-workbench")
+
+    def test_unsafe_session_name_is_rejected(self):
+        for name in ("", "../escape", "a/b"):
+            with self.assertRaisesRegex(ProcessPolicyError, "session name"):
+                herdr_process_spec(executable=self.executable, root=self.root, session_name=name)
 
 
 if __name__ == "__main__":

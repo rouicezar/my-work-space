@@ -93,3 +93,37 @@ def omlx_process_spec(
         secret_environment_names=("OMLX_API_KEY",),
         working_directory=runtime_path,
     )
+
+
+def herdr_process_spec(
+    *,
+    executable: Path,
+    root: Path,
+    session_name: str,
+) -> ProcessSpec:
+    """Build a fail-closed Herdr headless-server launch contract.
+
+    Herdr communicates over a named-session Unix socket, not a TCP port, so no
+    host/port validation is needed. The socket path is controlled entirely by
+    ``HERDR_SESSION``, which must match whatever a caller later uses to resolve
+    the socket via ``forma_ai.herdr_transport.resolve_socket_path``.
+    """
+    if not executable.is_absolute() or not root.is_absolute():
+        raise ProcessPolicyError("Herdr executable and root paths must be absolute")
+    if not session_name or "/" in session_name or session_name in {".", ".."}:
+        raise ProcessPolicyError("Herdr session name must be a plain non-empty identifier")
+
+    isolated_home = root / "state" / "homes" / "herdr"
+    runtime_path = root / "state" / "runtime" / "herdr"
+
+    return ProcessSpec(
+        executable=executable,
+        arguments=("--session", session_name, "server"),
+        environment={
+            "HOME": str(isolated_home),
+            "HERDR_SESSION": session_name,
+            "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
+        },
+        secret_environment_names=(),
+        working_directory=runtime_path,
+    )
