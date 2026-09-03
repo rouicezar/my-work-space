@@ -89,6 +89,7 @@ class DeepSeekAdapter:
         outcome = "failed"
         error_code: str | None = None
         error_type: str | None = None
+        actual_cost_usd: float | None = None
         try:
             try:
                 with self.open_url(request, timeout=self.timeout) as response:
@@ -107,6 +108,12 @@ class DeepSeekAdapter:
             if len(raw) > self.maximum_response_bytes:
                 raise DeepSeekError("DEEPSEEK_RESPONSE_TOO_LARGE", str(len(raw)))
             result = self._normalize(raw, proposal, now)
+            actual_cost_usd = result.usage.cost_usd
+            if result.usage.cost_usd > approval.maximum_cost_usd:
+                raise DeepSeekError(
+                    "DEEPSEEK_COST_CEILING_EXCEEDED",
+                    f"{result.usage.cost_usd}>{approval.maximum_cost_usd}",
+                )
             outcome = "completed"
             return result
         except DeepSeekError as exc:
@@ -127,6 +134,7 @@ class DeepSeekAdapter:
                 "payload_size_bytes": proposal.payload_size_bytes,
                 "maximum_output_tokens": proposal.maximum_output_tokens,
                 "maximum_cost_usd": approval.maximum_cost_usd,
+                "actual_cost_usd": actual_cost_usd,
                 "outcome": outcome, "error_code": error_code, "error_type": error_type,
             })
 

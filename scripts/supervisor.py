@@ -47,6 +47,7 @@ from forma_ai.cloud_approval import CloudApprovalStore
 from forma_ai.cloud_catalog import load_cloud_provider
 from forma_ai.cloud_proposals import CloudProposalStore
 from forma_ai.deepseek_adapter import DeepSeekAdapter
+from forma_ai.mcp_client import MCPServerSpec, connect_stdio_server
 from forma_ai.inference_routing import RoutingError, TaskRequirements, create_cloud_proposal
 from forma_ai.local_tasks import (
     MAXIMUM_TASK_BYTES, LocalTaskError, LocalTaskRequest, completion_body, normalize_local_result,
@@ -202,6 +203,13 @@ def parser() -> argparse.ArgumentParser:
     task_submit.add_argument("--cloud-catalog", type=Path, default=DEFAULT_CLOUD_PROVIDERS)
     herdr_snapshot = commands.add_parser("herdr-snapshot")
     herdr_snapshot.add_argument("--root", type=Path, required=True)
+    for name in ("mcp-list-tools", "mcp-call-tool"):
+        command = commands.add_parser(name)
+        command.add_argument("--server-command", required=True)
+        command.add_argument("--server-arg", action="append", default=[])
+        if name == "mcp-call-tool":
+            command.add_argument("--tool-name", required=True)
+            command.add_argument("--arguments-json", default="{}")
     return result
 
 
@@ -214,6 +222,45 @@ def validate_request_id(value: str) -> str:
 
 def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, Any]:
     request_id = validate_request_id(args.request_id)
+    if args.command in {"mcp-list-tools", "mcp-call-tool"}:
+        spec = MCPServerSpec(command=args.server_command, args=tuple(args.server_arg))
+        client = connect_stdio_server(spec)
+        try:
+            if args.command == "mcp-list-tools":
+                tools = client.list_tools()
+                payload = {
+                    "schema_version": 1,
+                    "tools": [
+                        {
+                            "name": tool.name,
+                            "description": tool.description,
+                            "input_schema": tool.input_schema,
+                        }
+                        for tool in tools
+                    ],
+                }
+            else:
+                try:
+                    arguments = json.loads(args.arguments_json)
+                except json.JSONDecodeError as exc:
+                    raise ValueError("arguments JSON is invalid") from exc
+                if not isinstance(arguments, dict):
+                    raise ValueError("arguments JSON must decode to an object")
+                result = client.call_tool(args.tool_name, arguments)
+                payload = {
+                    "schema_version": 1,
+                    "tool_name": args.tool_name,
+                    "content": list(result.content),
+                    "is_error": result.is_error,
+                }
+        finally:
+            client.close()
+        return envelope(
+            command=args.command,
+            request_id=request_id,
+            status="ok",
+            payload=payload,
+        )
     if args.command == "herdr-snapshot":
         _validate_product_root(args.root)
         status = RuntimeManager(args.root).status()

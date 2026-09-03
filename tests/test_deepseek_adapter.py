@@ -230,6 +230,33 @@ class DeepSeekAdapterTests(unittest.TestCase):
         self.assertEqual(result.content, "")
         self.assertEqual(result.finish_reason, "length")
 
+    def test_actual_cost_above_approval_ceiling_is_rejected(self):
+        proposal, payload = self.proposal()
+        body = json.dumps({
+            "id": "fixture", "object": "chat.completion", "model": "deepseek-v4-flash",
+            "choices": [{"index": 0, "finish_reason": "stop",
+                         "message": {"role": "assistant", "content": "expensive"}}],
+            "usage": {"prompt_tokens": 100, "prompt_cache_hit_tokens": 0,
+                      "prompt_cache_miss_tokens": 100, "completion_tokens": 5_000_000,
+                      "total_tokens": 5_000_100},
+        }).encode()
+        audit = MemoryAuditSink()
+        with tempfile.TemporaryDirectory() as directory:
+            approvals = CloudApprovalStore(Path(directory))
+            approvals.approve(
+                proposal, maximum_cost_usd=proposal.estimated_cost.maximum, now=self.now,
+            )
+            adapter = DeepSeekAdapter(
+                self.provider, approvals, audit,
+                open_url=FakeOpen([FakeResponse(body)]),
+            )
+            with self.assertRaises(DeepSeekError) as raised:
+                adapter.execute(proposal, payload, api_key="fixture-key", now=self.now)
+        self.assertEqual(raised.exception.code, "DEEPSEEK_COST_CEILING_EXCEEDED")
+        self.assertEqual(audit.events[0]["outcome"], "failed")
+        self.assertEqual(audit.events[0]["error_code"], "DEEPSEEK_COST_CEILING_EXCEEDED")
+        self.assertGreater(audit.events[0]["actual_cost_usd"], audit.events[0]["maximum_cost_usd"])
+
 
 if __name__ == "__main__":
     unittest.main()
