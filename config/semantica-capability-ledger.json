@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-03T15:45:00Z",
-  "task_id": "P7-T04",
+  "updated_at": "2026-09-03T16:00:00Z",
+  "task_id": "P7-T05",
   "confirmed_authority": "semantica",
   "pinned_upstream": {
     "semantica": {
@@ -53,7 +53,8 @@
       "verdict": "inject",
       "authority": "semantica",
       "p7_t02_action": "completed",
-      "decision_ref": "docs/research/semantica-binding-decision-2026-09-03.md#decision-f1--retrieval-seam"
+      "decision_ref": "docs/research/semantica-binding-decision-2026-09-03.md#decision-f1--retrieval-seam",
+      "p7_t05_action": "completed"
     },
     {
       "id": "memory.health",
@@ -101,7 +102,8 @@
       "verdict": "product_gap",
       "authority": "product_governance",
       "p7_t02_action": "keep",
-      "p7_t04_action": "completed"
+      "p7_t04_action": "completed",
+      "p7_t05_action": "completed"
     },
     {
       "id": "memory.conflict_detection",
@@ -111,7 +113,8 @@
       "verdict": "product_gap",
       "authority": "product_governance",
       "p7_t02_action": "keep",
-      "p7_t04_action": "completed"
+      "p7_t04_action": "completed",
+      "p7_t05_action": "completed"
     },
     {
       "id": "memory.correction_chain",
@@ -121,7 +124,8 @@
       "verdict": "product_gap",
       "authority": "product_governance",
       "p7_t02_action": "keep",
-      "p7_t04_action": "completed"
+      "p7_t04_action": "completed",
+      "p7_t05_action": "completed"
     },
     {
       "id": "memory.governance_cache",
@@ -131,7 +135,8 @@
       "verdict": "projection",
       "authority": "semantica",
       "p7_t02_action": "completed",
-      "decision_ref": "docs/research/semantica-binding-decision-2026-09-03.md#decision-f4--local-confirmed-content-cache"
+      "decision_ref": "docs/research/semantica-binding-decision-2026-09-03.md#decision-f4--local-confirmed-content-cache",
+      "p7_t05_action": "completed"
     },
     {
       "id": "memory.service_transport",

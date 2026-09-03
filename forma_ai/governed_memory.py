@@ -142,6 +142,7 @@ class GovernedMemory:
 
     def confirm(self, candidate_id: str, *, actor: str, correlation_id: str) -> ConfirmedMemory:
         self._validate_identity(candidate_id, actor, correlation_id)
+        conflict_claim: str | None = None
         with self._connect() as connection:
             row = connection.execute(
                 "SELECT * FROM candidates WHERE candidate_id = ?", (candidate_id,)
@@ -166,7 +167,9 @@ class GovernedMemory:
                     (_now(), candidate_id),
                 )
                 self._event(connection, correlation_id, actor, "confirm", candidate_id, "conflict", current[5])
-                raise MemoryGovernanceError("MEMORY_CONFLICT", row[1])
+                conflict_claim = row[1]
+        if conflict_claim is not None:
+            raise MemoryGovernanceError("MEMORY_CONFLICT", conflict_claim)
 
         record_id = str(uuid.uuid4())
         sources = self._decode_sources(row[3])

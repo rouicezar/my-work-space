@@ -76,6 +76,7 @@ class GovernedMemoryTests(unittest.TestCase):
         with self.assertRaisesRegex(MemoryGovernanceError, "country.france.capital") as raised:
             self.memory.confirm(conflict.candidate_id, actor="reviewer", correlation_id="run-4")
         self.assertEqual(raised.exception.code, "MEMORY_CONFLICT")
+        self.assertEqual(self.memory.get_candidate(conflict.candidate_id).status, "conflict")
         self.assertEqual(self.memory.get(first.record_id), first)
 
     def test_correction_creates_version_history_and_removes_old_authority_item(self):
