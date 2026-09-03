@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-09-04T02:10:00Z",
+  "task_id": "P8-T07",
+  "confirmed_authority": "herdr",
+  "pinned_upstream": {
+    "herdr": {
+      "role": "multi_agent_execution_runtime",
+      "license": "upstream",
+      "product_adapter": "forma_ai/herdr_adapter.py"
+    }
+  },
+  "capabilities": [
+    {
+      "id": "history.metadata_projection",
+      "description": "Product metadata projection bounded by Herdr authority",
+      "upstream_entry": "Herdr session snapshot + agent revision",
+      "product_entry": "forma_ai/task_metadata_projection.py",
+      "verdict": "projection",
+      "authority": "herdr",
+      "p8_t01_action": "completed"
+    },
+    {
+      "id": "history.metadata_persistence",
+      "description": "Persist intent, correlation, approval/artifact refs, last accepted revision",
+      "upstream_entry": null,
+      "product_entry": "forma_ai/task_metadata_store.py",
+      "verdict": "product_owned",
+      "authority": "herdr",
+      "p8_t02_action": "completed",
+      "forbidden_claims": ["completed", "resumable", "runtime_state"]
+    },
+    {
+      "id": "history.metadata_reconcile",
+      "description": "Reconstruct runtime truth from fresh Herdr snapshot",
+      "upstream_entry": "Herdr snapshot/events",
+      "product_entry": "forma_ai/task_metadata_reconcile.py",
+      "verdict": "adapter",
+      "authority": "herdr",
+      "p8_t03_action": "completed"
+    },
+    {
+      "id": "history.recovery_routes",
+      "description": "Revision-checked reclaim, cancel, fresh-run supervisor routes",
+      "upstream_entry": "Herdr lifecycle operations",
+      "product_entry": "forma_ai/task_history_recovery.py",
+      "verdict": "adapter",
+      "authority": "herdr",
+      "p8_t04_action": "completed"
+    },
+    {
+      "id": "history.rediscovery_proof",
+      "description": "App reopen and Herdr detach/reconnect rediscovery without false completion",
+      "upstream_entry": "Herdr reconnect snapshot",
+      "product_entry": "forma_ai/task_history_rediscovery.py",
+      "verdict": "product_owned",
+      "authority": "herdr",
+      "p8_t05_action": "completed"
+    },
+    {
+      "id": "history.manual_recovery_proof",
+      "description": "Interrupted-task recovery evidence with operator manual checklist",
+      "upstream_entry": null,
+      "product_entry": "forma_ai/task_history_manual_proof.py",
+      "verdict": "product_owned",
+      "authority": "herdr",
+      "p8_t06_action": "completed",
+      "manual_signoff_required": true
+    },
+    {
+      "id": "history.preview_ui",
+      "description": "SwiftUI synthetic history/recovery preview states",
+      "upstream_entry": null,
+      "product_entry": "prototypes/packaging/Sources/LifecycleContract/ProductPreviewProvider.swift::HistoryRecoveryPreviewContract",
+      "verdict": "preview_only",
+      "authority": "none",
+      "p8_t04_action": "completed",
+      "p8_t07_action": "runtime_panel_wired_no_second_state_machine"
+    },
+    {
+      "id": "history.runtime_panel",
+      "description": "Native History panel wired to supervisor reconcile and recovery commands",
+      "upstream_entry": null,
+      "product_entry": "prototypes/packaging/Sources/FormaAIApp/HistoryRecoveryPanel.swift",
+      "verdict": "product_owned",
+      "authority": "herdr",
+      "p8_t04_action": "completed",
+      "p8_t07_action": "wired_requires_runtime"
+    }
+  ]
+}
