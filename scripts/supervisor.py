@@ -49,6 +49,7 @@ from forma_ai.cloud_proposals import CloudProposalStore
 from forma_ai.deepseek_adapter import DeepSeekAdapter
 from forma_ai.mcp_client import MCPServerSpec, connect_stdio_server
 from forma_ai.skills import SkillRegistry
+from forma_ai.tool_registry import ToolRegistry
 from forma_ai.inference_routing import RoutingError, TaskRequirements, create_cloud_proposal
 from forma_ai.local_tasks import (
     MAXIMUM_TASK_BYTES, LocalTaskError, LocalTaskRequest, completion_body, normalize_local_result,
@@ -216,6 +217,19 @@ def parser() -> argparse.ArgumentParser:
     skills_inject = commands.add_parser("skills-inject")
     skills_inject.add_argument("--skill-root", action="append", required=True, type=Path)
     skills_inject.add_argument("--skill-name", action="append", required=True)
+    tools_discover = commands.add_parser("tools-discover")
+    tools_discover.add_argument("--root", type=Path, required=True)
+    tools_discover.add_argument("--catalog", type=Path, default=REPOSITORY_ROOT / "config/tool-packages.json")
+    tools_discover.add_argument("--local-path", action="append", default=[], type=Path)
+    tools_install = commands.add_parser("tools-install")
+    tools_install.add_argument("--root", type=Path, required=True)
+    tools_install.add_argument("--catalog", type=Path, default=REPOSITORY_ROOT / "config/tool-packages.json")
+    tools_install.add_argument("--package-id", required=True)
+    for name in ("tools-start", "tools-stop"):
+        command = commands.add_parser(name)
+        command.add_argument("--root", type=Path, required=True)
+        command.add_argument("--catalog", type=Path, default=REPOSITORY_ROOT / "config/tool-packages.json")
+        command.add_argument("--tool-id", required=True)
     return result
 
 
@@ -280,6 +294,50 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
                 "injection": registry.inject(args.skill_name),
                 "skill_names": list(args.skill_name),
             }
+        return envelope(
+            command=args.command,
+            request_id=request_id,
+            status="ok",
+            payload=payload,
+        )
+    if args.command in {"tools-discover", "tools-install", "tools-start", "tools-stop"}:
+        _validate_product_root(args.root)
+        registry = ToolRegistry(
+            args.root,
+            catalog_path=args.catalog,
+            repository_root=REPOSITORY_ROOT,
+            local_paths=args.local_path if hasattr(args, "local_path") else (),
+        )
+        if args.command == "tools-discover":
+            payload = {
+                "schema_version": 1,
+                "tools": [
+                    {
+                        "tool_id": item.tool_id,
+                        "version": item.version,
+                        "source": item.source,
+                        "command": item.command,
+                        "args": list(item.args),
+                        "install_dir": None if item.install_dir is None else str(item.install_dir),
+                    }
+                    for item in registry.discover()
+                ],
+            }
+        elif args.command == "tools-install":
+            installation = registry.install(args.package_id)
+            payload = {
+                "schema_version": 1,
+                "tool_id": installation.tool_id,
+                "version": installation.version,
+                "source": installation.source,
+                "install_dir": str(installation.install_dir),
+            }
+        elif args.command == "tools-start":
+            state = registry.start(args.tool_id)
+            payload = {"schema_version": 1, **asdict(state)}
+        else:
+            registry.stop(args.tool_id)
+            payload = {"schema_version": 1, "tool_id": args.tool_id, "stopped": True}
         return envelope(
             command=args.command,
             request_id=request_id,
