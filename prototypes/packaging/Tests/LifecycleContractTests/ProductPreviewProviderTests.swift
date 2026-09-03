@@ -271,6 +271,15 @@ import Testing
 
 
 
+
+@Test func taskHistoryRediscoveryProofPhases() {
+    let proof = HistoryRecoveryPreviewContract.rediscoveryProof
+
+    #expect(proof.falseCompletionForbidden == true)
+    #expect(proof.proofPhases.contains("herdr_detached"))
+    #expect(proof.runtimeAuthority == "herdr")
+}
+
 @Test func historyRecoveryProductBindingReadsPersistedHistory() {
     let binding = HistoryRecoveryPreviewContract.productBinding
     let service = HistoryRecoveryPreviewContract.serviceBinding

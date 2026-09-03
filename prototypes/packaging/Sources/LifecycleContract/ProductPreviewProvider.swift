@@ -266,6 +266,21 @@ public struct TaskMetadataPersistenceContract: Sendable, Equatable {
 }
 
 
+
+public struct TaskHistoryRediscoveryContract: Sendable, Equatable {
+    public let schemaVersion: Int
+    public let proofPhases: [String]
+    public let runtimeAuthority: String
+    public let falseCompletionForbidden: Bool
+
+    public static let productDefault = TaskHistoryRediscoveryContract(
+        schemaVersion: 1,
+        proofPhases: ["app_reopened", "herdr_detached", "herdr_reconnected"],
+        runtimeAuthority: "herdr",
+        falseCompletionForbidden: true
+    )
+}
+
 public struct HistoryRecoveryServiceBinding: Sendable, Equatable {
     public let runtimeAuthority: String
     public let reconcileCommand: String
@@ -340,6 +355,7 @@ public struct HistoryRecoveryPreviewContract: Sendable {
     public static let metadataReconcile = TaskMetadataReconcileContract.productDefault
     public static let serviceBinding = HistoryRecoveryServiceBinding.productDefault
     public static let productBinding = HistoryRecoveryProductContract.productDefault
+    public static let rediscoveryProof = TaskHistoryRediscoveryContract.productDefault
 }
 
 public enum GovernedMemoryReviewState: String, CaseIterable, Sendable, Equatable, Hashable, Identifiable {
