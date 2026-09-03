@@ -272,6 +272,15 @@ import Testing
 
 
 
+
+@Test func taskHistoryManualRecoveryEvidencePattern() {
+    let manual = HistoryRecoveryPreviewContract.manualRecoveryProof
+
+    #expect(manual.scenarioID == "interrupted_blocked_task")
+    #expect(manual.manualChecklist.contains("recovery_audit_log_written"))
+    #expect(manual.evidenceFilenamePattern.contains("recovery-YYYY-MM-DD"))
+}
+
 @Test func taskHistoryRediscoveryProofPhases() {
     let proof = HistoryRecoveryPreviewContract.rediscoveryProof
 

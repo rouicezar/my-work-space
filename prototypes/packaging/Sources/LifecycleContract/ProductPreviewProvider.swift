@@ -267,6 +267,27 @@ public struct TaskMetadataPersistenceContract: Sendable, Equatable {
 
 
 
+
+public struct TaskHistoryManualRecoveryContract: Sendable, Equatable {
+    public let schemaVersion: Int
+    public let scenarioID: String
+    public let manualChecklist: [String]
+    public let evidenceFilenamePattern: String
+
+    public static let productDefault = TaskHistoryManualRecoveryContract(
+        schemaVersion: 1,
+        scenarioID: "interrupted_blocked_task",
+        manualChecklist: [
+            "native_history_lists_persisted_task_after_reopen",
+            "history_shows_unknown_while_herdr_detached",
+            "reclaim_enabled_only_with_fresh_herdr",
+            "recovery_audit_log_written",
+            "no_false_completion_without_herdr",
+        ],
+        evidenceFilenamePattern: "evidence/recovery/recovery-YYYY-MM-DD.md"
+    )
+}
+
 public struct TaskHistoryRediscoveryContract: Sendable, Equatable {
     public let schemaVersion: Int
     public let proofPhases: [String]
@@ -356,6 +377,7 @@ public struct HistoryRecoveryPreviewContract: Sendable {
     public static let serviceBinding = HistoryRecoveryServiceBinding.productDefault
     public static let productBinding = HistoryRecoveryProductContract.productDefault
     public static let rediscoveryProof = TaskHistoryRediscoveryContract.productDefault
+    public static let manualRecoveryProof = TaskHistoryManualRecoveryContract.productDefault
 }
 
 public enum GovernedMemoryReviewState: String, CaseIterable, Sendable, Equatable, Hashable, Identifiable {
