@@ -78,6 +78,24 @@ class SupervisorProtocolTests(unittest.TestCase):
         self.assertEqual(response["payload"]["reason"], "HERDR_NOT_RUNNING")
         self.assertEqual(response["payload"]["agents"], [])
 
+    def test_skills_list_returns_catalog_without_injection(self):
+        request_id = str(uuid.uuid4())
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            skill_dir = root / "excel"
+            skill_dir.mkdir()
+            (skill_dir / "SKILL.md").write_text(
+                "---\nname: excel-merge\ndescription: Merge spreadsheets\n---\n# Secret\n",
+                encoding="utf-8",
+            )
+            args = supervisor.parser().parse_args([
+                "--request-id", request_id, "skills-list", "--skill-root", str(root),
+            ])
+            response = supervisor.run(args)
+        self.assertEqual(response["command"], "skills-list")
+        self.assertEqual(response["payload"]["skills"][0]["name"], "excel-merge")
+        self.assertNotIn("Secret", json.dumps(response["payload"]))
+
     def task_submit_args(self, root: Path, cloud_catalog: Path, request_id: str):
         return supervisor.parser().parse_args([
             "--request-id", request_id, "task-submit", "--root", str(root),

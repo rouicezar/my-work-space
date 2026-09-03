@@ -48,6 +48,7 @@ from forma_ai.cloud_catalog import load_cloud_provider
 from forma_ai.cloud_proposals import CloudProposalStore
 from forma_ai.deepseek_adapter import DeepSeekAdapter
 from forma_ai.mcp_client import MCPServerSpec, connect_stdio_server
+from forma_ai.skills import SkillRegistry
 from forma_ai.inference_routing import RoutingError, TaskRequirements, create_cloud_proposal
 from forma_ai.local_tasks import (
     MAXIMUM_TASK_BYTES, LocalTaskError, LocalTaskRequest, completion_body, normalize_local_result,
@@ -210,6 +211,11 @@ def parser() -> argparse.ArgumentParser:
         if name == "mcp-call-tool":
             command.add_argument("--tool-name", required=True)
             command.add_argument("--arguments-json", default="{}")
+    skills_list = commands.add_parser("skills-list")
+    skills_list.add_argument("--skill-root", action="append", required=True, type=Path)
+    skills_inject = commands.add_parser("skills-inject")
+    skills_inject.add_argument("--skill-root", action="append", required=True, type=Path)
+    skills_inject.add_argument("--skill-name", action="append", required=True)
     return result
 
 
@@ -255,6 +261,25 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
                 }
         finally:
             client.close()
+        return envelope(
+            command=args.command,
+            request_id=request_id,
+            status="ok",
+            payload=payload,
+        )
+    if args.command in {"skills-list", "skills-inject"}:
+        registry = SkillRegistry(args.skill_root)
+        if args.command == "skills-list":
+            payload = {
+                "schema_version": 1,
+                "skills": [item.to_catalog_entry() for item in registry.descriptors],
+            }
+        else:
+            payload = {
+                "schema_version": 1,
+                "injection": registry.inject(args.skill_name),
+                "skill_names": list(args.skill_name),
+            }
         return envelope(
             command=args.command,
             request_id=request_id,
