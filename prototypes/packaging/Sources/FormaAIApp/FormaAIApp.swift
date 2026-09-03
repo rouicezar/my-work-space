@@ -346,10 +346,16 @@ struct ManifestOverview: View {
     }
 
     private var history: some View {
-        ContentUnavailableView(
-            "No task history yet", systemImage: "clock.arrow.circlepath",
-            description: Text("Completed and interrupted tasks will appear here with their audit status.")
-        )
+        Group {
+            if let context = installationContext() {
+                HistoryRecoveryPanel(supervisorURL: context.supervisor, rootURL: context.root)
+            } else {
+                ContentUnavailableView(
+                    "History unavailable", systemImage: "clock.arrow.circlepath",
+                    description: Text("Supervisor context is missing. Task history reads persisted metadata reconciled against Herdr.")
+                )
+            }
+        }
         .navigationTitle("History")
     }
 

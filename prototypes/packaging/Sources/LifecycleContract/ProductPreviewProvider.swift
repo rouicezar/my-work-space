@@ -265,6 +265,43 @@ public struct TaskMetadataPersistenceContract: Sendable, Equatable {
     )
 }
 
+
+public struct HistoryRecoveryServiceBinding: Sendable, Equatable {
+    public let runtimeAuthority: String
+    public let reconcileCommand: String
+    public let reclaimCommand: String
+    public let cancelCommand: String
+    public let freshRunCommand: String
+    public let auditPath: String
+    public let recoveryAuditPath: String
+
+    public static let productDefault = HistoryRecoveryServiceBinding(
+        runtimeAuthority: "herdr",
+        reconcileCommand: "task-metadata-reconcile",
+        reclaimCommand: "task-history-reclaim",
+        cancelCommand: "task-history-cancel",
+        freshRunCommand: "task-history-fresh-run",
+        auditPath: "logs/audit/task-history-reconcile.jsonl",
+        recoveryAuditPath: "logs/audit/task-history-recovery.jsonl"
+    )
+}
+
+public struct HistoryRecoveryProductContract: Sendable, Equatable {
+    public let readsPersistedHistory: Bool
+    public let runtimeActionsAllowed: Bool
+    public let performsReclaim: Bool
+    public let performsCancellation: Bool
+    public let performsFreshRun: Bool
+
+    public static let productDefault = HistoryRecoveryProductContract(
+        readsPersistedHistory: true,
+        runtimeActionsAllowed: true,
+        performsReclaim: true,
+        performsCancellation: true,
+        performsFreshRun: true
+    )
+}
+
 public struct HistoryRecoveryPreviewContract: Sendable {
     public let states: [HistoryPreviewTaskState]
     public let sections: [HistoryRecoverySection]
@@ -301,6 +338,8 @@ public struct HistoryRecoveryPreviewContract: Sendable {
     public static let metadataProjection = TaskMetadataProjectionContract.productDefault
     public static let metadataPersistence = TaskMetadataPersistenceContract.productDefault
     public static let metadataReconcile = TaskMetadataReconcileContract.productDefault
+    public static let serviceBinding = HistoryRecoveryServiceBinding.productDefault
+    public static let productBinding = HistoryRecoveryProductContract.productDefault
 }
 
 public enum GovernedMemoryReviewState: String, CaseIterable, Sendable, Equatable, Hashable, Identifiable {

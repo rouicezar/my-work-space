@@ -8,9 +8,13 @@ from forma_ai.task_metadata_reconcile import build_reconcile_payload
 
 
 TASK_HISTORY_AUDIT_PATH = "logs/audit/task-history-reconcile.jsonl"
+TASK_HISTORY_RECOVERY_AUDIT_PATH = "logs/audit/task-history-recovery.jsonl"
 
 SUPERVISOR_COMMANDS = {
     "reconcile": "task-metadata-reconcile",
+    "reclaim": "task-history-reclaim",
+    "cancel": "task-history-cancel",
+    "fresh_run": "task-history-fresh-run",
 }
 
 

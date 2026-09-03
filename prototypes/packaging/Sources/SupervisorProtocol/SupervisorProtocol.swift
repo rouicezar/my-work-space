@@ -298,6 +298,69 @@ public struct RuntimeRecordPayload: Decodable, Sendable {
 }
 
 
+
+
+public struct TaskHistoryTaskPayload: Decodable, Sendable, Equatable {
+    public let taskID: String
+    public let correlationID: String
+    public let intentLabel: String
+    public let runtimeState: String
+    public let displayOutcome: String
+    public let freshness: String
+    public let lastAcceptedRevision: Int?
+    public let herdrPaneID: String?
+    public let mayResume: Bool
+    public let reconciliationRequired: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case taskID = "task_id"
+        case correlationID = "correlation_id"
+        case intentLabel = "intent_label"
+        case runtimeState = "runtime_state"
+        case displayOutcome = "display_outcome"
+        case freshness
+        case lastAcceptedRevision = "last_accepted_revision"
+        case herdrPaneID = "herdr_pane_id"
+        case mayResume = "may_resume"
+        case reconciliationRequired = "reconciliation_required"
+    }
+}
+
+public struct TaskHistoryReconcilePayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let runtimeAuthority: String
+    public let freshness: String
+    public let reason: String?
+    public let tasks: [TaskHistoryTaskPayload]
+    public let availablePaneIDs: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case runtimeAuthority = "runtime_authority"
+        case freshness, reason, tasks
+        case availablePaneIDs = "available_pane_ids"
+    }
+}
+
+public struct TaskHistoryRecoveryPayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let action: String
+    public let taskID: String
+    public let runID: String
+    public let paneID: String
+    public let revision: Int
+    public let state: String
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case action
+        case taskID = "task_id"
+        case runID = "run_id"
+        case paneID = "pane_id"
+        case revision, state
+    }
+}
+
 public struct MemoryReviewSnapshotPayload: Decodable, Sendable {
     public let schemaVersion: Int
     public let correlationID: String
@@ -1163,6 +1226,69 @@ public struct SupervisorClient: Sendable {
             environmentOverrides: [
                 "FORMA_AI_MEMORY_TOKEN": memoryToken,
             ]
+        )
+    }
+
+
+    public func taskMetadataReconcile(
+        rootURL: URL,
+        taskID: String? = nil,
+        requestID: UUID = UUID()
+    ) throws -> TaskHistoryReconcilePayload {
+        var arguments = ["--root", rootURL.path]
+        if let taskID {
+            arguments += ["--task-id", taskID]
+        }
+        return try request(
+            command: "task-metadata-reconcile",
+            arguments: arguments,
+            requestID: requestID
+        )
+    }
+
+    public func taskHistoryReclaim(
+        rootURL: URL,
+        taskID: String,
+        requestID: UUID = UUID()
+    ) throws -> TaskHistoryRecoveryPayload {
+        try request(
+            command: "task-history-reclaim",
+            arguments: ["--root", rootURL.path, "--task-id", taskID],
+            requestID: requestID
+        )
+    }
+
+    public func taskHistoryCancel(
+        rootURL: URL,
+        taskID: String,
+        expectedRevision: Int,
+        requestID: UUID = UUID()
+    ) throws -> TaskHistoryRecoveryPayload {
+        try request(
+            command: "task-history-cancel",
+            arguments: [
+                "--root", rootURL.path,
+                "--task-id", taskID,
+                "--expected-revision", String(expectedRevision),
+            ],
+            requestID: requestID
+        )
+    }
+
+    public func taskHistoryFreshRun(
+        rootURL: URL,
+        taskID: String,
+        freshPaneID: String,
+        requestID: UUID = UUID()
+    ) throws -> TaskHistoryRecoveryPayload {
+        try request(
+            command: "task-history-fresh-run",
+            arguments: [
+                "--root", rootURL.path,
+                "--task-id", taskID,
+                "--fresh-pane-id", freshPaneID,
+            ],
+            requestID: requestID
         )
     }
 

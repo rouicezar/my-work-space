@@ -144,6 +144,33 @@ class SupervisorProtocolTests(unittest.TestCase):
         self.assertEqual(task["display_outcome"], "succeeded")
         self.assertTrue(task["is_terminal"])
 
+
+    def test_task_history_reclaim_fails_when_herdr_unavailable(self):
+        from forma_ai.task_metadata_projection import TaskMetadataRecord
+        from forma_ai.task_metadata_store import TaskMetadataStore
+
+        request_id = str(uuid.uuid4())
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "Product"
+            TaskMetadataStore(root).save(TaskMetadataRecord(
+                task_id="task-1",
+                correlation_id="corr-1",
+                intent_label="Recover notes",
+                recorded_at="2026-09-04T00:00:00+00:00",
+                updated_at="2026-09-04T00:00:00+00:00",
+                run_id="run-1",
+                herdr_pane_id="pane-1",
+                last_accepted_revision=1,
+            ))
+            args = supervisor.parser().parse_args([
+                "--request-id", request_id, "task-history-reclaim",
+                "--root", str(root), "--task-id", "task-1",
+            ])
+            with patch.object(supervisor.RuntimeManager, "status", return_value={"herdr_alive": False}):
+                response = supervisor.run(args)
+        self.assertEqual(response["status"], "error")
+        self.assertEqual(response["error"]["code"], "RECOVERY_HERDR_UNAVAILABLE")
+
     def test_skills_list_returns_catalog_without_injection(self):
         request_id = str(uuid.uuid4())
         with tempfile.TemporaryDirectory() as directory:

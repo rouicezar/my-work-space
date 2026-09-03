@@ -45,7 +45,15 @@ from forma_ai.memory_review_binding import (
     audit_review_event,
     build_review_snapshot,
 )
-from forma_ai.task_history_binding import TASK_HISTORY_AUDIT_PATH
+from forma_ai.task_history_binding import TASK_HISTORY_AUDIT_PATH, TASK_HISTORY_RECOVERY_AUDIT_PATH
+from forma_ai.task_history_recovery import (
+    TaskHistoryRecoveryError,
+    build_history_snapshot,
+    execute_cancel,
+    execute_fresh_run,
+    execute_reclaim,
+    load_recovery_context,
+)
 from forma_ai.task_metadata_reconcile import build_reconcile_payload
 from forma_ai.task_metadata_store import TaskMetadataStore, TaskMetadataStoreError
 from forma_ai.memory_service import (
@@ -193,6 +201,14 @@ def parser() -> argparse.ArgumentParser:
     task_metadata_reconcile = commands.add_parser("task-metadata-reconcile")
     task_metadata_reconcile.add_argument("--root", type=Path, required=True)
     task_metadata_reconcile.add_argument("--task-id", default=None)
+    for name in ("task-history-reclaim", "task-history-cancel", "task-history-fresh-run"):
+        command = commands.add_parser(name)
+        command.add_argument("--root", type=Path, required=True)
+        command.add_argument("--task-id", required=True)
+        if name == "task-history-cancel":
+            command.add_argument("--expected-revision", type=int, required=True)
+        if name == "task-history-fresh-run":
+            command.add_argument("--fresh-pane-id", required=True)
     cloud_preview = commands.add_parser("cloud-preview")
     cloud_preview.add_argument("--root", type=Path, required=True)
     cloud_preview.add_argument("--catalog", type=Path, default=DEFAULT_CLOUD_PROVIDERS)
@@ -301,6 +317,25 @@ def validate_request_id(value: str) -> str:
         raise ValueError("request ID must use canonical UUID form")
     return str(parsed)
 
+
+
+
+def _herdr_adapter_for_root(product_root: Path) -> HerdrAdapter | None:
+    status = RuntimeManager(product_root).status()
+    if not status.get("herdr_alive"):
+        return None
+    socket_path = resolve_socket_path(environ={"HERDR_SESSION": HERDR_SESSION_NAME})
+    transport = HerdrSocketTransport(socket_path=socket_path, environ={})
+    return HerdrAdapter(request=transport, probe=transport.probe)
+
+
+def _recovery_error_envelope(*, command: str, request_id: str, exc: TaskHistoryRecoveryError) -> dict[str, object]:
+    return envelope(
+        command=command,
+        request_id=request_id,
+        status="error",
+        error={"code": exc.code, "message": str(exc)},
+    )
 
 def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, Any]:
     request_id = validate_request_id(args.request_id)
@@ -566,6 +601,57 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
             },
         )
 
+
+    if args.command in {"task-history-reclaim", "task-history-cancel", "task-history-fresh-run"}:
+        _validate_product_root(args.root)
+        status = RuntimeManager(args.root).status()
+        snapshot_source = _herdr_adapter_for_root(args.root)
+        if snapshot_source is None:
+            return _recovery_error_envelope(
+                command=args.command,
+                request_id=request_id,
+                exc=TaskHistoryRecoveryError("RECOVERY_HERDR_UNAVAILABLE", "Herdr is not running"),
+            )
+        try:
+            context = load_recovery_context(
+                args.root,
+                args.task_id,
+                runtime_status=lambda: status,
+                snapshot_source=snapshot_source,
+            )
+            if args.command == "task-history-reclaim":
+                payload = execute_reclaim(context, snapshot_source)
+            elif args.command == "task-history-cancel":
+                payload = execute_cancel(
+                    context,
+                    snapshot_source,
+                    expected_revision=args.expected_revision,
+                    correlation_id=request_id,
+                )
+            else:
+                payload = execute_fresh_run(
+                    context,
+                    snapshot_source,
+                    fresh_pane_id=args.fresh_pane_id,
+                    correlation_id=request_id,
+                )
+        except TaskHistoryRecoveryError as exc:
+            return _recovery_error_envelope(command=args.command, request_id=request_id, exc=exc)
+        JsonlAuditSink(args.root / TASK_HISTORY_RECOVERY_AUDIT_PATH).record({
+            "schema_version": 1,
+            "event": "task_history_recovery",
+            "correlation_id": request_id,
+            "command": args.command,
+            "outcome": "completed",
+            "task_id": args.task_id,
+            "action": payload.get("action"),
+        })
+        return envelope(
+            command=args.command,
+            request_id=request_id,
+            status="ok",
+            payload={"schema_version": 1, **payload},
+        )
     if args.command == "task-metadata-reconcile":
         _validate_product_root(args.root)
         if args.task_id is not None:
@@ -584,7 +670,7 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
             socket_path = resolve_socket_path(environ={"HERDR_SESSION": HERDR_SESSION_NAME})
             transport = HerdrSocketTransport(socket_path=socket_path, environ={})
             snapshot_source = HerdrAdapter(request=transport, probe=transport.probe)
-        payload = build_reconcile_payload(
+        payload = build_history_snapshot(
             args.root,
             task_id=args.task_id,
             runtime_status=lambda: status,

@@ -270,6 +270,17 @@ import Testing
 }
 
 
+
+@Test func historyRecoveryProductBindingReadsPersistedHistory() {
+    let binding = HistoryRecoveryPreviewContract.productBinding
+    let service = HistoryRecoveryPreviewContract.serviceBinding
+
+    #expect(binding.readsPersistedHistory == true)
+    #expect(binding.runtimeActionsAllowed == true)
+    #expect(service.reclaimCommand == "task-history-reclaim")
+    #expect(HistoryRecoveryPreviewContract.productDefault.readsPersistedHistory == false)
+}
+
 @Test func taskMetadataReconcileUsesHerdrAuthority() {
     let reconcile = HistoryRecoveryPreviewContract.metadataReconcile
 
