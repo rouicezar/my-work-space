@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-03T00:00:00Z",
-  "task_id": "P7-T01",
+  "updated_at": "2026-09-03T12:52:38Z",
+  "task_id": "P7-T02",
   "confirmed_authority": "semantica",
   "pinned_upstream": {
     "semantica": {
@@ -52,7 +52,7 @@
       "product_entry": "forma_ai/adapters/semantica.py::SemanticaContextBackend.retrieve",
       "verdict": "inject",
       "authority": "semantica",
-      "p7_t02_action": "enrich_results_via_backend_get",
+      "p7_t02_action": "completed",
       "decision_ref": "docs/research/semantica-binding-decision-2026-09-03.md#decision-f1--retrieval-seam"
     },
     {
@@ -126,7 +126,7 @@
       "product_entry": "forma_ai/governed_memory.py records table",
       "verdict": "projection",
       "authority": "semantica",
-      "p7_t02_action": "justify_or_narrow_content_cache",
+      "p7_t02_action": "completed",
       "decision_ref": "docs/research/semantica-binding-decision-2026-09-03.md#decision-f4--local-confirmed-content-cache"
     },
     {

@@ -1344,6 +1344,8 @@ def _run_internal_broker(root: Path, omlx_port: int, broker_port: int) -> None:
 
 
 class _UnavailableSemanticaBackend:
+    """Fail-closed stub for internal-memory-service without an approved embedding route."""
+
     def health(self) -> dict[str, str]:
         return {"status": "unavailable", "code": "EMBEDDING_ROUTE_UNVERIFIED"}
 

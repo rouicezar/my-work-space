@@ -1,4 +1,11 @@
-"""Product governance boundary for confirmed Semantica knowledge."""
+"""Product governance boundary for confirmed Semantica knowledge.
+
+The local SQLite ``records`` table is a **workflow projection**, not a competing
+authority. Confirmed reads and exports must use Semantica content via
+``SemanticaBackend.get()`` after metadata binding checks. Denormalized ``content``
+columns exist for offline review/history only and may lag upstream until corrected
+through the governed ``correct()`` path.
+"""
 
 from __future__ import annotations
 
@@ -229,7 +236,13 @@ class GovernedMemory:
         metadata = upstream.get("metadata", {})
         if metadata.get("record_id") != record_id or metadata.get("version") != row[5]:
             raise MemoryGovernanceError("SEMANTICA_RECORD_MISMATCH", record_id)
-        return self._record(row)
+        content = upstream.get("content")
+        if not isinstance(content, str) or not content.strip():
+            raise MemoryGovernanceError("SEMANTICA_RECORD_MISSING", row[1])
+        return ConfirmedMemory(
+            row[0], row[1], row[2], content, tuple(self._decode_sources(row[6])),
+            row[7], row[5], row[8], row[9], row[10],
+        )
 
     def retrieve(self, query: str, limit: int = 5) -> list[ConfirmedMemory]:
         if not query.strip() or not 1 <= limit <= 100:
@@ -246,7 +259,6 @@ class GovernedMemory:
             if len(results) == limit:
                 break
         return results
-
     def history(self, claim_key: str) -> list[dict[str, Any]]:
         with self._connect() as connection:
             rows = connection.execute(
@@ -258,10 +270,15 @@ class GovernedMemory:
     def export(self) -> dict[str, Any]:
         with self._connect() as connection:
             rows = connection.execute(
-                "SELECT * FROM records WHERE status IN ('confirmed', 'superseded') "
-                "AND content IS NOT NULL ORDER BY claim_key, version"
+                "SELECT record_id FROM records WHERE status = 'confirmed' AND content IS NOT NULL "
+                "ORDER BY claim_key, version"
             ).fetchall()
-        return {"schema_version": 1, "exported_at": _now(), "records": [asdict(self._record(row)) for row in rows]}
+        exported: list[dict[str, object]] = []
+        for row in rows:
+            confirmed = self.get(row[0])
+            if confirmed is not None:
+                exported.append(asdict(confirmed))
+        return {"schema_version": 1, "exported_at": _now(), "records": exported}
 
     def health(self) -> dict[str, Any]:
         upstream = self.backend.health()

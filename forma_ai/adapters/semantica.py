@@ -48,10 +48,24 @@ class SemanticaContextBackend:
             raise RuntimeError("SEMANTIC_INDEX_UNVERIFIED")
         embed_query = getattr(self.semantic_store, "embed_query", self.semantic_store.embed)
         vector = embed_query(query)
-        return [
-            {"metadata": result.get("metadata", {})}
-            for result in self.semantic_store.search_vectors(vector, k=limit)
-        ]
+        enriched: list[dict[str, Any]] = []
+        for result in self.semantic_store.search_vectors(vector, k=limit):
+            metadata = dict(result.get("metadata", {}))
+            item: dict[str, Any] = {"metadata": metadata}
+            memory_id = metadata.get("memory_id") or result.get("id")
+            if isinstance(memory_id, str) and memory_id:
+                upstream = self.context.get_memory(memory_id)
+                if isinstance(upstream, dict):
+                    item["id"] = memory_id
+                    content = upstream.get("content")
+                    if isinstance(content, str):
+                        item["content"] = content
+                    upstream_metadata = upstream.get("metadata")
+                    if isinstance(upstream_metadata, dict):
+                        metadata.update(upstream_metadata)
+                        item["metadata"] = metadata
+            enriched.append(item)
+        return enriched
 
     def forget(self, memory_id: str) -> bool:
         snapshot = self.context.get_memory(memory_id)

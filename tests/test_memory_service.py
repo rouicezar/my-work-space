@@ -82,7 +82,9 @@ class MemoryServiceTests(unittest.TestCase):
         }))["result"]
         self.assertEqual([item["version"] for item in history], [1, 2])
         exported = self.decoded(self.request("/v1/memory/export", {}))["result"]
-        self.assertEqual(len(exported["records"]), 2)
+        self.assertEqual(len(exported["records"]), 1)
+        self.assertEqual(exported["records"][0]["record_id"], corrected["record_id"])
+        self.assertEqual(exported["records"][0]["version"], 2)
         deleted = self.request("/v1/memory/delete", {
             "actor": "reviewer", "record_id": corrected["record_id"],
         }, correlation="run-http-4")

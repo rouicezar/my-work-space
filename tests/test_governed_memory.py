@@ -125,6 +125,29 @@ class GovernedMemoryTests(unittest.TestCase):
         self.assertEqual(raised.exception.code, "SEMANTICA_UNAVAILABLE")
         self.assertEqual(self.backend.items, {})
 
+    def test_get_returns_upstream_content_when_projection_cache_is_stale(self):
+        confirmed = self.memory.confirm(self.propose().candidate_id, actor="reviewer", correlation_id="run-2")
+        with self.memory._connect() as connection:
+            connection.execute(
+                "UPDATE records SET content = ? WHERE record_id = ?",
+                ("stale local projection", confirmed.record_id),
+            )
+        loaded = self.memory.get(confirmed.record_id)
+        self.assertEqual(loaded.content, confirmed.content)
+        self.assertNotEqual(loaded.content, "stale local projection")
+
+    def test_export_reads_authoritative_upstream_content(self):
+        confirmed = self.memory.confirm(self.propose().candidate_id, actor="reviewer", correlation_id="run-2")
+        self.backend.items[confirmed.semantica_id]["content"] = "upstream export truth"
+        with self.memory._connect() as connection:
+            connection.execute(
+                "UPDATE records SET content = ? WHERE record_id = ?",
+                ("stale export cache", confirmed.record_id),
+            )
+        exported = self.memory.export()["records"]
+        self.assertEqual(len(exported), 1)
+        self.assertEqual(exported[0]["content"], "upstream export truth")
+
     def test_source_and_correlation_are_mandatory(self):
         with self.assertRaises(MemoryGovernanceError):
             self.memory.propose(

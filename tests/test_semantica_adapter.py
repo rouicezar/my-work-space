@@ -76,15 +76,27 @@ class SemanticaAdapterContractTests(unittest.TestCase):
         self.assertFalse(call[2]["auto_extract"])
         self.assertEqual(adapter.get(memory_id)["metadata"], metadata)
 
-    def test_retrieval_uses_product_index_record_id_metadata(self):
+    def test_retrieval_uses_product_index_and_rehydrates_upstream_content(self):
         context = FixtureContext()
+        context.memories["vector-1"] = {
+            "id": "vector-1",
+            "content": "authoritative fact",
+            "metadata": {"record_id": "record-1", "memory_id": "vector-1", "status": "confirmed"},
+        }
         store = FixtureSemanticStore()
         adapter = SemanticaContextBackend(
             context, embedding_route="fixture-local", semantic_store=store
         )
-        self.assertEqual(adapter.retrieve("fact", 7), [{"metadata": {"record_id": "record-1"}}])
+        self.assertEqual(
+            adapter.retrieve("fact", 7),
+            [{
+                "metadata": {"record_id": "record-1", "memory_id": "vector-1", "status": "confirmed"},
+                "id": "vector-1",
+                "content": "authoritative fact",
+            }],
+        )
         self.assertEqual(store.calls[:2], [("embed", "fact"), ("search", [1.0, 0.0], 7)])
-        self.assertFalse(any(call[0] == "retrieve" for call in context.calls))
+        self.assertEqual(context.calls, [("get", "vector-1")])
 
     def test_health_and_forget_are_normalized(self):
         context = FixtureContext()
