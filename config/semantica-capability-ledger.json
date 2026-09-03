@@ -145,7 +145,7 @@
       "product_entry": "forma_ai/semantica_backend.py::create_managed_semantica_backend",
       "verdict": "adapter",
       "authority": "semantica",
-      "p7_t02_action": "verify_real_runtime_p7_t03"
+      "p7_t02_action": "completed"
     },
     {
       "id": "memory.runtime_inspection",

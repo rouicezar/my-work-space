@@ -1,0 +1,20 @@
+# Product-managed runtime dependencies for pinned semantica==0.6.7.
+# Install semantica itself with --no-deps first, then this file.
+# This curated set avoids the upstream full dependency graph (torch, opencv, etc.)
+# while keeping the pinned AgentContext import and lifecycle surface working.
+numpy>=2.0.2
+pyyaml>=6.0
+scipy>=1.13.1
+scikit-learn>=1.7.2
+pandas>=1.3.0
+pydantic>=2.13.4
+networkx>=2.8.0
+loguru>=0.7.3
+requests>=2.34.2
+click>=8.4.2
+tqdm>=4.68.3
+rdflib>=6.2.0
+protobuf>=5.29.1,<8.0
+structlog>=24.0.0
+rich>=13.0.0
+python-dotenv>=1.0.0
