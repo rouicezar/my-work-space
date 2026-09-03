@@ -234,6 +234,22 @@ public struct TaskMetadataProjectionContract: Sendable, Equatable {
     )
 }
 
+public struct TaskMetadataPersistenceContract: Sendable, Equatable {
+    public let schemaVersion: Int
+    public let storageRelativeDirectory: String
+    public let recordSchemaVersion: Int
+    public let persistsRuntimeClaims: Bool
+    public let productOwnedFields: [String]
+
+    public static let productDefault = TaskMetadataPersistenceContract(
+        schemaVersion: 1,
+        storageRelativeDirectory: "state/task-metadata",
+        recordSchemaVersion: 1,
+        persistsRuntimeClaims: false,
+        productOwnedFields: TaskMetadataProjectionContract.productDefault.productOwnedFields
+    )
+}
+
 public struct HistoryRecoveryPreviewContract: Sendable {
     public let states: [HistoryPreviewTaskState]
     public let sections: [HistoryRecoverySection]
@@ -268,6 +284,7 @@ public struct HistoryRecoveryPreviewContract: Sendable {
     )
 
     public static let metadataProjection = TaskMetadataProjectionContract.productDefault
+    public static let metadataPersistence = TaskMetadataPersistenceContract.productDefault
 }
 
 public enum GovernedMemoryReviewState: String, CaseIterable, Sendable, Equatable, Hashable, Identifiable {

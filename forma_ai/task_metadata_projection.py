@@ -137,6 +137,57 @@ def validate_metadata_record(record: TaskMetadataRecord) -> None:
         raise TaskMetadataProjectionError("METADATA_INVALID", "last_accepted_revision must be nonnegative")
 
 
+def metadata_record_to_dict(record: TaskMetadataRecord) -> dict[str, Any]:
+    validate_metadata_record(record)
+    return {
+        "schema_version": PROJECTION_SCHEMA_VERSION,
+        "task_id": record.task_id,
+        "correlation_id": record.correlation_id,
+        "intent_label": record.intent_label,
+        "recorded_at": record.recorded_at,
+        "updated_at": record.updated_at,
+        "run_id": record.run_id,
+        "herdr_pane_id": record.herdr_pane_id,
+        "herdr_workspace_id": record.herdr_workspace_id,
+        "herdr_tab_id": record.herdr_tab_id,
+        "herdr_terminal_id": record.herdr_terminal_id,
+        "last_accepted_revision": record.last_accepted_revision,
+        "approval_refs": list(record.approval_refs),
+        "artifact_refs": list(record.artifact_refs),
+        "policy_preview_digest": record.policy_preview_digest,
+    }
+
+
+def metadata_record_from_dict(raw: Mapping[str, Any]) -> TaskMetadataRecord:
+    validate_metadata_payload(raw)
+    if raw.get("schema_version") != PROJECTION_SCHEMA_VERSION:
+        raise TaskMetadataProjectionError("METADATA_INVALID", "unsupported schema_version")
+    for field in ("approval_refs", "artifact_refs"):
+        value = raw.get(field, ())
+        if value is None:
+            value = ()
+        if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+            raise TaskMetadataProjectionError("METADATA_INVALID", f"{field} must be a string array")
+    record = TaskMetadataRecord(
+        task_id=str(raw["task_id"]),
+        correlation_id=str(raw["correlation_id"]),
+        intent_label=str(raw["intent_label"]),
+        recorded_at=str(raw["recorded_at"]),
+        updated_at=str(raw["updated_at"]),
+        run_id=raw.get("run_id"),
+        herdr_pane_id=raw.get("herdr_pane_id"),
+        herdr_workspace_id=raw.get("herdr_workspace_id"),
+        herdr_tab_id=raw.get("herdr_tab_id"),
+        herdr_terminal_id=raw.get("herdr_terminal_id"),
+        last_accepted_revision=raw.get("last_accepted_revision"),
+        approval_refs=tuple(raw.get("approval_refs") or ()),
+        artifact_refs=tuple(raw.get("artifact_refs") or ()),
+        policy_preview_digest=raw.get("policy_preview_digest"),
+    )
+    validate_metadata_record(record)
+    return record
+
+
 def project_task_view(
     metadata: TaskMetadataRecord,
     *,

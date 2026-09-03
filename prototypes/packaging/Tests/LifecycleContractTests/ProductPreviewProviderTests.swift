@@ -269,3 +269,13 @@ import Testing
     #expect(HistoryRecoveryPreviewContract.productDefault.performsResume == false)
 }
 
+@Test func taskMetadataPersistenceDoesNotClaimRuntimeAuthority() {
+    let persistence = HistoryRecoveryPreviewContract.metadataPersistence
+
+    #expect(persistence.persistsRuntimeClaims == false)
+    #expect(persistence.storageRelativeDirectory == "state/task-metadata")
+    #expect(persistence.recordSchemaVersion == 1)
+    #expect(persistence.productOwnedFields.contains("last_accepted_revision"))
+    #expect(persistence.productOwnedFields.contains("approval_refs"))
+}
+
