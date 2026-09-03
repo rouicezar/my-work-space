@@ -269,6 +269,15 @@ import Testing
     #expect(HistoryRecoveryPreviewContract.productDefault.performsResume == false)
 }
 
+
+@Test func taskMetadataReconcileUsesHerdrAuthority() {
+    let reconcile = HistoryRecoveryPreviewContract.metadataReconcile
+
+    #expect(reconcile.runtimeAuthority == "herdr")
+    #expect(reconcile.supervisorCommand == "task-metadata-reconcile")
+    #expect(reconcile.auditPath == "logs/audit/task-history-reconcile.jsonl")
+}
+
 @Test func taskMetadataPersistenceDoesNotClaimRuntimeAuthority() {
     let persistence = HistoryRecoveryPreviewContract.metadataPersistence
 

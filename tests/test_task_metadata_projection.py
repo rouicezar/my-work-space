@@ -112,6 +112,7 @@ class TaskMetadataProjectionContractTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn("TaskMetadataProjectionContract", swift)
         self.assertIn("TaskMetadataPersistenceContract", swift)
+        self.assertIn("TaskMetadataReconcileContract", swift)
         self.assertIn("HistoryRecoveryPreviewContract", swift)
 
 

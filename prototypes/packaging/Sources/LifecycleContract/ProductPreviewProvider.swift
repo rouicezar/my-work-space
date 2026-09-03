@@ -234,6 +234,21 @@ public struct TaskMetadataProjectionContract: Sendable, Equatable {
     )
 }
 
+
+public struct TaskMetadataReconcileContract: Sendable, Equatable {
+    public let schemaVersion: Int
+    public let supervisorCommand: String
+    public let runtimeAuthority: String
+    public let auditPath: String
+
+    public static let productDefault = TaskMetadataReconcileContract(
+        schemaVersion: 1,
+        supervisorCommand: "task-metadata-reconcile",
+        runtimeAuthority: "herdr",
+        auditPath: "logs/audit/task-history-reconcile.jsonl"
+    )
+}
+
 public struct TaskMetadataPersistenceContract: Sendable, Equatable {
     public let schemaVersion: Int
     public let storageRelativeDirectory: String
@@ -285,6 +300,7 @@ public struct HistoryRecoveryPreviewContract: Sendable {
 
     public static let metadataProjection = TaskMetadataProjectionContract.productDefault
     public static let metadataPersistence = TaskMetadataPersistenceContract.productDefault
+    public static let metadataReconcile = TaskMetadataReconcileContract.productDefault
 }
 
 public enum GovernedMemoryReviewState: String, CaseIterable, Sendable, Equatable, Hashable, Identifiable {

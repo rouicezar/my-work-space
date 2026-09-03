@@ -78,6 +78,72 @@ class SupervisorProtocolTests(unittest.TestCase):
         self.assertEqual(response["payload"]["reason"], "HERDR_NOT_RUNNING")
         self.assertEqual(response["payload"]["agents"], [])
 
+
+    def test_task_metadata_reconcile_fails_closed_when_herdr_not_running(self):
+        from forma_ai.task_metadata_store import TaskMetadataStore
+        from forma_ai.task_metadata_projection import TaskMetadataRecord
+
+        request_id = str(uuid.uuid4())
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "Product"
+            TaskMetadataStore(root).save(TaskMetadataRecord(
+                task_id="task-1",
+                correlation_id="corr-1",
+                intent_label="Recover notes",
+                recorded_at="2026-09-04T00:00:00+00:00",
+                updated_at="2026-09-04T00:00:00+00:00",
+                herdr_pane_id="pane-1",
+                last_accepted_revision=1,
+            ))
+            args = supervisor.parser().parse_args([
+                "--request-id", request_id, "task-metadata-reconcile",
+                "--root", str(root),
+            ])
+            with patch.object(supervisor.RuntimeManager, "status", return_value={"herdr_alive": False}),                  patch.object(supervisor.HerdrAdapter, "snapshot") as snapshot:
+                response = supervisor.run(args)
+            snapshot.assert_not_called()
+
+        self.assertEqual(response["command"], "task-metadata-reconcile")
+        self.assertEqual(response["payload"]["freshness"], "stale")
+        self.assertEqual(response["payload"]["tasks"][0]["runtime_state"], "unknown")
+        self.assertTrue(response["payload"]["tasks"][0]["reconciliation_required"])
+
+    def test_task_metadata_reconcile_surfaces_fresh_herdr_outcome(self):
+        from forma_ai.task_metadata_store import TaskMetadataStore
+        from forma_ai.task_metadata_projection import TaskMetadataRecord
+
+        expected = HerdrSessionSnapshot(
+            version="0.8.2", protocol=20, workspaces=(), tabs=(), panes=(),
+            agents=(HerdrSessionAgent(
+                terminal_id="terminal-1", agent_status="done",
+                workspace_id="workspace-1", tab_id="tab-1", pane_id="pane-1",
+                focused=True, revision=9,
+            ),), layouts=(),
+        )
+        request_id = str(uuid.uuid4())
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "Product"
+            TaskMetadataStore(root).save(TaskMetadataRecord(
+                task_id="task-1",
+                correlation_id="corr-1",
+                intent_label="Recover notes",
+                recorded_at="2026-09-04T00:00:00+00:00",
+                updated_at="2026-09-04T00:00:00+00:00",
+                herdr_pane_id="pane-1",
+                last_accepted_revision=8,
+            ))
+            args = supervisor.parser().parse_args([
+                "--request-id", request_id, "task-metadata-reconcile",
+                "--root", str(root),
+            ])
+            with patch.object(supervisor.RuntimeManager, "status", return_value={"herdr_alive": True}),                  patch.object(supervisor.HerdrAdapter, "snapshot", return_value=expected):
+                response = supervisor.run(args)
+
+        self.assertEqual(response["payload"]["freshness"], "fresh")
+        task = response["payload"]["tasks"][0]
+        self.assertEqual(task["display_outcome"], "succeeded")
+        self.assertTrue(task["is_terminal"])
+
     def test_skills_list_returns_catalog_without_injection(self):
         request_id = str(uuid.uuid4())
         with tempfile.TemporaryDirectory() as directory:

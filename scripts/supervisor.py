@@ -45,6 +45,9 @@ from forma_ai.memory_review_binding import (
     audit_review_event,
     build_review_snapshot,
 )
+from forma_ai.task_history_binding import TASK_HISTORY_AUDIT_PATH
+from forma_ai.task_metadata_reconcile import build_reconcile_payload
+from forma_ai.task_metadata_store import TaskMetadataStore, TaskMetadataStoreError
 from forma_ai.memory_service import (
     GovernedMemoryService,
     MemoryServicePolicy,
@@ -187,6 +190,9 @@ def parser() -> argparse.ArgumentParser:
         if name in {"memory-review-confirm", "memory-review-reject"}:
             command.add_argument("--candidate-id", required=True)
             command.add_argument("--actor", required=True)
+    task_metadata_reconcile = commands.add_parser("task-metadata-reconcile")
+    task_metadata_reconcile.add_argument("--root", type=Path, required=True)
+    task_metadata_reconcile.add_argument("--task-id", default=None)
     cloud_preview = commands.add_parser("cloud-preview")
     cloud_preview.add_argument("--root", type=Path, required=True)
     cloud_preview.add_argument("--catalog", type=Path, default=DEFAULT_CLOUD_PROVIDERS)
@@ -559,6 +565,46 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
                 "agents": [asdict(item) for item in snapshot.agents],
             },
         )
+
+    if args.command == "task-metadata-reconcile":
+        _validate_product_root(args.root)
+        if args.task_id is not None:
+            try:
+                TaskMetadataStore(args.root).load(args.task_id)
+            except TaskMetadataStoreError as exc:
+                return envelope(
+                    command=args.command,
+                    request_id=request_id,
+                    status="error",
+                    error={"code": exc.code, "message": str(exc)},
+                )
+        status = RuntimeManager(args.root).status()
+        snapshot_source = None
+        if status.get("herdr_alive"):
+            socket_path = resolve_socket_path(environ={"HERDR_SESSION": HERDR_SESSION_NAME})
+            transport = HerdrSocketTransport(socket_path=socket_path, environ={})
+            snapshot_source = HerdrAdapter(request=transport, probe=transport.probe)
+        payload = build_reconcile_payload(
+            args.root,
+            task_id=args.task_id,
+            runtime_status=lambda: status,
+            snapshot_source=snapshot_source,
+        )
+        JsonlAuditSink(args.root / TASK_HISTORY_AUDIT_PATH).record({
+            "schema_version": 1,
+            "event": "task_history_reconcile",
+            "correlation_id": request_id,
+            "command": args.command,
+            "outcome": "completed",
+            "freshness": payload.get("freshness"),
+            "task_count": len(payload.get("tasks", [])),
+        })
+        return envelope(
+            command=args.command,
+            request_id=request_id,
+            status="ok",
+            payload=payload,
+        )
     if args.command == "preflight":
         if not args.profiles.is_absolute() or not args.check_path.is_absolute():
             raise ValueError("preflight paths must be absolute")
@@ -882,6 +928,7 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
         )
     if args.command in {
         "memory-review-snapshot", "memory-review-confirm", "memory-review-reject",
+                "task-metadata-reconcile",
     }:
         _validate_product_root(args.root)
         audit = JsonlAuditSink(args.root / MEMORY_REVIEW_AUDIT_PATH)
@@ -1542,6 +1589,7 @@ def main(argv: list[str] | None = None) -> int:
                 "runtime-status", "start-runtime", "stop-runtime", "sample-task", "local-task", "internal-broker",
                 "internal-memory-service", "semantica-status",
                 "memory-review-snapshot", "memory-review-confirm", "memory-review-reject",
+                "task-metadata-reconcile",
                 "cloud-preview", "cloud-approve", "cloud-reject", "cloud-execute",
                 "cloud-settings", "set-cloud-settings",
                 "task-submit",
