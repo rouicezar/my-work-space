@@ -997,6 +997,66 @@ class SupervisorProtocolTests(unittest.TestCase):
                     supervisor.run(args)
             sample.assert_not_called()
 
+    def tool_route_common(self, root: Path, request_id: str, command: str) -> argparse.Namespace:
+        return supervisor.parser().parse_args([
+            "--request-id", request_id, command,
+            "--root", str(root),
+            "--catalog", str(ROOT / "config/tool-routing.json"),
+            "--capability-id", "echo.transform",
+            "--operation", "echo",
+            "--arguments-json", '{"message":"hello"}',
+            "--data-class", "tool_result",
+        ])
+
+    def test_tool_route_resolve_maps_installed_capability(self):
+        from forma_ai.tool_registry import ToolRegistry
+
+        request_id = str(uuid.uuid4())
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "Product"
+            ToolRegistry(
+                root,
+                catalog_path=ROOT / "config/tool-packages.json",
+                repository_root=ROOT,
+            ).install("fixture-echo-mcp")
+            response = supervisor.run(self.tool_route_common(root, request_id, "tool-route-resolve"))
+        self.assertEqual(response["command"], "tool-route-resolve")
+        decision = response["payload"]["decision"]
+        self.assertEqual(decision["route"], "ready")
+        self.assertEqual(decision["tool_id"], "fixture-echo-mcp")
+        self.assertEqual(decision["mcp_tool_name"], "echo")
+        self.assertFalse(decision["approval_required"])
+
+    def test_tool_route_resolve_reports_missing_tool(self):
+        request_id = str(uuid.uuid4())
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "Product"
+            response = supervisor.run(self.tool_route_common(root, request_id, "tool-route-resolve"))
+        self.assertEqual(response["payload"]["decision"]["route"], "tool_missing")
+
+    def test_tool_call_propose_persists_proposal_without_exposing_arguments(self):
+        from forma_ai.tool_registry import ToolRegistry
+
+        request_id = str(uuid.uuid4())
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "Product"
+            ToolRegistry(
+                root,
+                catalog_path=ROOT / "config/tool-packages.json",
+                repository_root=ROOT,
+            ).install("fixture-echo-mcp")
+            response = supervisor.run(self.tool_route_common(root, request_id, "tool-call-propose"))
+            proposal = response["payload"]["proposal"]
+            self.assertFalse(response["payload"]["approval_required"])
+            self.assertTrue(proposal["proposal_id"])
+            state = root / "state/tool-proposals"
+            self.assertTrue((state / f"{proposal['proposal_id']}.json").is_file())
+            self.assertTrue((state / f"{proposal['proposal_id']}.payload").is_file())
+            self.assertNotIn("hello", json.dumps(response))
+            audit = (root / "logs/audit/tools.jsonl").read_text(encoding="utf-8")
+            self.assertIn('"event":"tool_route_proposed"', audit)
+            self.assertNotIn("hello", audit)
+
 
 class SupervisorHerdrFeatureTests(unittest.TestCase):
     def test_herdr_dispatch_fails_closed_when_feature_is_disabled(self):

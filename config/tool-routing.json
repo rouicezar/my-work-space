@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-09-03T00:00:00Z",
+  "routes": [
+    {
+      "capability_id": "echo.transform",
+      "operation": "echo",
+      "tool_id": "fixture-echo-mcp",
+      "mcp_tool_name": "echo",
+      "sensitivity": "low",
+      "sandbox_required": false
+    },
+    {
+      "capability_id": "filesystem.write",
+      "operation": "write_file",
+      "tool_id": "fixture-echo-mcp",
+      "mcp_tool_name": "echo",
+      "sensitivity": "high",
+      "sandbox_required": true
+    }
+  ]
+}

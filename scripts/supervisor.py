@@ -69,6 +69,15 @@ from forma_ai.herdr_transport import (
     HerdrTransportError,
     resolve_socket_path,
 )
+from forma_ai.herdr_tool_bridge import HerdrToolBridge
+from forma_ai.tool_routing import (
+    RegistryMCPCaller,
+    ToolApprovalStore,
+    ToolCapabilityRequest,
+    ToolProposalStore,
+    ToolRouter,
+    ToolRoutingError,
+)
 
 
 SCHEMA_VERSION = 1
@@ -80,6 +89,7 @@ HERDR_SESSION_NAME = "forma-workbench"
 DEFAULT_CLOUD_PROVIDERS = REPOSITORY_ROOT / "config/cloud-providers.json"
 DEFAULT_LOCAL_PROFILES = REPOSITORY_ROOT / "config/local-model-profiles.json"
 DEFAULT_HARDWARE_PROFILES = REPOSITORY_ROOT / "config/hardware-profiles.yaml"
+DEFAULT_TOOL_ROUTING = REPOSITORY_ROOT / "config/tool-routing.json"
 MAXIMUM_CLOUD_PAYLOAD_BYTES = 8 * 1024 * 1024
 
 
@@ -230,6 +240,34 @@ def parser() -> argparse.ArgumentParser:
         command.add_argument("--root", type=Path, required=True)
         command.add_argument("--catalog", type=Path, default=REPOSITORY_ROOT / "config/tool-packages.json")
         command.add_argument("--tool-id", required=True)
+    for name in ("tool-route-resolve", "tool-call-propose"):
+        command = commands.add_parser(name)
+        command.add_argument("--root", type=Path, required=True)
+        command.add_argument("--catalog", type=Path, default=DEFAULT_TOOL_ROUTING)
+        command.add_argument("--capability-id", required=True)
+        command.add_argument("--operation", required=True)
+        command.add_argument("--arguments-json", default="{}")
+        command.add_argument("--data-class", action="append", default=[])
+        command.add_argument("--local-path", action="append", default=[], type=Path)
+    tool_call_approve = commands.add_parser("tool-call-approve")
+    tool_call_approve.add_argument("--root", type=Path, required=True)
+    tool_call_approve.add_argument("--proposal-id", required=True)
+    tool_call_approve.add_argument("--ttl-seconds", type=int, default=300)
+    tool_call_execute = commands.add_parser("tool-call-execute")
+    tool_call_execute.add_argument("--root", type=Path, required=True)
+    tool_call_execute.add_argument("--proposal-id", required=True)
+    tool_call_execute.add_argument("--catalog", type=Path, default=DEFAULT_TOOL_ROUTING)
+    tool_call_execute.add_argument("--local-path", action="append", default=[], type=Path)
+    herdr_tool_call = commands.add_parser("herdr-tool-call")
+    herdr_tool_call.add_argument("--root", type=Path, required=True)
+    herdr_tool_call.add_argument("--correlation-id", required=True)
+    herdr_tool_call.add_argument("--capability-id", required=True)
+    herdr_tool_call.add_argument("--operation", required=True)
+    herdr_tool_call.add_argument("--arguments-json", default="{}")
+    herdr_tool_call.add_argument("--data-class", action="append", default=[])
+    herdr_tool_call.add_argument("--workspace-dir", type=Path, default=None)
+    herdr_tool_call.add_argument("--catalog", type=Path, default=DEFAULT_TOOL_ROUTING)
+    herdr_tool_call.add_argument("--local-path", action="append", default=[], type=Path)
     return result
 
 
@@ -343,6 +381,112 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
             request_id=request_id,
             status="ok",
             payload=payload,
+        )
+    if args.command in {
+        "tool-route-resolve", "tool-call-propose", "tool-call-approve", "tool-call-execute",
+    }:
+        _validate_product_root(args.root)
+        audit = JsonlAuditSink(args.root / "logs/audit/tools.jsonl")
+        try:
+            if args.command in {"tool-route-resolve", "tool-call-propose"}:
+                if not args.catalog.is_absolute() or not args.catalog.is_file():
+                    raise ValueError("tool routing catalog must be an existing absolute file")
+                request = ToolCapabilityRequest(
+                    correlation_id=request_id,
+                    capability_id=args.capability_id,
+                    operation=args.operation,
+                    arguments=_parse_tool_arguments_json(args.arguments_json),
+                    data_classes=frozenset(args.data_class),
+                )
+                router = _tool_router(args, audit)
+                if args.command == "tool-route-resolve":
+                    payload = {
+                        "schema_version": 1,
+                        "decision": asdict(router.resolve(request)),
+                    }
+                else:
+                    proposal, proposal_payload, preview = router.propose(
+                        request, now=datetime.now(timezone.utc),
+                    )
+                    ToolProposalStore(args.root).save(proposal, proposal_payload)
+                    payload = {
+                        "schema_version": 1,
+                        "proposal": proposal.to_dict(),
+                        "preview": asdict(preview),
+                        "approval_required": proposal.approval_required,
+                    }
+            elif args.command == "tool-call-approve":
+                proposals = ToolProposalStore(args.root)
+                proposal, _ = proposals.load(args.proposal_id)
+                approval = ToolApprovalStore(args.root).approve(
+                    proposal,
+                    ttl_seconds=args.ttl_seconds,
+                    now=datetime.now(timezone.utc),
+                )
+                audit.record({
+                    "schema_version": 1,
+                    "event": "tool_escalation_decision",
+                    "correlation_id": proposal.correlation_id,
+                    "proposal_id": proposal.proposal_id,
+                    "tool_id": proposal.tool_id,
+                    "mcp_tool_name": proposal.mcp_tool_name,
+                    "payload_sha256": proposal.payload_sha256,
+                    "outcome": "approved",
+                    "expires_at": approval.expires_at,
+                })
+                payload = {"schema_version": 1, "approval": asdict(approval)}
+            else:
+                if not args.catalog.is_absolute() or not args.catalog.is_file():
+                    raise ValueError("tool routing catalog must be an existing absolute file")
+                proposals = ToolProposalStore(args.root)
+                proposal, proposal_payload = proposals.load(args.proposal_id)
+                arguments = _tool_call_arguments(proposal_payload)
+                router = _tool_router(args, audit)
+                try:
+                    result = router.execute(
+                        proposal,
+                        proposal_payload,
+                        arguments=arguments,
+                        now=datetime.now(timezone.utc),
+                    )
+                finally:
+                    proposals.discard(args.proposal_id)
+                payload = {
+                    "schema_version": 1,
+                    "result": {
+                        "content": list(result.content),
+                        "is_error": result.is_error,
+                    },
+                }
+        except ToolRoutingError as exc:
+            raise _tool_routing_value_error(exc) from exc
+        return envelope(
+            command=args.command,
+            request_id=request_id,
+            status="ok",
+            payload=payload,
+        )
+    if args.command == "herdr-tool-call":
+        _validate_product_root(args.root)
+        validate_request_id(args.correlation_id)
+        if not args.catalog.is_absolute() or not args.catalog.is_file():
+            raise ValueError("tool routing catalog must be an existing absolute file")
+        artifact = HerdrToolBridge(repository_root=REPOSITORY_ROOT).call(
+            product_root=args.root,
+            correlation_id=args.correlation_id,
+            capability_id=args.capability_id,
+            operation=args.operation,
+            arguments=_parse_tool_arguments_json(args.arguments_json),
+            data_classes=frozenset(args.data_class),
+            catalog_path=args.catalog,
+            local_paths=tuple(args.local_path),
+            workspace_dir=args.workspace_dir,
+        )
+        return envelope(
+            command=args.command,
+            request_id=request_id,
+            status="ok",
+            payload={"schema_version": 1, "artifact": artifact.to_dict()},
         )
     if args.command == "herdr-snapshot":
         _validate_product_root(args.root)
@@ -930,6 +1074,51 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
             payload={"schema_version": 1, "active": asdict(active)},
         )
     raise ValueError("unsupported command")
+
+
+def _tool_routing_value_error(exc: ToolRoutingError) -> ValueError:
+    error = ValueError(f"{exc.code}: {exc}")
+    error.code = exc.code
+    return error
+
+
+def _parse_tool_arguments_json(raw: str) -> dict[str, Any]:
+    try:
+        arguments = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError("arguments JSON is invalid") from exc
+    if not isinstance(arguments, dict):
+        raise ValueError("arguments JSON must decode to an object")
+    return arguments
+
+
+def _tool_call_arguments(payload: bytes) -> dict[str, Any]:
+    try:
+        body = json.loads(payload)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("stored tool payload is invalid") from exc
+    if not isinstance(body, dict):
+        raise ValueError("stored tool payload must be a JSON object")
+    arguments = body.get("arguments")
+    if not isinstance(arguments, dict):
+        raise ValueError("stored tool arguments must be an object")
+    return arguments
+
+
+def _tool_router(args: argparse.Namespace, audit: JsonlAuditSink) -> ToolRouter:
+    registry = ToolRegistry(
+        args.root,
+        catalog_path=REPOSITORY_ROOT / "config/tool-packages.json",
+        repository_root=REPOSITORY_ROOT,
+        local_paths=getattr(args, "local_path", ()),
+    )
+    return ToolRouter(
+        registry,
+        catalog_path=args.catalog,
+        approvals=ToolApprovalStore(args.root),
+        audit=audit,
+        caller=RegistryMCPCaller(),
+    )
 
 
 def _validate_product_root(root: Path) -> None:
