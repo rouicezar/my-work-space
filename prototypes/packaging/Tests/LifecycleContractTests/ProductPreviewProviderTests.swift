@@ -242,3 +242,19 @@ import Testing
     #expect(diagnostics.performsRecovery == false)
     #expect(diagnostics.honestDegradation == true)
 }
+
+@Test func governedMemoryReviewRealServiceBindingMapsSemanticaTruthFields() {
+    let binding = GovernedMemoryReviewContract.realServiceBinding
+
+    #expect(binding.loopbackPort == 43111)
+    #expect(binding.auditPath == "logs/audit/memory-review.jsonl")
+    #expect(binding.confirmedAuthority == "semantica")
+    #expect(binding.snapshotCommand == "memory-review-snapshot")
+    #expect(binding.confirmCommand == "memory-review-confirm")
+    #expect(binding.rejectCommand == "memory-review-reject")
+    #expect(binding.routes["confirm"]?.path == "/v1/memory/confirm")
+    #expect(binding.uiStateFields[.confirmed]?.semanticaID == "semantica_id")
+    #expect(GovernedMemoryReviewContract.productDefault.readsPersistentMemory == false)
+    #expect(GovernedMemoryReviewContract.productDefault.runtimeActionsAllowed == false)
+}
+

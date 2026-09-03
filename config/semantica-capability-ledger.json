@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-03T16:00:00Z",
-  "task_id": "P7-T05",
+  "updated_at": "2026-09-03T17:30:00Z",
+  "task_id": "P7-T06",
   "confirmed_authority": "semantica",
   "pinned_upstream": {
     "semantica": {
@@ -169,10 +169,11 @@
       "id": "memory.preview_ui",
       "description": "SwiftUI synthetic memory review states",
       "upstream_entry": null,
-      "product_entry": "prototypes/packaging/.../GovernedMemoryReviewPreview.swift",
+      "product_entry": "prototypes/packaging/Sources/LifecycleContract/ProductPreviewProvider.swift::GovernedMemoryReviewServiceBinding",
       "verdict": "preview_only",
       "authority": "none",
-      "p7_t02_action": "bind_real_path_p7_t06"
+      "p7_t02_action": "completed",
+      "p7_t06_action": "completed"
     }
   ]
 }

@@ -39,6 +39,12 @@ from forma_ai.semantica_runtime import SemanticaLayout, SemanticaRuntimeInspecto
 from forma_ai.governed_memory import GovernedMemory
 from forma_ai.memory_governance_policy import UnavailableSemanticaBackend
 from forma_ai.embedding_config import activate_embedding_route, load_approved_embedding_route
+from forma_ai.memory_client import MemoryClient, MemoryClientError
+from forma_ai.memory_review_binding import (
+    MEMORY_REVIEW_AUDIT_PATH,
+    audit_review_event,
+    build_review_snapshot,
+)
 from forma_ai.memory_service import (
     GovernedMemoryService,
     MemoryServicePolicy,
@@ -174,6 +180,13 @@ def parser() -> argparse.ArgumentParser:
     memory_internal = commands.add_parser("internal-memory-service")
     memory_internal.add_argument("--root", type=Path, required=True)
     memory_internal.add_argument("--memory-port", type=int, required=True)
+    for name in ("memory-review-snapshot", "memory-review-confirm", "memory-review-reject"):
+        command = commands.add_parser(name)
+        command.add_argument("--root", type=Path, required=True)
+        command.add_argument("--memory-port", type=int, default=43111)
+        if name in {"memory-review-confirm", "memory-review-reject"}:
+            command.add_argument("--candidate-id", required=True)
+            command.add_argument("--actor", required=True)
     cloud_preview = commands.add_parser("cloud-preview")
     cloud_preview.add_argument("--root", type=Path, required=True)
     cloud_preview.add_argument("--catalog", type=Path, default=DEFAULT_CLOUD_PROVIDERS)
@@ -867,6 +880,84 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
             status="ok",
             payload=SemanticaRuntimeInspector(SemanticaLayout(args.root)).status(),
         )
+    if args.command in {
+        "memory-review-snapshot", "memory-review-confirm", "memory-review-reject",
+    }:
+        _validate_product_root(args.root)
+        audit = JsonlAuditSink(args.root / MEMORY_REVIEW_AUDIT_PATH)
+        client = _memory_client(args.memory_port)
+        try:
+            if args.command == "memory-review-snapshot":
+                payload = build_review_snapshot(client, request_id)
+                audit_review_event(
+                    audit,
+                    correlation_id=request_id,
+                    event="memory_review_snapshot",
+                    command=args.command,
+                    outcome="completed",
+                    extra={
+                        "pending_count": len(payload.get("pending_candidates", [])),
+                        "confirmed_count": len(payload.get("confirmed_records", [])),
+                    },
+                )
+            elif args.command == "memory-review-confirm":
+                confirmed = client.confirm(
+                    actor=args.actor,
+                    candidate_id=args.candidate_id,
+                    correlation_id=request_id,
+                )
+                payload = {
+                    "schema_version": 1,
+                    "correlation_id": request_id,
+                    "confirmed": confirmed,
+                    "audit_path": MEMORY_REVIEW_AUDIT_PATH,
+                }
+                audit_review_event(
+                    audit,
+                    correlation_id=request_id,
+                    event="memory_review_decision",
+                    command=args.command,
+                    outcome="confirmed",
+                    candidate_id=args.candidate_id,
+                    record_id=str(confirmed.get("record_id", "")) or None,
+                )
+            else:
+                result = client.reject(
+                    actor=args.actor,
+                    candidate_id=args.candidate_id,
+                    correlation_id=request_id,
+                )
+                payload = {
+                    "schema_version": 1,
+                    "correlation_id": request_id,
+                    "result": result,
+                    "audit_path": MEMORY_REVIEW_AUDIT_PATH,
+                }
+                audit_review_event(
+                    audit,
+                    correlation_id=request_id,
+                    event="memory_review_decision",
+                    command=args.command,
+                    outcome="rejected",
+                    candidate_id=args.candidate_id,
+                )
+        except MemoryClientError as exc:
+            audit_review_event(
+                audit,
+                correlation_id=request_id,
+                event="memory_review_decision" if args.command != "memory-review-snapshot" else "memory_review_snapshot",
+                command=args.command,
+                outcome="denied",
+                candidate_id=getattr(args, "candidate_id", None),
+                error_code=exc.code,
+            )
+            raise ValueError(exc.code) from exc
+        return envelope(
+            command=args.command,
+            request_id=request_id,
+            status="ok",
+            payload=payload,
+        )
     if args.command == "runtime-status":
         return envelope(
             command=args.command,
@@ -1270,6 +1361,12 @@ def _memory_secret() -> str:
     return memory_token
 
 
+def _memory_client(memory_port: int) -> MemoryClient:
+    if not 1024 <= memory_port <= 65535:
+        raise ValueError("memory service port must be unprivileged")
+    return MemoryClient("127.0.0.1", memory_port, _memory_secret())
+
+
 def _supervisor_invocation() -> tuple[Path, list[str]]:
     if getattr(sys, "frozen", False):
         return Path(sys.executable), []
@@ -1444,6 +1541,7 @@ def main(argv: list[str] | None = None) -> int:
                 "activate-embedding",
                 "runtime-status", "start-runtime", "stop-runtime", "sample-task", "local-task", "internal-broker",
                 "internal-memory-service", "semantica-status",
+                "memory-review-snapshot", "memory-review-confirm", "memory-review-reject",
                 "cloud-preview", "cloud-approve", "cloud-reject", "cloud-execute",
                 "cloud-settings", "set-cloud-settings",
                 "task-submit",

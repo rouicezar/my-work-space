@@ -297,6 +297,69 @@ public struct RuntimeRecordPayload: Decodable, Sendable {
     }
 }
 
+
+public struct MemoryReviewSnapshotPayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let correlationID: String
+    public let confirmedAuthority: String
+    public let pendingCandidates: [MemoryReviewCandidatePayload]
+    public let confirmedRecords: [MemoryReviewRecordPayload]
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case correlationID = "correlation_id"
+        case confirmedAuthority = "confirmed_authority"
+        case pendingCandidates = "pending_candidates"
+        case confirmedRecords = "confirmed_records"
+    }
+}
+
+public struct MemoryReviewCandidatePayload: Decodable, Sendable {
+    public let candidateID: String
+    public let claimKey: String
+    public let content: String
+    public let correlationID: String
+    public let status: String
+
+    enum CodingKeys: String, CodingKey {
+        case candidateID = "candidate_id"
+        case claimKey = "claim_key"
+        case content
+        case correlationID = "correlation_id"
+        case status
+    }
+}
+
+public struct MemoryReviewRecordPayload: Decodable, Sendable {
+    public let recordID: String
+    public let semanticaID: String
+    public let claimKey: String
+    public let content: String
+    public let correlationID: String
+    public let version: Int
+
+    enum CodingKeys: String, CodingKey {
+        case recordID = "record_id"
+        case semanticaID = "semantica_id"
+        case claimKey = "claim_key"
+        case content
+        case correlationID = "correlation_id"
+        case version
+    }
+}
+
+public struct MemoryReviewDecisionPayload: Decodable, Sendable {
+    public let schemaVersion: Int
+    public let correlationID: String
+    public let auditPath: String
+
+    enum CodingKeys: String, CodingKey {
+        case schemaVersion = "schema_version"
+        case correlationID = "correlation_id"
+        case auditPath = "audit_path"
+    }
+}
+
 public struct HerdrAgentPayload: Decodable, Sendable, Equatable {
     public let terminalID: String
     public let agentStatus: String
@@ -1034,6 +1097,72 @@ public struct SupervisorClient: Sendable {
                 "FORMA_AI_MEMORY_TOKEN": memoryToken,
             ],
             inputData: input
+        )
+    }
+
+
+    public func memoryReviewSnapshot(
+        rootURL: URL,
+        memoryPort: Int = 43111,
+        memoryToken: String,
+        requestID: UUID = UUID()
+    ) throws -> MemoryReviewSnapshotPayload {
+        try request(
+            command: "memory-review-snapshot",
+            arguments: [
+                "--root", rootURL.path,
+                "--memory-port", String(memoryPort),
+            ],
+            requestID: requestID,
+            environmentOverrides: [
+                "FORMA_AI_MEMORY_TOKEN": memoryToken,
+            ]
+        )
+    }
+
+    public func memoryReviewConfirm(
+        rootURL: URL,
+        candidateID: String,
+        actor: String,
+        memoryPort: Int = 43111,
+        memoryToken: String,
+        requestID: UUID = UUID()
+    ) throws -> MemoryReviewDecisionPayload {
+        try request(
+            command: "memory-review-confirm",
+            arguments: [
+                "--root", rootURL.path,
+                "--memory-port", String(memoryPort),
+                "--candidate-id", candidateID,
+                "--actor", actor,
+            ],
+            requestID: requestID,
+            environmentOverrides: [
+                "FORMA_AI_MEMORY_TOKEN": memoryToken,
+            ]
+        )
+    }
+
+    public func memoryReviewReject(
+        rootURL: URL,
+        candidateID: String,
+        actor: String,
+        memoryPort: Int = 43111,
+        memoryToken: String,
+        requestID: UUID = UUID()
+    ) throws -> MemoryReviewDecisionPayload {
+        try request(
+            command: "memory-review-reject",
+            arguments: [
+                "--root", rootURL.path,
+                "--memory-port", String(memoryPort),
+                "--candidate-id", candidateID,
+                "--actor", actor,
+            ],
+            requestID: requestID,
+            environmentOverrides: [
+                "FORMA_AI_MEMORY_TOKEN": memoryToken,
+            ]
         )
     }
 

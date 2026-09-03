@@ -257,6 +257,112 @@ public enum GovernedMemoryReviewSection: Sendable, Equatable {
     case authorityBoundary
 }
 
+
+public struct GovernedMemoryReviewRoute: Sendable, Equatable {
+    public let method: String
+    public let path: String
+    public let supervisorCommand: String?
+
+    public init(method: String, path: String, supervisorCommand: String?) {
+        self.method = method
+        self.path = path
+        self.supervisorCommand = supervisorCommand
+    }
+}
+
+public struct GovernedMemoryReviewUIFieldMap: Sendable, Equatable {
+    public let primaryID: String
+    public let status: String
+    public let claimKey: String
+    public let content: String
+    public let correlationID: String
+    public let sources: String
+    public let semanticaID: String?
+    public let recordID: String?
+    public let version: String?
+    public let previousRecordID: String?
+
+    public init(
+        primaryID: String,
+        status: String,
+        claimKey: String,
+        content: String,
+        correlationID: String,
+        sources: String,
+        semanticaID: String?,
+        recordID: String?,
+        version: String?,
+        previousRecordID: String?
+    ) {
+        self.primaryID = primaryID
+        self.status = status
+        self.claimKey = claimKey
+        self.content = content
+        self.correlationID = correlationID
+        self.sources = sources
+        self.semanticaID = semanticaID
+        self.recordID = recordID
+        self.version = version
+        self.previousRecordID = previousRecordID
+    }
+}
+
+public struct GovernedMemoryReviewServiceBinding: Sendable, Equatable {
+    public let loopbackPort: Int
+    public let auditPath: String
+    public let confirmedAuthority: String
+    public let snapshotCommand: String
+    public let confirmCommand: String
+    public let rejectCommand: String
+    public let routes: [String: GovernedMemoryReviewRoute]
+    public let uiStateFields: [GovernedMemoryReviewState: GovernedMemoryReviewUIFieldMap]
+
+    public static let productDefault = GovernedMemoryReviewServiceBinding(
+        loopbackPort: 43111,
+        auditPath: "logs/audit/memory-review.jsonl",
+        confirmedAuthority: "semantica",
+        snapshotCommand: "memory-review-snapshot",
+        confirmCommand: "memory-review-confirm",
+        rejectCommand: "memory-review-reject",
+        routes: [
+            "health": GovernedMemoryReviewRoute(method: "GET", path: "/v1/memory/health", supervisorCommand: nil),
+            "list_candidates": GovernedMemoryReviewRoute(method: "POST", path: "/v1/memory/candidates", supervisorCommand: "memory-review-snapshot"),
+            "get_candidate": GovernedMemoryReviewRoute(method: "POST", path: "/v1/memory/candidate/get", supervisorCommand: nil),
+            "confirm": GovernedMemoryReviewRoute(method: "POST", path: "/v1/memory/confirm", supervisorCommand: "memory-review-confirm"),
+            "reject": GovernedMemoryReviewRoute(method: "POST", path: "/v1/memory/reject", supervisorCommand: "memory-review-reject"),
+            "export": GovernedMemoryReviewRoute(method: "POST", path: "/v1/memory/export", supervisorCommand: nil),
+            "get": GovernedMemoryReviewRoute(method: "POST", path: "/v1/memory/get", supervisorCommand: nil),
+        ],
+        uiStateFields: [
+            .candidate: GovernedMemoryReviewUIFieldMap(
+                primaryID: "candidate_id", status: "pending", claimKey: "claim_key", content: "content",
+                correlationID: "correlation_id", sources: "sources",
+                semanticaID: nil, recordID: nil, version: nil, previousRecordID: nil
+            ),
+            .confirmed: GovernedMemoryReviewUIFieldMap(
+                primaryID: "record_id", status: "confirmed", claimKey: "claim_key", content: "content",
+                correlationID: "correlation_id", sources: "sources",
+                semanticaID: "semantica_id", recordID: "record_id", version: "version", previousRecordID: "previous_record_id"
+            ),
+            .conflict: GovernedMemoryReviewUIFieldMap(
+                primaryID: "candidate_id", status: "conflict", claimKey: "claim_key", content: "content",
+                correlationID: "correlation_id", sources: "sources",
+                semanticaID: nil, recordID: nil, version: nil, previousRecordID: nil
+            ),
+            .correction: GovernedMemoryReviewUIFieldMap(
+                primaryID: "record_id", status: "confirmed", claimKey: "claim_key", content: "content",
+                correlationID: "correlation_id", sources: "sources",
+                semanticaID: "semantica_id", recordID: "record_id", version: "version", previousRecordID: "previous_record_id"
+            ),
+            .deleted: GovernedMemoryReviewUIFieldMap(
+                primaryID: "record_id", status: "deleted", claimKey: "claim_key", content: "content",
+                correlationID: "correlation_id", sources: "sources",
+                semanticaID: "semantica_id", recordID: "record_id", version: "version", previousRecordID: "previous_record_id"
+            ),
+        ]
+    )
+}
+
 public struct GovernedMemoryReviewContract: Sendable {
     public let states: [GovernedMemoryReviewState]
     public let sections: [GovernedMemoryReviewSection]
@@ -286,6 +392,8 @@ public struct GovernedMemoryReviewContract: Sendable {
         performsCorrect: false,
         performsDelete: false
     )
+
+    public static let realServiceBinding = GovernedMemoryReviewServiceBinding.productDefault
 }
 
 public enum AgentAdapterKind: String, CaseIterable, Sendable, Equatable, Hashable, Identifiable {
