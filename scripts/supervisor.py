@@ -37,6 +37,7 @@ from forma_ai.processes import herdr_process_spec, omlx_process_spec
 from forma_ai.runtime import RuntimeManager, SubprocessController
 from forma_ai.semantica_runtime import SemanticaLayout, SemanticaRuntimeInspector
 from forma_ai.governed_memory import GovernedMemory
+from forma_ai.memory_governance_policy import UnavailableSemanticaBackend
 from forma_ai.embedding_config import activate_embedding_route, load_approved_embedding_route
 from forma_ai.memory_service import (
     GovernedMemoryService,
@@ -1343,30 +1344,11 @@ def _run_internal_broker(root: Path, omlx_port: int, broker_port: int) -> None:
         server.server_close()
 
 
-class _UnavailableSemanticaBackend:
-    """Fail-closed stub for internal-memory-service without an approved embedding route."""
-
-    def health(self) -> dict[str, str]:
-        return {"status": "unavailable", "code": "EMBEDDING_ROUTE_UNVERIFIED"}
-
-    def store(self, content: str, metadata: dict[str, Any]) -> str:
-        raise RuntimeError("unavailable backend cannot store")
-
-    def get(self, memory_id: str) -> None:
-        return None
-
-    def retrieve(self, query: str, limit: int) -> list[dict[str, Any]]:
-        return []
-
-    def forget(self, memory_id: str) -> bool:
-        return False
-
-
 def _run_internal_memory_service(root: Path, memory_port: int) -> None:
     if not 1024 <= memory_port <= 65535:
         raise ValueError("memory service port must be unprivileged")
     memory_token = _memory_secret()
-    memory = GovernedMemory(root, _UnavailableSemanticaBackend())
+    memory = GovernedMemory(root, UnavailableSemanticaBackend())
     service = GovernedMemoryService(
         MemoryServicePolicy(memory_token),
         memory,

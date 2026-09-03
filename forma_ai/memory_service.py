@@ -28,6 +28,8 @@ ROUTES = {
     ("POST", "/v1/memory/propose"),
     ("POST", "/v1/memory/confirm"),
     ("POST", "/v1/memory/reject"),
+    ("POST", "/v1/memory/candidates"),
+    ("POST", "/v1/memory/candidate/get"),
     ("POST", "/v1/memory/correct"),
     ("POST", "/v1/memory/delete"),
     ("POST", "/v1/memory/get"),
@@ -127,7 +129,8 @@ class GovernedMemoryService:
         if method == "GET" and path == "/v1/memory/health":
             return self.memory.health()
         actor = self._required_text(payload, "actor") if path not in {
-            "/v1/memory/get", "/v1/memory/retrieve", "/v1/memory/history", "/v1/memory/export"
+            "/v1/memory/get", "/v1/memory/retrieve", "/v1/memory/history", "/v1/memory/export",
+            "/v1/memory/candidates", "/v1/memory/candidate/get",
         } else None
         if path == "/v1/memory/propose":
             return asdict(self.memory.propose(
@@ -140,6 +143,14 @@ class GovernedMemoryService:
         if path == "/v1/memory/reject":
             self.memory.reject(self._required_text(payload, "candidate_id"), actor=actor or "", correlation_id=correlation_id)
             return {"status": "rejected"}
+        if path == "/v1/memory/candidates":
+            status = payload.get("status", "pending")
+            if status is not None and not isinstance(status, str):
+                raise MemoryGovernanceError("MEMORY_INPUT_INVALID", "status")
+            return [asdict(item) for item in self.memory.list_candidates(status=status)]
+        if path == "/v1/memory/candidate/get":
+            item = self.memory.get_candidate(self._required_text(payload, "candidate_id"))
+            return asdict(item) if item else None
         if path == "/v1/memory/correct":
             return asdict(self.memory.correct(
                 self._required_text(payload, "record_id"), content=self._required_text(payload, "content"),

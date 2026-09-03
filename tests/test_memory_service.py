@@ -106,6 +106,22 @@ class MemoryServiceTests(unittest.TestCase):
         self.assertEqual(health["confirmed_authority"], "semantica")
         self.assertEqual(self.backend.items, {})
 
+    def test_candidate_list_and_get_endpoints_are_governance_only(self):
+        source = {"uri": "fixture://doc/3", "observed_at": "2026-08-30T00:00:00+00:00"}
+        proposed = self.decoded(self.request("/v1/memory/propose", {
+            "actor": "user", "claim_key": "fixture.pending", "content": "Pending only",
+            "sources": [source],
+        }))
+        candidate_id = proposed["result"]["candidate_id"]
+        listed = self.decoded(self.request("/v1/memory/candidates", {}))["result"]
+        self.assertEqual(len(listed), 1)
+        self.assertEqual(listed[0]["candidate_id"], candidate_id)
+        fetched = self.decoded(self.request("/v1/memory/candidate/get", {
+            "candidate_id": candidate_id,
+        }))["result"]
+        self.assertEqual(fetched["status"], "pending")
+        self.assertEqual(self.backend.items, {})
+
     def test_unavailable_semantica_returns_capability_failure_not_empty_success(self):
         source = {"uri": "fixture://doc/1", "observed_at": "2026-08-30T00:00:00+00:00"}
         candidate = self.decoded(self.request("/v1/memory/propose", {

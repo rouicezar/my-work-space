@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-03T12:52:38Z",
-  "task_id": "P7-T02",
+  "updated_at": "2026-09-03T15:45:00Z",
+  "task_id": "P7-T04",
   "confirmed_authority": "semantica",
   "pinned_upstream": {
     "semantica": {
@@ -90,7 +90,8 @@
       "product_entry": "forma_ai/governed_memory.py::GovernedMemory.propose",
       "verdict": "product_gap",
       "authority": "product_governance",
-      "p7_t02_action": "keep"
+      "p7_t02_action": "keep",
+      "p7_t04_action": "completed"
     },
     {
       "id": "memory.confirm_reject",
@@ -99,7 +100,8 @@
       "product_entry": "forma_ai/governed_memory.py::GovernedMemory.confirm|reject",
       "verdict": "product_gap",
       "authority": "product_governance",
-      "p7_t02_action": "keep"
+      "p7_t02_action": "keep",
+      "p7_t04_action": "completed"
     },
     {
       "id": "memory.conflict_detection",
@@ -108,7 +110,8 @@
       "product_entry": "forma_ai/governed_memory.py::GovernedMemory.confirm",
       "verdict": "product_gap",
       "authority": "product_governance",
-      "p7_t02_action": "keep"
+      "p7_t02_action": "keep",
+      "p7_t04_action": "completed"
     },
     {
       "id": "memory.correction_chain",
@@ -117,7 +120,8 @@
       "product_entry": "forma_ai/governed_memory.py::GovernedMemory.correct",
       "verdict": "product_gap",
       "authority": "product_governance",
-      "p7_t02_action": "keep"
+      "p7_t02_action": "keep",
+      "p7_t04_action": "completed"
     },
     {
       "id": "memory.governance_cache",

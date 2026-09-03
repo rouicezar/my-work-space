@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import sqlite3
 import uuid
 from dataclasses import asdict, dataclass
@@ -19,14 +18,24 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Protocol
 
+from forma_ai.memory_governance_policy import (
+    CONFIRMED_AUTHORITY,
+    CORRELATION,
+    MemoryGovernanceError,
+    SourceReference,
+    build_confirmed_metadata,
+    validate_confirmed_metadata,
+)
 
-CORRELATION = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
-
-
-class MemoryGovernanceError(RuntimeError):
-    def __init__(self, code: str, message: str):
-        super().__init__(message)
-        self.code = code
+__all__ = [
+    "CORRELATION",
+    "Candidate",
+    "ConfirmedMemory",
+    "GovernedMemory",
+    "MemoryGovernanceError",
+    "SemanticaBackend",
+    "SourceReference",
+]
 
 
 class SemanticaBackend(Protocol):
@@ -35,13 +44,6 @@ class SemanticaBackend(Protocol):
     def retrieve(self, query: str, limit: int) -> list[dict[str, Any]]: ...
     def forget(self, memory_id: str) -> bool: ...
     def health(self) -> dict[str, Any]: ...
-
-
-@dataclass(frozen=True)
-class SourceReference:
-    uri: str
-    observed_at: str
-    digest: str | None = None
 
 
 @dataclass(frozen=True)
@@ -106,6 +108,37 @@ class GovernedMemory:
             )
             self._event(connection, correlation_id, actor, "propose", candidate_id, "completed", 0)
         return Candidate(candidate_id, claim_key, content, tuple(sources), correlation_id, "pending", now, now)
+
+    def get_candidate(self, candidate_id: str) -> Candidate | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM candidates WHERE candidate_id = ?", (candidate_id,)
+            ).fetchone()
+        if row is None:
+            return None
+        return Candidate(
+            row[0], row[1], row[2], tuple(self._decode_sources(row[3])),
+            row[4], row[5], row[6], row[7],
+        )
+
+    def list_candidates(self, *, status: str | None = "pending") -> list[Candidate]:
+        with self._connect() as connection:
+            if status is None:
+                rows = connection.execute(
+                    "SELECT * FROM candidates ORDER BY created_at"
+                ).fetchall()
+            else:
+                rows = connection.execute(
+                    "SELECT * FROM candidates WHERE status = ? ORDER BY created_at",
+                    (status,),
+                ).fetchall()
+        return [
+            Candidate(
+                row[0], row[1], row[2], tuple(self._decode_sources(row[3])),
+                row[4], row[5], row[6], row[7],
+            )
+            for row in rows
+        ]
 
     def confirm(self, candidate_id: str, *, actor: str, correlation_id: str) -> ConfirmedMemory:
         self._validate_identity(candidate_id, actor, correlation_id)
@@ -285,7 +318,7 @@ class GovernedMemory:
         return {
             "schema_version": 1,
             "status": "healthy" if upstream.get("status") == "healthy" else "unavailable",
-            "confirmed_authority": "semantica",
+            "confirmed_authority": CONFIRMED_AUTHORITY,
             "semantica": upstream,
         }
 
@@ -349,13 +382,17 @@ class GovernedMemory:
 
     @staticmethod
     def _metadata(record_id: str, claim_key: str, version: int, previous: str | None, sources: list[SourceReference], correlation_id: str) -> dict[str, Any]:
-        return {
-            "schema_version": 1, "record_id": record_id, "claim_key": claim_key,
-            "status": "confirmed", "version": version, "previous_record_id": previous,
-            "sources": [asdict(source) for source in sources], "correlation_id": correlation_id,
-        }
+        return build_confirmed_metadata(
+            record_id=record_id,
+            claim_key=claim_key,
+            version=version,
+            previous_record_id=previous,
+            sources=sources,
+            correlation_id=correlation_id,
+        )
 
     def _store_authoritative(self, content: str, metadata: dict[str, Any]) -> str:
+        validate_confirmed_metadata(metadata)
         health = self.backend.health()
         if health.get("status") != "healthy":
             raise MemoryGovernanceError("SEMANTICA_UNAVAILABLE", "confirmed memory authority is unavailable")
