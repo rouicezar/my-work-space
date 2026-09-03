@@ -14,6 +14,19 @@
         "size_bytes": 2774,
         "sha256": "a503abf2aecbc7c07cb13dbc43aea52e44f073c40400cbab901c8b9c2dc2757e"
       }
+    },
+    {
+      "id": "fixture-workbook-mcp",
+      "version": "1.0.0",
+      "description": "Repository-local workbook merge and HTML report MCP server fixture",
+      "command": "python3",
+      "args": ["{install_dir}/server.py"],
+      "artifact": {
+        "name": "server.py",
+        "source": "tests/fixtures/mcp_workbook_server/server.py",
+        "size_bytes": 6848,
+        "sha256": "5e0f2885a75ac98191fa06c71db2b63b26d33e36cf0f01b1ec58330b49ef2261"
+      }
     }
   ]
 }

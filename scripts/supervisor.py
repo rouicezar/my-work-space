@@ -70,6 +70,7 @@ from forma_ai.herdr_transport import (
     resolve_socket_path,
 )
 from forma_ai.herdr_tool_bridge import HerdrToolBridge
+from forma_ai.tool_e2e_runner import ToolE2ERunner
 from forma_ai.tool_routing import (
     RegistryMCPCaller,
     ToolApprovalStore,
@@ -268,6 +269,9 @@ def parser() -> argparse.ArgumentParser:
     herdr_tool_call.add_argument("--workspace-dir", type=Path, default=None)
     herdr_tool_call.add_argument("--catalog", type=Path, default=DEFAULT_TOOL_ROUTING)
     herdr_tool_call.add_argument("--local-path", action="append", default=[], type=Path)
+    tool_e2e_workbook = commands.add_parser("tool-e2e-workbook")
+    tool_e2e_workbook.add_argument("--root", type=Path, required=True)
+    tool_e2e_workbook.add_argument("--workspace-dir", type=Path, required=True)
     return result
 
 
@@ -487,6 +491,26 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
             request_id=request_id,
             status="ok",
             payload={"schema_version": 1, "artifact": artifact.to_dict()},
+        )
+    if args.command == "tool-e2e-workbook":
+        _validate_product_root(args.root)
+        workspace_dir = args.workspace_dir
+        if not workspace_dir.is_absolute():
+            raise ValueError("workspace directory must be absolute")
+        if not workspace_dir.is_dir() or workspace_dir.is_symlink():
+            raise ValueError("workspace directory must be an existing directory")
+        correlation_id = str(uuid.uuid4())
+        result = ToolE2ERunner().run_workbook_report(
+            product_root=args.root,
+            workspace_dir=workspace_dir,
+            correlation_id=correlation_id,
+            repository_root=REPOSITORY_ROOT,
+        )
+        return envelope(
+            command=args.command,
+            request_id=request_id,
+            status="ok",
+            payload={"schema_version": 1, "result": result.to_dict()},
         )
     if args.command == "herdr-snapshot":
         _validate_product_root(args.root)
