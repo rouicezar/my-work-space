@@ -258,3 +258,14 @@ import Testing
     #expect(GovernedMemoryReviewContract.productDefault.runtimeActionsAllowed == false)
 }
 
+@Test func taskMetadataProjectionIsBoundedByHerdrAuthority() {
+    let projection = HistoryRecoveryPreviewContract.metadataProjection
+
+    #expect(projection.runtimeAuthority == "herdr")
+    #expect(projection.forbiddenMetadataClaims.contains("completed"))
+    #expect(projection.forbiddenMetadataClaims.contains("resumable"))
+    #expect(projection.productOwnedFields.contains("task_id"))
+    #expect(HistoryRecoveryPreviewContract.productDefault.readsPersistedHistory == false)
+    #expect(HistoryRecoveryPreviewContract.productDefault.performsResume == false)
+}
+

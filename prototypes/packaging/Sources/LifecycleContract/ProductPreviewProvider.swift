@@ -206,6 +206,34 @@ public enum HistoryRecoverySection: Sendable, Equatable {
     case auditBoundary
 }
 
+
+public struct TaskMetadataProjectionContract: Sendable, Equatable {
+    public let schemaVersion: Int
+    public let runtimeAuthority: String
+    public let productOwnedFields: [String]
+    public let forbiddenMetadataClaims: [String]
+    public let terminalRuntimeStates: [String]
+    public let resumableRuntimeStates: [String]
+
+    public static let productDefault = TaskMetadataProjectionContract(
+        schemaVersion: 1,
+        runtimeAuthority: "herdr",
+        productOwnedFields: [
+            "task_id", "correlation_id", "run_id", "intent_label",
+            "herdr_pane_id", "herdr_workspace_id", "herdr_tab_id", "herdr_terminal_id",
+            "last_accepted_revision", "approval_refs", "artifact_refs",
+            "policy_preview_digest", "recorded_at", "updated_at",
+        ],
+        forbiddenMetadataClaims: [
+            "completed", "succeeded", "failed", "cancelled", "resumable",
+            "runtime_state", "runtime_phase", "agent_status", "may_resume",
+            "is_terminal", "display_outcome",
+        ],
+        terminalRuntimeStates: ["succeeded", "failed", "cancelled"],
+        resumableRuntimeStates: ["interrupted", "blocked", "failed", "unknown"]
+    )
+}
+
 public struct HistoryRecoveryPreviewContract: Sendable {
     public let states: [HistoryPreviewTaskState]
     public let sections: [HistoryRecoverySection]
@@ -238,6 +266,8 @@ public struct HistoryRecoveryPreviewContract: Sendable {
         performsCancellation: false,
         performsForceTermination: false
     )
+
+    public static let metadataProjection = TaskMetadataProjectionContract.productDefault
 }
 
 public enum GovernedMemoryReviewState: String, CaseIterable, Sendable, Equatable, Hashable, Identifiable {
