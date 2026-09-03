@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-09-03T00:00:00Z",
+  "task_id": "P7-T01",
+  "confirmed_authority": "semantica",
+  "pinned_upstream": {
+    "semantica": {
+      "release": "v0.6.7",
+      "version": "0.6.7",
+      "commit": "ecb33a5b7d1c232da77527da89d861e2b10e9c42",
+      "license": "MIT",
+      "runtime": "isolated_python_library"
+    },
+    "embedding": {
+      "provider": "omlx",
+      "license": "Apache-2.0",
+      "product_adapter": "forma_ai/omlx_embeddings.py"
+    }
+  },
+  "capabilities": [
+    {
+      "id": "memory.store",
+      "description": "Persist confirmed knowledge",
+      "upstream_entry": "semantica.context.AgentContext.store",
+      "product_entry": "forma_ai/adapters/semantica.py::SemanticaContextBackend.store",
+      "verdict": "reuse",
+      "authority": "semantica",
+      "p7_t02_action": "none"
+    },
+    {
+      "id": "memory.get",
+      "description": "Read authoritative memory by upstream id",
+      "upstream_entry": "semantica.context.AgentContext.get_memory",
+      "product_entry": "forma_ai/adapters/semantica.py::SemanticaContextBackend.get",
+      "verdict": "reuse",
+      "authority": "semantica",
+      "p7_t02_action": "none"
+    },
+    {
+      "id": "memory.forget",
+      "description": "Delete authoritative memory",
+      "upstream_entry": "semantica.context.AgentContext.forget",
+      "product_entry": "forma_ai/adapters/semantica.py::SemanticaContextBackend.forget",
+      "verdict": "reuse",
+      "authority": "semantica",
+      "p7_t02_action": "none"
+    },
+    {
+      "id": "memory.retrieve",
+      "description": "Semantic retrieval over injected vector store",
+      "upstream_entry": "semantica.context.AgentContext + injected vector_store",
+      "product_entry": "forma_ai/adapters/semantica.py::SemanticaContextBackend.retrieve",
+      "verdict": "inject",
+      "authority": "semantica",
+      "p7_t02_action": "enrich_results_via_backend_get",
+      "decision_ref": "docs/research/semantica-binding-decision-2026-09-03.md#decision-f1--retrieval-seam"
+    },
+    {
+      "id": "memory.health",
+      "description": "Upstream health probe",
+      "upstream_entry": "semantica.context.AgentContext.health",
+      "product_entry": "forma_ai/adapters/semantica.py::SemanticaContextBackend.health",
+      "verdict": "reuse",
+      "authority": "semantica",
+      "p7_t02_action": "none"
+    },
+    {
+      "id": "memory.embedding",
+      "description": "Local embedding vectors for semantic index",
+      "upstream_entry": "oMLX /v1/embeddings",
+      "product_entry": "forma_ai/omlx_embeddings.py::OMLXEmbeddingClient",
+      "verdict": "upstream_omlx",
+      "authority": "omlx",
+      "p7_t02_action": "none"
+    },
+    {
+      "id": "memory.vector_index",
+      "description": "Persistent vector index injected into Semantica",
+      "upstream_entry": "Semantica vector_store injection surface",
+      "product_entry": "forma_ai/omlx_embeddings.py::PersistentOMLXVectorStore",
+      "verdict": "adapter",
+      "authority": "semantica",
+      "p7_t02_action": "none",
+      "decision_ref": "docs/research/semantica-binding-decision-2026-09-03.md#decision-f1--retrieval-seam"
+    },
+    {
+      "id": "memory.candidate_propose",
+      "description": "Candidate memory before confirmation",
+      "upstream_entry": null,
+      "product_entry": "forma_ai/governed_memory.py::GovernedMemory.propose",
+      "verdict": "product_gap",
+      "authority": "product_governance",
+      "p7_t02_action": "keep"
+    },
+    {
+      "id": "memory.confirm_reject",
+      "description": "Approval gate before upstream write",
+      "upstream_entry": null,
+      "product_entry": "forma_ai/governed_memory.py::GovernedMemory.confirm|reject",
+      "verdict": "product_gap",
+      "authority": "product_governance",
+      "p7_t02_action": "keep"
+    },
+    {
+      "id": "memory.conflict_detection",
+      "description": "Claim-key conflict detection",
+      "upstream_entry": null,
+      "product_entry": "forma_ai/governed_memory.py::GovernedMemory.confirm",
+      "verdict": "product_gap",
+      "authority": "product_governance",
+      "p7_t02_action": "keep"
+    },
+    {
+      "id": "memory.correction_chain",
+      "description": "Versioned correction with upstream supersede",
+      "upstream_entry": null,
+      "product_entry": "forma_ai/governed_memory.py::GovernedMemory.correct",
+      "verdict": "product_gap",
+      "authority": "product_governance",
+      "p7_t02_action": "keep"
+    },
+    {
+      "id": "memory.governance_cache",
+      "description": "Local SQLite workflow projection for records",
+      "upstream_entry": null,
+      "product_entry": "forma_ai/governed_memory.py records table",
+      "verdict": "projection",
+      "authority": "semantica",
+      "p7_t02_action": "justify_or_narrow_content_cache",
+      "decision_ref": "docs/research/semantica-binding-decision-2026-09-03.md#decision-f4--local-confirmed-content-cache"
+    },
+    {
+      "id": "memory.service_transport",
+      "description": "Loopback HTTP API for governed memory",
+      "upstream_entry": null,
+      "product_entry": "forma_ai/memory_service.py::GovernedMemoryService",
+      "verdict": "product_owned",
+      "authority": "product_governance",
+      "p7_t02_action": "keep"
+    },
+    {
+      "id": "memory.runtime_factory",
+      "description": "Managed Semantica + embedding wiring",
+      "upstream_entry": "semantica import + AgentContext constructor",
+      "product_entry": "forma_ai/semantica_backend.py::create_managed_semantica_backend",
+      "verdict": "adapter",
+      "authority": "semantica",
+      "p7_t02_action": "verify_real_runtime_p7_t03"
+    },
+    {
+      "id": "memory.runtime_inspection",
+      "description": "Read-only Semantica install verification",
+      "upstream_entry": null,
+      "product_entry": "forma_ai/semantica_runtime.py::SemanticaRuntimeInspector",
+      "verdict": "product_owned",
+      "authority": "product_lifecycle",
+      "p7_t02_action": "keep"
+    },
+    {
+      "id": "memory.preview_ui",
+      "description": "SwiftUI synthetic memory review states",
+      "upstream_entry": null,
+      "product_entry": "prototypes/packaging/.../GovernedMemoryReviewPreview.swift",
+      "verdict": "preview_only",
+      "authority": "none",
+      "p7_t02_action": "bind_real_path_p7_t06"
+    }
+  ]
+}
