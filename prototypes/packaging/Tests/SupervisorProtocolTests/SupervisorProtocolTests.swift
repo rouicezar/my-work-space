@@ -532,3 +532,23 @@ func realKeychainRuntimeSampleAuditAndStop() throws {
     let stopped = try client.stopRuntime(rootURL: root)
     #expect(stopped.runtime.phase == "stopped")
 }
+
+@Test func memoryReviewSnapshotDecodesSemanticaTruthFields() throws {
+    let temporary = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(at: temporary, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: temporary) }
+    let executable = temporary.appendingPathComponent("fixture-supervisor")
+    let response = #"{"schema_version":1,"command":"memory-review-snapshot","request_id":"00000000-0000-0000-0000-000000000001","status":"ok","payload":{"schema_version":1,"correlation_id":"00000000-0000-0000-0000-000000000001","confirmed_authority":"semantica","pending_candidates":[{"candidate_id":"c-1","claim_key":"fixture.claim","content":"Pending","correlation_id":"corr-1","status":"pending"}],"confirmed_records":[{"record_id":"r-1","semantica_id":"sem-1","claim_key":"fixture.claim","content":"Confirmed","correlation_id":"corr-2","version":1}]},"error":null,"emitted_at":"2026-09-04T00:00:00+00:00"}"#
+    try "#!/bin/sh\nprintf '%s' '\(response)'\n".write(to: executable, atomically: true, encoding: .utf8)
+    try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
+    let payload = try SupervisorClient(executableURL: executable).memoryReviewSnapshot(
+        rootURL: temporary.appendingPathComponent("Product"),
+        memoryToken: String(repeating: "m", count: 48),
+        requestID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+    )
+    #expect(payload.confirmedAuthority == "semantica")
+    #expect(payload.pendingCandidates.count == 1)
+    #expect(payload.confirmedRecords.first?.semanticaID == "sem-1")
+}
+

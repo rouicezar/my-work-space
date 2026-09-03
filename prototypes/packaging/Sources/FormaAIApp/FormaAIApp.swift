@@ -391,6 +391,15 @@ struct ManifestOverview: View {
             settingsNotice("Herdr agent runtime", icon: "rectangle.3.group", detail: "Agent adapters remain governed by capability, permission, and lifecycle contracts. Live adapter management arrives with verified runtime binding.")
         case .memory:
             embeddingSection
+            if let context = installationContext() {
+                GovernedMemoryReviewPanel(supervisorURL: context.supervisor, rootURL: context.root)
+            } else {
+                settingsNotice(
+                    "Memory review unavailable",
+                    icon: "exclamationmark.triangle.fill",
+                    detail: "Supervisor context is missing. Memory review uses the existing memory-review supervisor commands against the loopback governed-memory service."
+                )
+            }
             settingsNotice("Governed memory", icon: "brain.head.profile", detail: "Semantica remains the only long-term memory authority. Nothing is promoted without provenance and policy approval.")
         case .permissionsAndApprovals:
             settingsNotice("Approval policy", icon: "hand.raised", detail: "Cloud transmission, external writes, and force termination require explicit task-bound approval.")
