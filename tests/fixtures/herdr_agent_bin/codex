@@ -3,6 +3,45 @@ set -u
 
 printf '\033]0;Codex\007'
 printf 'OpenAI Codex\n› Ask Codex to do anything\n'
+
+_run_herdr_tool_call() {
+    local message="$1"
+    local marker="$2"
+    if [[ "${FORMA_TOOL_BRIDGE:-}" == "1" ]]; then
+        date +%s > "${marker}_marker.txt"
+        printf 'FIXTURE-%s-MARKER-%s\n' "$marker" "$(date +%s)"
+        return 0
+    fi
+    if [[ -z "${FORMA_PRODUCT_ROOT:-}" || -z "${FORMA_REPO_ROOT:-}" ]]; then
+        printf 'FIXTURE-TOOL-ERROR:missing-env\n'
+        return 1
+    fi
+    local corr
+    corr=$("${FORMA_PYTHON:-python3}" -c 'import uuid; print(uuid.uuid4())')
+    local response
+    response=$(
+        "${FORMA_PYTHON:-python3}" "$FORMA_REPO_ROOT/scripts/supervisor.py" \
+            --request-id "$corr" \
+            herdr-tool-call \
+            --root "$FORMA_PRODUCT_ROOT" \
+            --correlation-id "$corr" \
+            --capability-id echo.transform \
+            --operation echo \
+            --arguments-json "{\"message\":\"$message\"}" \
+            --data-class tool_result \
+            --workspace-dir "$(pwd)" \
+            --catalog "$FORMA_REPO_ROOT/config/tool-routing.json"
+    )
+    local status
+    status=$(printf '%s' "$response" | "${FORMA_PYTHON:-python3}" -c 'import json,sys; print(json.load(sys.stdin).get("status",""))')
+    if [[ "$status" != "ok" ]]; then
+        printf 'FIXTURE-TOOL-ERROR:%s\n' "$response"
+        return 1
+    fi
+    date +%s > "${marker}_done.txt"
+    printf 'FIXTURE-%s-DONE-%s\n' "$marker" "$(date +%s)"
+}
+
 while IFS= read -r line; do
     if [[ "$line" == "exit" ]]; then
         exit 0
@@ -18,6 +57,10 @@ while IFS= read -r line; do
         sleep 2
         date +%s > b_end.txt
         printf 'FIXTURE-B-DONE-%s\n' "$(date +%s)"
+    elif [[ "$line" == "fixture-tool-a" ]]; then
+        _run_herdr_tool_call tool-a TOOL-A
+    elif [[ "$line" == "fixture-tool-b" ]]; then
+        _run_herdr_tool_call tool-b TOOL-B
     elif [[ "$line" == "fixture-blocked" ]]; then
         printf '\033]0;Action Required\007'
         printf 'Awaiting explicit approval\n'
