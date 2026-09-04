@@ -11,8 +11,8 @@
       "artifact": {
         "name": "server.py",
         "source": "tests/fixtures/mcp_echo_server/server.py",
-        "size_bytes": 2774,
-        "sha256": "a503abf2aecbc7c07cb13dbc43aea52e44f073c40400cbab901c8b9c2dc2757e"
+        "size_bytes": 2436,
+        "sha256": "8ca650aba56a259a8ad20bef9b5a756f8abc4ba50873a8ebc46a9d0503a6ac75"
       }
     },
     {
@@ -24,8 +24,8 @@
       "artifact": {
         "name": "server.py",
         "source": "tests/fixtures/mcp_workbook_server/server.py",
-        "size_bytes": 6848,
-        "sha256": "5e0f2885a75ac98191fa06c71db2b63b26d33e36cf0f01b1ec58330b49ef2261"
+        "size_bytes": 6510,
+        "sha256": "e575e278c3ba66351a1720ea4d717f46eef38b70485499416ca1cca34c1d91a8"
       }
     }
   ]

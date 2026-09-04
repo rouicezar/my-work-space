@@ -1,8 +1,9 @@
-"""Thin MCP client host over JSON-RPC content-length stdio framing."""
+"""Thin MCP client host over newline-delimited JSON-RPC stdio."""
 
 from __future__ import annotations
 
 import json
+import selectors
 import subprocess
 from dataclasses import dataclass
 from typing import Any, BinaryIO, Callable, Mapping, Protocol
@@ -24,6 +25,7 @@ class MCPServerSpec:
     command: str
     args: tuple[str, ...] = ()
     env: Mapping[str, str] | None = None
+    request_timeout_seconds: float = 10.0
 
     def argv(self) -> list[str]:
         if not self.command:
@@ -53,40 +55,44 @@ class MCPTransport(Protocol):
 RequestCallable = Callable[[str, dict[str, Any]], dict[str, Any]]
 
 
-class FramedJsonRpcTransport:
-    """Content-Length framed JSON-RPC over binary streams."""
+class NewlineDelimitedJsonRpcTransport:
+    """MCP stdio transport: one UTF-8 JSON-RPC object per line."""
 
-    def __init__(self, reader: BinaryIO, writer: BinaryIO) -> None:
+    def __init__(
+        self,
+        reader: BinaryIO,
+        writer: BinaryIO,
+        *,
+        read_timeout_seconds: float | None = None,
+    ) -> None:
         self._reader = reader
         self._writer = writer
+        self._read_timeout_seconds = read_timeout_seconds
 
     def write(self, payload: dict[str, Any]) -> None:
         body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
-        header = f"Content-Length: {len(body)}\r\n\r\n".encode("ascii")
-        self._writer.write(header + body)
+        self._writer.write(body + b"\n")
         self._writer.flush()
 
     def read(self) -> dict[str, Any]:
-        headers: dict[str, str] = {}
-        while True:
-            line = self._reader.readline()
-            if not line:
-                raise MCPClientError("MCP_TRANSPORT_EOF", "server closed stdout")
-            stripped = line.strip()
-            if not stripped:
-                break
-            key, value = stripped.decode("ascii").split(":", 1)
-            headers[key.strip().lower()] = value.strip()
+        if self._read_timeout_seconds is not None:
+            try:
+                selector = selectors.DefaultSelector()
+                selector.register(self._reader, selectors.EVENT_READ)
+                ready = selector.select(self._read_timeout_seconds)
+                selector.close()
+            except (AttributeError, OSError, ValueError):
+                ready = [True]
+            if not ready:
+                raise MCPClientError("MCP_TRANSPORT_TIMEOUT", "server response timed out")
+        line = self._reader.readline()
+        if not line:
+            raise MCPClientError("MCP_TRANSPORT_EOF", "server closed stdout")
+        if line in (b"\n", b"\r\n"):
+            raise MCPClientError("MCP_FRAME_INVALID", "empty stdout line")
         try:
-            length = int(headers["content-length"])
-        except (KeyError, ValueError) as exc:
-            raise MCPClientError("MCP_FRAME_INVALID", "missing content-length") from exc
-        body = self._reader.read(length)
-        if len(body) != length:
-            raise MCPClientError("MCP_FRAME_INVALID", "truncated message body")
-        try:
-            payload = json.loads(body)
-        except json.JSONDecodeError as exc:
+            payload = json.loads(line.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
             raise MCPClientError("MCP_FRAME_INVALID", "message is not JSON") from exc
         if not isinstance(payload, dict):
             raise MCPClientError("MCP_FRAME_INVALID", "message must be an object")
@@ -97,6 +103,10 @@ class FramedJsonRpcTransport:
             self._writer.close()
         finally:
             self._reader.close()
+
+
+# Compatibility alias for callers that imported the original public name.
+FramedJsonRpcTransport = NewlineDelimitedJsonRpcTransport
 
 
 class MCPClient:
@@ -125,7 +135,11 @@ class MCPClient:
         )
         if process.stdin is None or process.stdout is None:
             raise MCPClientError("MCP_PROCESS_INVALID", "stdio pipes unavailable")
-        transport = FramedJsonRpcTransport(process.stdout, process.stdin)
+        transport = NewlineDelimitedJsonRpcTransport(
+            process.stdout,
+            process.stdin,
+            read_timeout_seconds=spec.request_timeout_seconds,
+        )
         client = cls(transport)
         client._process = process
         return client
@@ -141,8 +155,22 @@ class MCPClient:
                 "clientInfo": {"name": CLIENT_NAME, "version": CLIENT_VERSION},
             },
         )
+        protocol_version = result.get("protocolVersion")
+        capabilities = result.get("capabilities")
+        server_info = result.get("serverInfo")
+        if protocol_version != MCP_PROTOCOL_VERSION:
+            raise MCPClientError(
+                "MCP_PROTOCOL_UNSUPPORTED",
+                f"server negotiated unsupported protocol {protocol_version!r}",
+            )
+        if not isinstance(capabilities, dict):
+            raise MCPClientError("MCP_CAPABILITIES_INVALID", "initialize capabilities must be an object")
+        if not isinstance(server_info, dict):
+            raise MCPClientError("MCP_SERVER_INFO_INVALID", "initialize serverInfo must be an object")
         self._notify("notifications/initialized", {})
         self._initialized = True
+        self.server_capabilities = capabilities
+        self.server_info = server_info
         return result
 
     def list_tools(self) -> list[MCPTool]:
@@ -187,14 +215,17 @@ class MCPClient:
         return MCPToolCallResult(content=tuple(blocks), is_error=is_error)
 
     def close(self) -> None:
-        self._transport.close()
-        process = getattr(self, "_process", None)
-        if process is not None and process.poll() is None:
-            process.terminate()
-            try:
-                process.wait(timeout=2)
-            except subprocess.TimeoutExpired:
-                process.kill()
+        try:
+            self._transport.close()
+        finally:
+            process = getattr(self, "_process", None)
+            if process is not None and process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=2)
 
     def _require_initialized(self) -> None:
         if not self._initialized:
@@ -207,7 +238,19 @@ class MCPClient:
             {"jsonrpc": "2.0", "id": request_id, "method": method, "params": params},
         )
         while True:
-            message = self._transport.read()
+            try:
+                message = self._transport.read()
+            except MCPClientError as exc:
+                if exc.code == "MCP_TRANSPORT_TIMEOUT":
+                    try:
+                        self._notify(
+                            "notifications/cancelled",
+                            {"requestId": request_id, "reason": "client request timeout"},
+                        )
+                    except (MCPClientError, OSError):
+                        pass
+                    raise MCPClientError("MCP_REQUEST_TIMEOUT", str(exc)) from exc
+                raise
             if message.get("id") != request_id:
                 continue
             if "error" in message:
@@ -229,5 +272,9 @@ class MCPClient:
 
 def connect_stdio_server(spec: MCPServerSpec) -> MCPClient:
     client = MCPClient.from_server_spec(spec)
-    client.connect()
+    try:
+        client.connect()
+    except BaseException:
+        client.close()
+        raise
     return client

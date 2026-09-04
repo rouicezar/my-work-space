@@ -4,10 +4,10 @@ import unittest
 from typing import Any
 
 from forma_ai.mcp_client import (
-    FramedJsonRpcTransport,
     MCPClient,
     MCPClientError,
     MCPServerSpec,
+    NewlineDelimitedJsonRpcTransport,
 )
 
 
@@ -93,16 +93,72 @@ class MCPClientTests(unittest.TestCase):
         client.close()
         self.assertTrue(transport.closed)
 
-    def test_framed_transport_roundtrip(self) -> None:
+    def test_newline_delimited_transport_roundtrip(self) -> None:
         payload = {"jsonrpc": "2.0", "id": 1, "result": {"ok": True}}
-        body = json.dumps(payload).encode("utf-8")
-        reader = io.BytesIO(f"Content-Length: {len(body)}\r\n\r\n".encode("ascii") + body)
+        body = json.dumps(payload).encode("utf-8") + b"\n"
+        reader = io.BytesIO(body)
         writer = io.BytesIO()
-        transport = FramedJsonRpcTransport(reader, writer)
+        transport = NewlineDelimitedJsonRpcTransport(reader, writer)
         transport.write({"jsonrpc": "2.0", "id": 2, "method": "ping", "params": {}})
         written = writer.getvalue()
-        self.assertIn(b"Content-Length:", written)
+        self.assertNotIn(b"Content-Length:", written)
+        self.assertEqual(written.count(b"\n"), 1)
         self.assertEqual(transport.read(), payload)
+
+    def test_newline_transport_rejects_malformed_stdout(self) -> None:
+        transport = NewlineDelimitedJsonRpcTransport(io.BytesIO(b"not-json\n"), io.BytesIO())
+        with self.assertRaises(MCPClientError) as raised:
+            transport.read()
+        self.assertEqual(raised.exception.code, "MCP_FRAME_INVALID")
+
+    def test_initialize_validates_protocol_and_capabilities(self) -> None:
+        class InvalidInitializeServer(FakeServer):
+            def handle(self, payload: dict[str, Any]) -> dict[str, Any] | None:
+                response = super().handle(payload)
+                if payload.get("method") == "initialize" and response is not None:
+                    response["result"]["protocolVersion"] = "2099-01-01"
+                return response
+
+        client = MCPClient(FakeTransport(InvalidInitializeServer()))
+        with self.assertRaises(MCPClientError) as raised:
+            client.connect()
+        self.assertEqual(raised.exception.code, "MCP_PROTOCOL_UNSUPPORTED")
+
+    def test_request_skips_notifications_and_unrelated_response_ids(self) -> None:
+        class CorrelatingTransport(FakeTransport):
+            def write(self, payload: dict[str, Any]) -> None:
+                if payload.get("method") == "initialize":
+                    self._responses.extend([
+                        {"jsonrpc": "2.0", "method": "notifications/progress", "params": {}},
+                        {"jsonrpc": "2.0", "id": 999, "result": {}},
+                    ])
+                super().write(payload)
+
+        client = MCPClient(CorrelatingTransport(FakeServer()))
+        result = client.connect()
+        self.assertEqual(result["serverInfo"]["name"], "fixture")
+
+    def test_timeout_sends_request_cancellation(self) -> None:
+        class TimeoutTransport:
+            def __init__(self) -> None:
+                self.writes: list[dict[str, Any]] = []
+
+            def write(self, payload: dict[str, Any]) -> None:
+                self.writes.append(payload)
+
+            def read(self) -> dict[str, Any]:
+                raise MCPClientError("MCP_TRANSPORT_TIMEOUT", "timed out")
+
+            def close(self) -> None:
+                pass
+
+        transport = TimeoutTransport()
+        client = MCPClient(transport)
+        with self.assertRaises(MCPClientError) as raised:
+            client.connect()
+        self.assertEqual(raised.exception.code, "MCP_REQUEST_TIMEOUT")
+        self.assertEqual(transport.writes[-1]["method"], "notifications/cancelled")
+        self.assertEqual(transport.writes[-1]["params"]["requestId"], 1)
 
     def test_call_tool_before_connect_fails_closed(self) -> None:
         client = MCPClient(FakeTransport(FakeServer()))

@@ -119,6 +119,7 @@ class ToolRegistry:
         self.state_root = product_root / "state/tools"
         self.index_path = self.state_root / "installed.json"
         self.running_root = self.state_root / "running"
+        self._processes_by_tool_id: dict[str, subprocess.Popen[bytes]] = {}
 
     def discover(self) -> tuple[ToolInstallation, ...]:
         discovered: dict[str, ToolInstallation] = {}
@@ -190,8 +191,7 @@ class ToolRegistry:
             )
         finally:
             os.close(descriptor)
-        if process.stdin is not None:
-            process.stdin.close()
+        self._processes_by_tool_id[tool_id] = process
         state = ToolProcessState(
             tool_id=tool_id,
             pid=process.pid,
@@ -208,6 +208,19 @@ class ToolRegistry:
         if not path.is_file():
             raise ToolRegistryError("TOOL_NOT_RUNNING", tool_id)
         state = ToolProcessState(**json.loads(path.read_text(encoding="utf-8")))
+        process = self._processes_by_tool_id.pop(tool_id, None)
+        if process is not None:
+            if process.stdin is not None and not process.stdin.closed:
+                process.stdin.close()
+            if process.poll() is None:
+                process.terminate()
+            try:
+                process.wait(timeout=1)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=1)
+            path.unlink(missing_ok=True)
+            return
         try:
             os.kill(state.pid, signal.SIGTERM)
         except ProcessLookupError as exc:
@@ -227,6 +240,13 @@ class ToolRegistry:
         if not path.is_file():
             return False
         state = ToolProcessState(**json.loads(path.read_text(encoding="utf-8")))
+        process = self._processes_by_tool_id.get(tool_id)
+        if process is not None:
+            if process.poll() is None:
+                return True
+            self._processes_by_tool_id.pop(tool_id, None)
+            path.unlink(missing_ok=True)
+            return False
         try:
             os.kill(state.pid, 0)
         except ProcessLookupError:

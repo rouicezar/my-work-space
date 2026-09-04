@@ -9,22 +9,15 @@ import sys
 
 def write_message(payload: dict[str, object]) -> None:
     body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
-    sys.stdout.buffer.write(f"Content-Length: {len(body)}\r\n\r\n".encode("ascii") + body)
+    sys.stdout.buffer.write(body + b"\n")
     sys.stdout.buffer.flush()
 
 
 def read_message() -> dict[str, object]:
-    headers: dict[str, str] = {}
-    while True:
-        line = sys.stdin.buffer.readline()
-        if not line:
-            raise SystemExit(0)
-        if line.strip() == b"":
-            break
-        key, value = line.decode("ascii").split(":", 1)
-        headers[key.strip().lower()] = value.strip()
-    length = int(headers["content-length"])
-    payload = json.loads(sys.stdin.buffer.read(length))
+    line = sys.stdin.buffer.readline()
+    if not line:
+        raise SystemExit(0)
+    payload = json.loads(line)
     if not isinstance(payload, dict):
         raise ValueError("message must be an object")
     return payload
