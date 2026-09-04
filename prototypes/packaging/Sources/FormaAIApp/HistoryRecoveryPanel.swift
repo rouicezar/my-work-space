@@ -11,6 +11,7 @@ enum HistoryRecoveryViewState: Sendable {
 }
 
 struct HistoryRecoveryPanel: View {
+    let language: ProductLanguage
     let supervisorURL: URL
     let rootURL: URL
 
@@ -21,38 +22,39 @@ struct HistoryRecoveryPanel: View {
     private let binding = HistoryRecoveryServiceBinding.productDefault
 
     var body: some View {
+        let copy = ProductCopy(language: language)
         VStack(alignment: .leading, spacing: 12) {
             switch state {
             case .loading:
-                ProgressView("Loading reconciled task history…")
+                ProgressView(copy.historyLoading)
             case .unavailable(let message):
-                Label("Task history unavailable", systemImage: "exclamationmark.triangle.fill")
+                Label(copy.historyUnavailable, systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
                 Text(message).font(.callout).foregroundStyle(.secondary)
-                Text("Start the local runtime and ensure Herdr is running before recovery actions.")
+                Text(copy.historyStartRuntimeHint)
                     .font(.caption).foregroundStyle(.secondary)
-                Button("Try again") { Task { await refresh() } }
+                Button(copy.tryAgain) { Task { await refresh() } }
             case .ready(let snapshot):
-                authorityBanner(snapshot)
+                authorityBanner(snapshot, copy: copy)
                 HStack(alignment: .top, spacing: 0) {
-                    taskList(snapshot)
+                    taskList(snapshot, copy: copy)
                     Divider()
-                    taskDetail(snapshot)
+                    taskDetail(snapshot, copy: copy)
                 }
                 .frame(minHeight: 320)
                 HStack {
-                    Button("Refresh reconcile") { Task { await refresh() } }
+                    Button(copy.refreshReconcile) { Task { await refresh() } }
                     Spacer()
-                    Text("Audit: \(binding.auditPath)")
+                    Text(copy.auditPath(binding.auditPath))
                         .font(.caption2.monospaced()).foregroundStyle(.secondary)
                 }
             case .acting:
-                ProgressView("Applying Herdr recovery action…")
+                ProgressView(copy.historyActing)
             case .failed(let message):
-                Label("Recovery failed safely", systemImage: "exclamationmark.triangle.fill")
+                Label(copy.historyFailedSafely, systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.red)
                 Text(message).font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
-                Button("Try again") { Task { await refresh() } }
+                Button(copy.tryAgain) { Task { await refresh() } }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -60,22 +62,22 @@ struct HistoryRecoveryPanel: View {
     }
 
     @ViewBuilder
-    private func authorityBanner(_ snapshot: TaskHistoryReconcilePayload) -> some View {
+    private func authorityBanner(_ snapshot: TaskHistoryReconcilePayload, copy: ProductCopy) -> some View {
         HStack(spacing: 8) {
-            Label("Runtime authority: \(snapshot.runtimeAuthority)", systemImage: "checkmark.shield.fill")
+            Label(copy.runtimeAuthority(snapshot.runtimeAuthority), systemImage: "checkmark.shield.fill")
                 .foregroundStyle(.green)
             Spacer()
-            Text("Freshness: \(snapshot.freshness)")
+            Text(copy.freshness(snapshot.freshness))
                 .font(.caption.monospaced()).foregroundStyle(.secondary)
         }
     }
 
     @ViewBuilder
-    private func taskList(_ snapshot: TaskHistoryReconcilePayload) -> some View {
+    private func taskList(_ snapshot: TaskHistoryReconcilePayload, copy: ProductCopy) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Persisted tasks").font(.headline)
+            Text(copy.persistedTasks).font(.headline)
             if snapshot.tasks.isEmpty {
-                Text("No persisted task metadata yet.")
+                Text(copy.noPersistedTasks)
                     .font(.callout).foregroundStyle(.secondary)
             } else {
                 List(selection: $selectedTaskID) {
@@ -99,46 +101,46 @@ struct HistoryRecoveryPanel: View {
     }
 
     @ViewBuilder
-    private func taskDetail(_ snapshot: TaskHistoryReconcilePayload) -> some View {
+    private func taskDetail(_ snapshot: TaskHistoryReconcilePayload, copy: ProductCopy) -> some View {
         if let task = snapshot.tasks.first(where: { $0.taskID == selectedTaskID }) {
             VStack(alignment: .leading, spacing: 14) {
                 Text(task.intentLabel).font(.title3.weight(.semibold))
-                detailRow("Outcome", task.displayOutcome)
-                detailRow("Runtime state", task.runtimeState)
-                detailRow("Revision", String(task.lastAcceptedRevision ?? 0))
-                detailRow("Pane", task.herdrPaneID ?? "—")
+                detailRow(copy.detailLabel(.outcome), task.displayOutcome, copy: copy)
+                detailRow(copy.detailLabel(.runtimeState), task.runtimeState, copy: copy)
+                detailRow(copy.detailLabel(.revision), String(task.lastAcceptedRevision ?? 0), copy: copy)
+                detailRow(copy.detailLabel(.pane), task.herdrPaneID ?? "—", copy: copy)
                 if task.reconciliationRequired {
-                    Label("Reconciliation required before recovery", systemImage: "exclamationmark.triangle.fill")
+                    Label(copy.reconciliationRequired, systemImage: "exclamationmark.triangle.fill")
                         .font(.callout).foregroundStyle(.orange)
                 }
-                recoveryActions(for: task, snapshot: snapshot)
+                recoveryActions(for: task, snapshot: snapshot, copy: copy)
             }
             .padding(16)
         } else {
-            Text("Select a task to inspect reconciled runtime truth.")
+            Text(copy.selectTaskHint)
                 .font(.callout).foregroundStyle(.secondary)
                 .padding(16)
         }
     }
 
     @ViewBuilder
-    private func recoveryActions(for task: TaskHistoryTaskPayload, snapshot: TaskHistoryReconcilePayload) -> some View {
+    private func recoveryActions(for task: TaskHistoryTaskPayload, snapshot: TaskHistoryReconcilePayload, copy: ProductCopy) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Recovery (Herdr authority)").font(.headline)
+            Text(copy.recoveryHerdrAuthority).font(.headline)
             HStack(spacing: 10) {
-                Button("Reclaim session") {
+                Button(copy.reclaimSession) {
                     Task { await reclaim(taskID: task.taskID) }
                 }
                 .disabled(!task.mayResume || task.reconciliationRequired || snapshot.freshness != "fresh")
-                Button("Cancel gracefully") {
+                Button(copy.cancelGracefully) {
                     Task { await cancel(task: task) }
                 }
                 .disabled(task.reconciliationRequired || snapshot.freshness != "fresh" || !isCancellable(task))
             }
             HStack(spacing: 8) {
-                TextField("Fresh-run pane id", text: $freshPaneID)
+                TextField(copy.freshRunPanePlaceholder, text: $freshPaneID)
                     .textFieldStyle(.roundedBorder)
-                Button("Start fresh run") {
+                Button(copy.startFreshRun) {
                     Task { await freshRun(taskID: task.taskID) }
                 }
                 .disabled(
@@ -148,12 +150,12 @@ struct HistoryRecoveryPanel: View {
                         || snapshot.freshness != "fresh"
                 )
             }
-            Text("Recovery routes require a fresh Herdr snapshot and matching revision. The UI never manufactures completion or resumability.")
+            Text(copy.recoveryRevisionHint)
                 .font(.caption).foregroundStyle(.secondary)
         }
     }
 
-    private func detailRow(_ title: String, _ value: String) -> some View {
+    private func detailRow(_ title: String, _ value: String, copy: ProductCopy) -> some View {
         HStack(alignment: .top) {
             Text(title).font(.caption.weight(.semibold)).foregroundStyle(.secondary).frame(width: 110, alignment: .leading)
             Text(value).font(.callout)

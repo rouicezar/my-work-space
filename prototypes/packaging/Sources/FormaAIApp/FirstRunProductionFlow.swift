@@ -1,19 +1,20 @@
 import SwiftUI
 import LifecycleContract
 
-struct FirstRunPreview: View {
-    @StateObject private var preparation = LocalAIPreparationCoordinator()
+struct FirstRunProductionFlow: View {
     @State private var language: ProductLanguage?
+    @StateObject private var preparation = LocalAIPreparationCoordinator()
+    let onComplete: () -> Void
 
     var body: some View {
         Group {
             if let language {
                 FirstRunAssistantView(
-                    mode: .preview,
+                    mode: .production,
                     language: language,
                     preparation: preparation,
                     onChangeLanguage: { self.language = nil },
-                    onComplete: {}
+                    onComplete: onComplete
                 )
             } else {
                 languageSelection
@@ -42,20 +43,13 @@ struct FirstRunPreview: View {
             Spacer()
         }
         .padding(44).frame(maxWidth: .infinity, maxHeight: .infinity)
-        .overlay(alignment: .top) {
-            HStack {
-                Label("Product Preview · 产品预览 · synthetic data · no runtime action", systemImage: "eye.trianglebadge.exclamationmark")
-                    .font(.callout.weight(.semibold))
-                Spacer()
-            }
-            .padding(.horizontal, 20).padding(.vertical, 10)
-            .background(Color(red: 0.96, green: 0.76, blue: 0.22))
-            .foregroundStyle(.black.opacity(0.78))
-        }
     }
 
     private func languageButton(_ value: ProductLanguage, title: String, subtitle: String) -> some View {
-        Button { language = value } label: {
+        Button {
+            language = value
+            UserDefaults.standard.set(value.rawValue, forKey: OnboardingPreferences.languageKey)
+        } label: {
             VStack(alignment: .leading, spacing: 10) {
                 Image(systemName: "character.bubble.fill").font(.title2).foregroundStyle(.blue)
                 Text(title).font(.title3.weight(.semibold))

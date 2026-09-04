@@ -10,6 +10,61 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPOSITORY_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
 OUTPUT_DIRECTORY=$1
 APP="$OUTPUT_DIRECTORY/Forma AI.app"
+APP_DIR="$SCRIPT_DIR/Sources/FormaAIApp"
+APP_SOURCE="$APP_DIR/FormaAIApp.swift"
+
+legacy_pattern() {
+  pattern=$1
+  message=$2
+  if rg -q "$pattern" "$APP_DIR" --glob '*.swift'; then
+    echo "error: $message" >&2
+    rg -n "$pattern" "$APP_DIR" --glob '*.swift' >&2 || true
+    exit 2
+  fi
+}
+
+legacy_pattern 'ManifestOverview' 'deprecated ManifestOverview runtime shell is still referenced'
+legacy_pattern 'NavigationSplitView' 'deprecated NavigationSplitView runtime shell is still referenced'
+legacy_pattern 'WorkspaceSection' 'deprecated WorkspaceSection navigation is still referenced'
+legacy_pattern 'dailyNavRow|dailySidebar|dailySupervisionRail' 'deprecated ManifestOverview sidebar helpers are still referenced'
+legacy_pattern 'What would you like to work on\?' 'legacy English idle workbench copy is still referenced'
+legacy_pattern 'struct DailyWorkbench: View' 'DailyWorkbench legacy runtime wrapper must not exist; use DailyWorkbenchShell(presentation: .production)'
+
+if ! rg -q 'DailyWorkbenchShell\(presentation: \.production\)' "$APP_DIR/ProductRootView.swift"; then
+  echo "error: ProductRootView must route to DailyWorkbenchShell(presentation: .production)" >&2
+  exit 2
+fi
+
+if ! awk '
+  /#else/ { in_release = 1 }
+  in_release && /ProductRootView\(\)|DailyWorkbenchShell\(presentation: \.production\)/ { ok = 1 }
+  /#endif/ { in_release = 0 }
+  END { exit ok ? 0 : 1 }
+' "$APP_SOURCE"; then
+  echo "error: release branch must route through ProductRootView or DailyWorkbenchShell production presentation" >&2
+  exit 2
+fi
+
+
+if ! rg -q 'LocalRuntimeControlPanel|ModelsProvidersControlPanel|DiagnosticsRecoveryControlPanel' "$APP_DIR/DailyWorkbenchShell.swift"; then
+  echo "error: production shell must wire real settings control panels" >&2
+  exit 2
+fi
+
+if ! rg -q 'download-model' "$REPOSITORY_ROOT/scripts/supervisor.py"; then
+  echo "error: supervisor must expose download-model for first-run model preparation" >&2
+  exit 2
+fi
+
+if ! rg -q 'DailyWorkbenchComposerSurface' "$APP_DIR/DailyWorkbenchShell.swift"; then
+  echo "error: production shell must render DailyWorkbenchComposerSurface" >&2
+  exit 2
+fi
+
+if ! rg -q 'settingsSectionRow\(\.memory' "$APP_DIR/DailyWorkbenchShell.swift"; then
+  echo "error: production shell must use bilingual Daily Workbench settings surface" >&2
+  exit 2
+fi
 
 if [ -e "$APP" ]; then
   echo "error: app destination already exists" >&2

@@ -532,6 +532,42 @@ class SupervisorProtocolTests(unittest.TestCase):
             files={"weights.bin": ModelFile(10, "d" * 64)},
         )
 
+
+    def test_chat_model_download_requires_revision_and_delegates(self):
+        request_id = str(uuid.uuid4())
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            cache = base / "cache"
+            cache.mkdir()
+            catalog = base / "models.json"
+            catalog.write_text("{}", encoding="utf-8")
+            args = supervisor.parser().parse_args([
+                "--request-id", request_id, "download-model",
+                "--root", str(base / "product"), "--cache-root", str(cache),
+                "--catalog", str(catalog), "--approve-revision", "c" * 40,
+            ])
+            result = SimpleNamespace(to_dict=lambda: {
+                "schema_version": 1, "model_id": "fixture-chat",
+                "revision": "c" * 40, "snapshot_path": str(cache / "snapshot"),
+                "total_size_bytes": 10, "transferred_bytes": 10,
+                "reused_files": 0, "downloaded_files": 1,
+            })
+            chat_model = ModelDefinition(
+                id="fixture-chat", repository="test/chat", revision="c" * 40,
+                license="MIT", license_url="https://example.test/license",
+                model_type="fixture", architecture="Fixture", capabilities=("chat",), quantization_bits=4,
+                embedding_dimension=None, query_prefix=None, document_prefix=None,
+                files={"weights.bin": ModelFile(10, "d" * 64)},
+            )
+            with patch.object(supervisor, "load_model", return_value=chat_model), \
+                 patch.object(supervisor, "download_model_snapshot", return_value=result) as download:
+                response = supervisor.run(args)
+            self.assertEqual(response["command"], "download-model")
+            self.assertEqual(response["payload"]["downloaded_files"], 1)
+            download.assert_called_once_with(
+                cache_root=cache, model=chat_model, approved_revision="c" * 40,
+            )
+
     def test_embedding_download_requires_revision_and_delegates(self):
         request_id = str(uuid.uuid4())
         with tempfile.TemporaryDirectory() as directory:

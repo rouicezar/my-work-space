@@ -9,6 +9,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class PackagingScriptTests(unittest.TestCase):
+    def test_build_places_supervisor_at_product_paths_location(self) -> None:
+        source = (ROOT / "prototypes/packaging/Sources/FormaAIApp/ProductPaths.swift").read_text()
+        build = (ROOT / "prototypes/packaging/build-app.sh").read_text()
+        self.assertIn('Contents/Helpers/Supervisor', source)
+        self.assertIn('$APP/Contents/Helpers/Supervisor', build)
+
     def test_app_bundle_declares_native_application_principal_class(self):
         with (ROOT / "prototypes/packaging/App-Info.plist").open("rb") as handle:
             info = plistlib.load(handle)
@@ -77,6 +83,41 @@ class PackagingScriptTests(unittest.TestCase):
             )
         self.assertEqual(result.returncode, 2)
         self.assertIn("already exists", result.stderr)
+
+    def test_app_build_rejects_legacy_manifest_overview_shell(self):
+        script = (ROOT / "prototypes/packaging/build-app.sh").read_text(encoding="utf-8")
+        self.assertIn("ManifestOverview", script)
+        self.assertIn("DailyWorkbenchShell(presentation: .production)", script)
+        self.assertIn("NavigationSplitView", script)
+        self.assertIn("WorkspaceSection", script)
+
+    def test_release_entry_uses_product_root_or_daily_workbench_shell(self):
+        source = (ROOT / "prototypes/packaging/Sources/FormaAIApp/FormaAIApp.swift").read_text(
+            encoding="utf-8"
+        )
+        app_dir = ROOT / "prototypes/packaging/Sources/FormaAIApp"
+        self.assertNotIn("ManifestOverview", source)
+        self.assertNotIn("struct DailyWorkbench: View", source)
+        self.assertIn("#else", source)
+        release_block = source.split("#else", 1)[1].split("#endif", 1)[0]
+        self.assertTrue(
+            "ProductRootView()" in release_block
+            or "DailyWorkbenchShell(presentation: .production)" in release_block
+        )
+        for path in app_dir.glob("*.swift"):
+            text = path.read_text(encoding="utf-8")
+            self.assertNotIn("NavigationSplitView", text, msg=str(path))
+            self.assertNotIn("dailyNavRow", text, msg=str(path))
+            self.assertNotIn("What would you like to work on?", text, msg=str(path))
+
+
+    def test_production_settings_use_control_panels(self):
+        shell = (ROOT / "prototypes/packaging/Sources/FormaAIApp/DailyWorkbenchShell.swift").read_text(encoding="utf-8")
+        self.assertIn("LocalRuntimeControlPanel", shell)
+        self.assertIn("ModelsProvidersControlPanel", shell)
+        self.assertIn("DiagnosticsRecoveryControlPanel", shell)
+        build = (ROOT / "prototypes/packaging/build-app.sh").read_text(encoding="utf-8")
+        self.assertIn("download-model", (ROOT / "scripts/supervisor.py").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

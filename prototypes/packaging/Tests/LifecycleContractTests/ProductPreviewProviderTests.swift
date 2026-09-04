@@ -76,6 +76,8 @@ import Testing
     let surface = DailyWorkbenchSurfaceContract.productDefault
 
     #expect(surface.developmentLaunchArgument == "--daily-workbench-preview")
+    #expect(surface.productionRootView == "DailyWorkbenchShell")
+    #expect(surface.previewRootView == "DailyWorkbenchPreview")
     #expect(surface.productionDefaultsToRuntime == true)
     #expect(surface.sections == [
         .primaryNavigation,

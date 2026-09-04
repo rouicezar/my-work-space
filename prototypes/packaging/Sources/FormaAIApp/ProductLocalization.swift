@@ -44,6 +44,10 @@ enum DailyCopyKey {
     case contextPreviewTitle
     case contextPreviewBody
     case dismiss
+    case startTask
+    case startTaskExplanation
+    case contextUnavailable
+    case routeBindingRequired
 }
 
 struct ProductCopy {
@@ -94,6 +98,10 @@ struct ProductCopy {
         case (.simplifiedChinese, .contextPreviewTitle): "上下文入口预览"
         case (.simplifiedChinese, .contextPreviewBody): "正式产品可选择文件、文件夹和已有任务材料。本预览不会打开选择器，也不会读取文件。"
         case (.simplifiedChinese, .dismiss): "知道了"
+        case (.simplifiedChinese, .startTask): "开始任务"
+        case (.simplifiedChinese, .startTaskExplanation): "Forma AI 会先检查最安全的可用路线，本地优先；需要云端时会先征求你的批准。"
+        case (.simplifiedChinese, .contextUnavailable): "即将支持"
+        case (.simplifiedChinese, .routeBindingRequired): "当前路线尚未绑定到可执行路由，请先在设置中完成运行时绑定。"
 
         case (.english, .previewNotice): "Product Preview · synthetic data · no runtime action"
         case (.english, .newTask): "New task"
@@ -138,6 +146,10 @@ struct ProductCopy {
         case (.english, .contextPreviewTitle): "Context options preview"
         case (.english, .contextPreviewBody): "The finished product can select files, folders, and material from existing tasks. This Preview opens no picker and reads no files."
         case (.english, .dismiss): "Got it"
+        case (.english, .startTask): "Start task"
+        case (.english, .startTaskExplanation): "Forma AI checks the safest available route first—local by default, with a separate approval step before any cloud use."
+        case (.english, .contextUnavailable): "Coming soon"
+        case (.english, .routeBindingRequired): "This route is not execution-bound yet. Finish runtime binding in Settings before submitting."
         }
     }
 }

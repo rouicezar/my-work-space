@@ -12,6 +12,7 @@ enum MemoryReviewViewState: Sendable {
 }
 
 struct GovernedMemoryReviewPanel: View {
+    let language: ProductLanguage
     let supervisorURL: URL
     let rootURL: URL
 
@@ -22,39 +23,40 @@ struct GovernedMemoryReviewPanel: View {
     private let binding = GovernedMemoryReviewContract.realServiceBinding
 
     var body: some View {
-        GroupBox("Memory review") {
+        let copy = ProductCopy(language: language)
+        GroupBox(copy.memoryReviewTitle) {
             VStack(alignment: .leading, spacing: 12) {
                 switch state {
                 case .loading:
-                    ProgressView("Loading governed memory snapshot…")
+                    ProgressView(copy.memoryLoading)
                 case .unavailable(let message):
-                    Label("Memory service unavailable", systemImage: "exclamationmark.triangle.fill")
+                    Label(copy.memoryUnavailable, systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
                     Text(message).font(.callout).foregroundStyle(.secondary)
-                    Text("Start the local runtime and ensure the governed-memory service is listening on loopback.")
+                    Text(copy.memoryStartRuntimeHint)
                         .font(.caption).foregroundStyle(.secondary)
-                    Button("Try again") { Task { await refresh() } }
+                    Button(copy.tryAgain) { Task { await refresh() } }
                 case .ready(let snapshot):
-                    authorityBanner(snapshot)
+                    authorityBanner(snapshot, copy: copy)
                     HStack(alignment: .top, spacing: 0) {
-                        recordList(snapshot)
+                        recordList(snapshot, copy: copy)
                         Divider()
-                        recordDetail(snapshot)
+                        recordDetail(snapshot, copy: copy)
                     }
                     .frame(minHeight: 280)
                     HStack {
-                        Button("Refresh snapshot") { Task { await refresh() } }
+                        Button(copy.refreshSnapshot) { Task { await refresh() } }
                         Spacer()
-                        Text("Audit: \(binding.auditPath)")
+                        Text(copy.auditPath(binding.auditPath))
                             .font(.caption2.monospaced()).foregroundStyle(.secondary)
                     }
                 case .acting:
-                    ProgressView("Recording review decision…")
+                    ProgressView(copy.memoryActing)
                 case .failed(let message):
-                    Label("Memory review failed safely", systemImage: "exclamationmark.triangle.fill")
+                    Label(copy.memoryFailedSafely, systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(.red)
                     Text(message).font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
-                    Button("Try again") { Task { await refresh() } }
+                    Button(copy.tryAgain) { Task { await refresh() } }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -63,21 +65,21 @@ struct GovernedMemoryReviewPanel: View {
     }
 
     @ViewBuilder
-    private func authorityBanner(_ snapshot: MemoryReviewSnapshotPayload) -> some View {
+    private func authorityBanner(_ snapshot: MemoryReviewSnapshotPayload, copy: ProductCopy) -> some View {
         HStack(spacing: 8) {
-            Label("Confirmed authority: \(snapshot.confirmedAuthority)", systemImage: "checkmark.shield.fill")
+            Label(copy.confirmedAuthority(snapshot.confirmedAuthority), systemImage: "checkmark.shield.fill")
                 .foregroundStyle(.green)
             Spacer()
-            Text("Loopback :\(binding.loopbackPort)")
+            Text(copy.loopbackPort(binding.loopbackPort))
                 .font(.caption.monospaced()).foregroundStyle(.secondary)
         }
     }
 
     @ViewBuilder
-    private func recordList(_ snapshot: MemoryReviewSnapshotPayload) -> some View {
+    private func recordList(_ snapshot: MemoryReviewSnapshotPayload, copy: ProductCopy) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             if !snapshot.pendingCandidates.isEmpty {
-                Text("Pending candidates").font(.headline)
+                Text(copy.pendingCandidates).font(.headline)
                 ForEach(snapshot.pendingCandidates, id: \.candidateID) { candidate in
                     memoryRow(
                         title: candidate.claimKey,
@@ -92,7 +94,7 @@ struct GovernedMemoryReviewPanel: View {
                 }
             }
             if !snapshot.confirmedRecords.isEmpty {
-                Text("Confirmed records").font(.headline)
+                Text(copy.confirmedRecords).font(.headline)
                     .padding(.top, snapshot.pendingCandidates.isEmpty ? 0 : 6)
                 ForEach(snapshot.confirmedRecords, id: \.recordID) { record in
                     memoryRow(
@@ -108,7 +110,7 @@ struct GovernedMemoryReviewPanel: View {
                 }
             }
             if snapshot.pendingCandidates.isEmpty && snapshot.confirmedRecords.isEmpty {
-                Text("No pending candidates or confirmed records.")
+                Text(copy.noMemoryRecords)
                     .font(.callout).foregroundStyle(.secondary)
             }
         }
@@ -117,7 +119,7 @@ struct GovernedMemoryReviewPanel: View {
     }
 
     @ViewBuilder
-    private func recordDetail(_ snapshot: MemoryReviewSnapshotPayload) -> some View {
+    private func recordDetail(_ snapshot: MemoryReviewSnapshotPayload, copy: ProductCopy) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 if let candidate = snapshot.pendingCandidates.first(where: { $0.candidateID == selectedCandidateID }) {
@@ -131,12 +133,12 @@ struct GovernedMemoryReviewPanel: View {
                         version: nil
                     )
                     HStack(spacing: 10) {
-                        Button("Confirm to Semantica") { Task { await confirm(candidate.candidateID) } }
+                        Button(copy.confirmToSemantica) { Task { await confirm(candidate.candidateID) } }
                             .buttonStyle(.borderedProminent)
-                        Button("Reject", role: .destructive) { Task { await reject(candidate.candidateID) } }
+                        Button(copy.reject, role: .destructive) { Task { await reject(candidate.candidateID) } }
                     }
                 } else if let record = snapshot.confirmedRecords.first(where: { $0.recordID == selectedRecordID }) {
-                    detailHeader(title: record.claimKey, subtitle: "confirmed v\(record.version)", symbol: "checkmark.seal.fill", tint: .green)
+                    detailHeader(title: record.claimKey, subtitle: copy.confirmedVersion(record.version), symbol: "checkmark.seal.fill", tint: .green)
                     provenanceBlock(
                         claimKey: record.claimKey,
                         content: record.content,
@@ -146,7 +148,7 @@ struct GovernedMemoryReviewPanel: View {
                         version: String(record.version)
                     )
                 } else {
-                    Text("Select a candidate or confirmed record.")
+                    Text(copy.selectMemoryRecord)
                         .font(.callout).foregroundStyle(.secondary)
                 }
             }

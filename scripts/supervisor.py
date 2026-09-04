@@ -157,7 +157,7 @@ def parser() -> argparse.ArgumentParser:
         if name == "install-omlx":
             command.add_argument("--approve-artifact-sha256", required=True)
     for name in (
-        "model-plan", "link-model", "embedding-plan", "download-embedding",
+        "model-plan", "link-model", "download-model", "embedding-plan", "download-embedding",
         "activate-embedding",
     ):
         command = commands.add_parser(name)
@@ -168,7 +168,7 @@ def parser() -> argparse.ArgumentParser:
             "--model-id",
             default=DEFAULT_EMBEDDING_MODEL_ID if "embedding" in name else DEFAULT_MODEL_ID,
         )
-        if name in {"link-model", "download-embedding", "activate-embedding"}:
+        if name in {"link-model", "download-model", "download-embedding", "activate-embedding"}:
             command.add_argument("--approve-revision", required=True)
     for name in ("runtime-status", "start-runtime", "stop-runtime", "sample-task", "local-task"):
         command = commands.add_parser(name)
@@ -710,7 +710,7 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
     if args.command in {"installation-plan", "installation-status", "install-omlx"}:
         _validate_product_root(args.root)
     if args.command in {
-        "model-plan", "link-model", "embedding-plan", "download-embedding",
+        "model-plan", "link-model", "download-model", "embedding-plan", "download-embedding",
         "activate-embedding",
     }:
         _validate_product_root(args.root)
@@ -921,7 +921,7 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
             payload={"schema_version": 1, "result": asdict(result)},
         )
     if args.command in {
-        "model-plan", "link-model", "embedding-plan", "download-embedding",
+        "model-plan", "link-model", "download-model", "embedding-plan", "download-embedding",
         "activate-embedding",
     }:
         if not args.cache_root.is_absolute() or not args.cache_root.is_dir():
@@ -933,6 +933,8 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
             "embedding-plan", "download-embedding", "activate-embedding",
         } and "embedding" not in model.capabilities:
             raise ValueError("selected model is not embedding capable")
+        if args.command == "download-model" and "chat" not in model.capabilities:
+            raise ValueError("selected model is not chat capable")
         snapshot = huggingface_snapshot(args.cache_root, model)
         if args.command in {"model-plan", "embedding-plan"}:
             try:
@@ -967,7 +969,7 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
             )
         if args.approve_revision != model.revision:
             raise ValueError("model approval does not match selected revision")
-        if args.command == "download-embedding":
+        if args.command in {"download-model", "download-embedding"}:
             downloaded = download_model_snapshot(
                 cache_root=args.cache_root,
                 model=model,
@@ -1670,7 +1672,7 @@ def main(argv: list[str] | None = None) -> int:
             item
             for item in (
                 "preflight", "installation-plan", "installation-status", "install-omlx",
-                "model-plan", "link-model", "embedding-plan", "download-embedding",
+                "model-plan", "link-model", "download-model", "embedding-plan", "download-embedding",
                 "activate-embedding",
                 "runtime-status", "start-runtime", "stop-runtime", "sample-task", "local-task", "internal-broker",
                 "internal-memory-service", "semantica-status",

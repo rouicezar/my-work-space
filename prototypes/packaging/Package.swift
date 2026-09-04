@@ -35,5 +35,9 @@ let package = Package(
             name: "SupervisorProtocolTests",
             dependencies: ["SupervisorProtocol", "RuntimeSecurity"]
         ),
+        .testTarget(
+            name: "FormaAIAppTests",
+            dependencies: ["FormaAIApp"]
+        ),
     ]
 )

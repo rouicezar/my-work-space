@@ -125,6 +125,8 @@ public enum DailyWorkbenchSection: Sendable, Equatable {
 
 public struct DailyWorkbenchSurfaceContract: Sendable {
     public let developmentLaunchArgument: String
+    public let productionRootView: String
+    public let previewRootView: String
     public let productionDefaultsToRuntime: Bool
     public let sections: [DailyWorkbenchSection]
     public let supportedLanguages: [ProductLanguage]
@@ -136,6 +138,8 @@ public struct DailyWorkbenchSurfaceContract: Sendable {
 
     public static let productDefault = DailyWorkbenchSurfaceContract(
         developmentLaunchArgument: "--daily-workbench-preview",
+        productionRootView: "DailyWorkbenchShell",
+        previewRootView: "DailyWorkbenchPreview",
         productionDefaultsToRuntime: true,
         sections: [
             .primaryNavigation,

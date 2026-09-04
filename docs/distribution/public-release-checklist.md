@@ -60,7 +60,7 @@ Source of truth: `config/upstreams.json`.
 | D3 | Rollback path documented and tested | Rollback runbook + result | [ ] |
 | D4 | Uninstall removes product-owned state without orphaning secrets unsafely | Uninstall checklist | [ ] |
 | D5 | Interrupted install/resume handled honestly (no false "ready") | First-run interruption test | [ ] |
-| D6 | Task history recovery works with persisted metadata + live Herdr | P8 recovery proof + optional manual sign-off | [ ] |
+| D6 | A task created by the signed native workbench persists metadata and recovers with live Herdr | C1-T04 production-path proof + mandatory P8 manual sign-off | [ ] |
 
 ## Gate E — Runtime, security, and policy behavior
 
@@ -70,8 +70,8 @@ Source of truth: `config/upstreams.json`.
 | E2 | Cloud escalation requires credential state, preview, explicit approval, cost ceiling, audit | DeepSeek / cloud adapter proof | [ ] |
 | E3 | External writes and destructive actions require preview + approval + audit | Policy integration test + manual review | [ ] |
 | E4 | Semantica remains sole governed memory authority; no competing store shipped | P7 slice + ledger review | [ ] |
-| E5 | Herdr remains core multi-agent runtime; no product-owned duplicate state machine | P8 slice + ledger review | [ ] |
-| E6 | Tool/skill execution respects sandbox, approval, and audit gates | P6 end-to-end tool proof | [ ] |
+| E5 | The normal production submit path dispatches through Herdr; no direct-inference bypass or duplicate state machine | C1-T03 production-path proof + ledger review | [ ] |
+| E6 | A standards-compliant external MCP tool runs inside the same Herdr task with sandbox, approval, artifact, validation, and audit evidence | C1-T02/C1-T03 compatibility and production E2E proof | [ ] |
 
 ## Gate F — Quality, accessibility, usability, and novice acceptance
 

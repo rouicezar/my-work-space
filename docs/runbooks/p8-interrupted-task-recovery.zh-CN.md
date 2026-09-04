@@ -19,7 +19,7 @@ Status: 与 P8-T06 配套；自动化部分已由 `scripts/record_task_recovery_
 ### 步骤 B — 应用重开
 
 1. 完全退出 Forma AI 原生工作台
-2. 重新启动（DEBUG 默认 `ManifestOverview`）
+2. 重新启动（Release 默认 `DailyWorkbenchShell(presentation: .production)`；Preview 用 `--daily-workbench-preview`）
 3. 打开 **History** 侧栏
 
 **预期：** 持久化任务出现在列表中（`readsPersistedHistory: true` 产品路径）。

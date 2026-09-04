@@ -1015,6 +1015,22 @@ public struct SupervisorClient: Sendable {
         )
     }
 
+
+    public func downloadModel(
+        rootURL: URL,
+        cacheRootURL: URL,
+        catalogURL: URL,
+        approvedRevision: String,
+        requestID: UUID = UUID()
+    ) throws -> ModelDownloadPayload {
+        try request(
+            command: "download-model",
+            arguments: ["--root", rootURL.path, "--cache-root", cacheRootURL.path,
+                        "--catalog", catalogURL.path, "--approve-revision", approvedRevision],
+            requestID: requestID
+        )
+    }
+
     public func runtimeStatus(rootURL: URL, requestID: UUID = UUID()) throws -> RuntimeStatusPayload {
         try request(
             command: "runtime-status", arguments: ["--root", rootURL.path], requestID: requestID

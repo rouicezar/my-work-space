@@ -16,6 +16,8 @@
 
 Forma AI is a general-purpose, distributable AI work operating system for ordinary Mac users. Its product-owned native workbench is the default user entry point. Through a stable adapter protocol it composes the licensed capabilities of four upstream projects — long-term memory, end-to-end audit, parallel multi-agent execution, local-first inference, and permission-gated real tool operations.
 
+> Development status (2026-09-04): architecture and several upstream adapter slices are verified, but the packaged first-run and the unified Workbench → Herdr → governed tool → History production journey are under corrective implementation. This repository is not release-ready or currently out-of-the-box complete.
+
 ## Features
 
 - **Out of the box** — graphical install and initialization with automatic Mac detection, compatible configuration, and health checks.
