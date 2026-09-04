@@ -231,7 +231,7 @@ public struct ProductManifest: Codable, Sendable {
         guard schemaVersion == 1 else {
             throw ManifestValidationError.unsupportedSchema(schemaVersion)
         }
-        let expected = Set(["semantica", "holaos", "herdr", "omlx"])
+        let expected = Set(["semantica", "holaos", "herdr", "qwen-code", "omlx"])
         let ids = components.map(\.id)
         guard Set(ids) == expected, ids.count == expected.count else {
             throw ManifestValidationError.wrongComponentSet(ids)

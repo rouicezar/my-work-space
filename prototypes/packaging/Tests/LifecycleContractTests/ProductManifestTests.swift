@@ -85,8 +85,8 @@ private func repositoryRoot() -> URL {
 @Test func realProductManifestLoadsAndOrdersComponents() throws {
     let manifestURL = repositoryRoot().appending(path: "config/product-manifest.json")
     let manifest = try ProductManifest.load(from: manifestURL)
-    #expect(manifest.startPlan.map(\.id) == ["omlx", "semantica", "herdr", "holaos"])
-    #expect(manifest.stopPlan.map(\.id) == ["holaos", "herdr", "semantica", "omlx"])
+    #expect(manifest.startPlan.map(\.id) == ["omlx", "semantica", "herdr", "qwen-code", "holaos"])
+    #expect(manifest.stopPlan.map(\.id) == ["holaos", "qwen-code", "herdr", "semantica", "omlx"])
 }
 
 @Test func launcherSummaryExposesPortsAndContractStatus() throws {

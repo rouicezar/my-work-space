@@ -24,7 +24,7 @@ from forma_ai.deepseek_adapter import DeepSeekResult, DeepSeekUsage
 from forma_ai.local_tasks import LocalTaskError, LocalTaskResult
 from forma_ai.cloud_preferences import CloudPreferenceStore
 from forma_ai.system_resources import MemoryEvidence
-from forma_ai.herdr_adapter import HerdrSessionAgent, HerdrSessionSnapshot
+from forma_ai.herdr_adapter import HerdrSessionAgent, HerdrSessionSnapshot, HerdrTask, HerdrWorkspace
 from forma_ai.supervisor import (
     Supervisor,
     SupervisorFeatures,
@@ -204,29 +204,108 @@ class SupervisorProtocolTests(unittest.TestCase):
             "required_capabilities": list(capabilities), "data_classes": list(classes),
         }, ensure_ascii=False).encode()
 
-    def test_task_submit_executes_verified_short_task_locally_without_cloud_proposal(self):
+    def test_task_submit_accepts_verified_short_task_via_herdr_without_cloud_proposal(self):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)
             root = base / "Product"
             catalog = self.write_current_cloud_catalog(base)
             request_id = str(uuid.uuid4())
-            expected = LocalTaskResult(
-                1, "local", request_id, "Qwen3-0.6B-4bit", "result", "stop",
-                5, 2, 7, "logs/audit/inference.jsonl",
-            )
+            expected = {
+                "schema_version": 1,
+                "route": "local",
+                "correlation_id": request_id,
+                "model": "Qwen3-0.6B-4bit",
+                "runtime_authority": "herdr",
+                "state": "running",
+            }
             with patch.object(supervisor.RuntimeManager, "status", return_value={"phase": "running"}), \
                  patch.object(supervisor, "measure_available_memory", return_value=MemoryEvidence(2048, True, "AVAILABLE_MEMORY_MEASURED")), \
                  patch.object(supervisor, "_runtime_secrets", return_value=("a", "b", "c")), \
-                 patch.object(supervisor, "_local_task", return_value=expected) as execute, \
+                 patch.object(supervisor, "_qwen_agent_environment", return_value={"HOME": "/qwen"}), \
+                 patch.object(supervisor, "_dispatch_local_agent_task", return_value=expected) as execute, \
                  patch.object(supervisor, "create_cloud_proposal") as cloud:
                 response = supervisor.run(
                     self.task_submit_args(root, catalog, request_id),
                     input_data=self.task_submit_body(),
                 )
             self.assertEqual(response["payload"]["plan"]["route"], "local")
-            self.assertEqual(response["payload"]["result"]["output"], "result")
-            self.assertEqual(execute.call_args.args[4], frozenset({"Qwen3-0.6B-4bit"}))
+            self.assertEqual(response["payload"]["result"]["runtime_authority"], "herdr")
+            self.assertEqual(execute.call_args.kwargs["model_id"], "Qwen3-0.6B-4bit")
             cloud.assert_not_called()
+
+    def test_dispatch_wraps_herdr_failure_and_rejects_nonempty_retry_workspace(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            request_id = str(uuid.uuid4())
+            workspace = root / "data" / "tasks" / request_id
+            workspace.mkdir(parents=True)
+            (workspace / "prior.txt").write_text("claimed", encoding="utf-8")
+            with patch.object(supervisor, "_herdr_adapter_for_root", return_value=object()):
+                with self.assertRaises(LocalTaskError) as context:
+                    supervisor._dispatch_local_agent_task(
+                        root=root, request_id=request_id,
+                        task=SimpleNamespace(prompt="hello"), model_id="fixture",
+                        qwen_environment={"HOME": "/fixture"},
+                    )
+        self.assertEqual(context.exception.code, "LOCAL_TASK_ALREADY_EXISTS")
+
+    def test_c1_task_submit_dispatches_qwen_through_herdr_instead_of_direct_broker(self):
+        """C1-T03 red contract: Herdr, not `_local_task`, owns local execution."""
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "Product"
+            catalog = self.write_current_cloud_catalog(base)
+            request_id = str(uuid.uuid4())
+            direct_result = LocalTaskResult(
+                1, "local", request_id, "Qwen3-0.6B-4bit", "legacy", "stop",
+                5, 2, 7, "logs/audit/inference.jsonl",
+            )
+            with patch.object(
+                supervisor.RuntimeManager,
+                "status",
+                return_value={"phase": "running", "herdr_alive": True},
+            ), patch.object(
+                supervisor,
+                "measure_available_memory",
+                return_value=MemoryEvidence(2048, True, "AVAILABLE_MEMORY_MEASURED"),
+            ), patch.object(
+                supervisor,
+                "_runtime_secrets",
+                return_value=("a", "b", "c"),
+            ), patch.object(
+                supervisor,
+                "_qwen_agent_environment",
+                return_value={"HOME": "/qwen", "OPENAI_BASE_URL": "http://127.0.0.1:43110/v1"},
+            ), patch.object(
+                supervisor, "_local_task", return_value=direct_result
+            ) as direct, patch.object(
+                supervisor, "_herdr_adapter_for_root"
+            ) as adapter_factory:
+                adapter = adapter_factory.return_value
+                adapter.open_workspace.return_value = HerdrWorkspace("workspace-1", "pane-1")
+                adapter.spawn_task.return_value = HerdrTask(
+                    request_id, f"herdr:{request_id}:pane-1", "workspace-1", "pane-1",
+                    "terminal-1", "idle", 1,
+                )
+                adapter.prompt_task.return_value = HerdrTask(
+                    request_id, f"herdr:{request_id}:pane-1", "workspace-1", "pane-1",
+                    "terminal-1", "running", 2,
+                )
+                response = supervisor.run(
+                    self.task_submit_args(root, catalog, request_id),
+                    input_data=self.task_submit_body(),
+                )
+
+            direct.assert_not_called()
+            adapter.open_workspace.assert_called_once()
+            adapter.spawn_task.assert_called_once()
+            adapter.prompt_task.assert_called_once()
+            self.assertEqual(adapter.spawn_task.call_args.kwargs["agent_kind"], "qwen")
+            self.assertEqual(
+                adapter.open_workspace.call_args.kwargs["env"]["OPENAI_BASE_URL"],
+                "http://127.0.0.1:43110/v1",
+            )
+            self.assertEqual(response["payload"]["result"]["runtime_authority"], "herdr")
 
     def test_task_submit_creates_offline_proposal_only_when_cloud_is_enabled(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -1060,7 +1139,7 @@ class SupervisorProtocolTests(unittest.TestCase):
             self.assertEqual(memory["environment"]["FORMA_AI_MEMORY_TOKEN"], "m" * 40)
             herdr = start.call_args.kwargs["herdr"]
             self.assertEqual(herdr["executable"], Path("/fixture/herdr"))
-            self.assertEqual(herdr["arguments"], ("--session", "forma-workbench", "server"))
+            self.assertEqual(herdr["arguments"], ("--session", "f", "server"))
             self.assertTrue(callable(start.call_args.kwargs["herdr_probe"]))
 
     def test_runtime_status_reports_herdr_alive(self):

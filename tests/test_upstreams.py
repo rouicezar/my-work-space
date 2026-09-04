@@ -14,7 +14,10 @@ class UpstreamManifestTests(unittest.TestCase):
 
     def test_manifest_is_versioned_and_complete(self):
         self.assertEqual(self.data["schema_version"], 1)
-        self.assertEqual(set(self.components), {"semantica", "holaos", "herdr", "omlx"})
+        self.assertEqual(
+            set(self.components),
+            {"semantica", "holaos", "herdr", "qwen-code", "omlx"},
+        )
 
     def test_repositories_are_canonical_https_urls(self):
         for component in self.components.values():
@@ -22,8 +25,17 @@ class UpstreamManifestTests(unittest.TestCase):
         self.assertEqual(self.components["herdr"]["repository"], "https://github.com/herdrdev/herdr")
 
     def test_stable_bundle_candidates_are_pinned(self):
-        for name in ("semantica", "herdr"):
+        for name in ("semantica", "herdr", "qwen-code"):
             self.assertRegex(self.components[name]["release"], r"^v\d+\.\d+\.\d+$")
+
+    def test_qwen_code_is_a_pinned_managed_external_candidate(self):
+        qwen = self.components["qwen-code"]
+        self.assertEqual(qwen["release"], "v0.23.0")
+        self.assertEqual(qwen["license"], "Apache-2.0")
+        self.assertEqual(
+            qwen["distribution_policy"],
+            "product_managed_external_runtime_candidate",
+        )
 
     def test_holaos_is_not_cleared_for_embedding(self):
         holaos = self.components["holaos"]

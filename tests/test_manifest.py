@@ -16,11 +16,11 @@ class ProductManifestTests(unittest.TestCase):
 
     def test_start_order_places_inference_before_memory_and_agents(self):
         ids = [item["id"] for item in ordered_components(self.manifest)]
-        self.assertEqual(ids, ["omlx", "semantica", "herdr", "holaos"])
+        self.assertEqual(ids, ["omlx", "semantica", "herdr", "qwen-code", "holaos"])
 
     def test_stop_order_is_reverse_start_order(self):
         ids = [item["id"] for item in ordered_components(self.manifest, reverse=True)]
-        self.assertEqual(ids, ["holaos", "herdr", "semantica", "omlx"])
+        self.assertEqual(ids, ["holaos", "qwen-code", "herdr", "semantica", "omlx"])
 
     def test_ports_do_not_collide(self):
         ports = [item["port"] for item in self.manifest["components"] if item["port"]]

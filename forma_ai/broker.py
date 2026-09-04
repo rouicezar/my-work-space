@@ -182,8 +182,14 @@ class OMLXUpstream:
     ) -> BrokerResponse:
         if (method, path) not in ALLOWED_ROUTES:
             raise ValueError("unsupported oMLX upstream route")
+        streaming = False
+        if body:
+            try:
+                streaming = json.loads(body).get("stream") is True
+            except (UnicodeDecodeError, json.JSONDecodeError, AttributeError):
+                pass
         headers = {
-            "Accept": "application/json",
+            "Accept": "text/event-stream" if streaming else "application/json",
             "Authorization": f"Bearer {self.api_key}",
             "X-Correlation-ID": correlation_id,
         }
@@ -274,14 +280,6 @@ class OMLXBroker:
                     status, outcome = 400, "invalid_json"
                     return self._json(status, {"error": {"code": "INVALID_JSON"}}, correlation_id, origin)
                 payload = json.loads(request.body)
-                if payload.get("stream") is True:
-                    status, outcome = 422, "streaming_not_supported"
-                    return self._json(
-                        status,
-                        {"error": {"code": "STREAMING_NOT_SUPPORTED"}},
-                        correlation_id,
-                        origin,
-                    )
                 if not self._inference_rate.allow():
                     status, outcome = 429, "rate_limited"
                     return self._json(
@@ -335,7 +333,9 @@ class OMLXBroker:
                 status, outcome = 502, "upstream_unavailable"
                 return self._json(status, {"error": {"code": "UPSTREAM_UNAVAILABLE"}}, correlation_id, origin)
             content_type = response.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
-            if content_type != "application/json":
+            expects_stream = method == "POST" and payload.get("stream") is True
+            allowed_content_types = {"text/event-stream"} if expects_stream else {"application/json"}
+            if content_type not in allowed_content_types:
                 status, outcome = 502, "upstream_invalid_content_type"
                 return self._json(
                     status,
@@ -355,7 +355,9 @@ class OMLXBroker:
             outcome = "forwarded"
             response_bytes = len(response.body)
             headers = {
-                "Content-Type": response.headers.get("Content-Type", "application/json"),
+                "Content-Type": response.headers.get(
+                    "Content-Type", "text/event-stream" if expects_stream else "application/json"
+                ),
                 "X-Correlation-ID": correlation_id,
                 "Cache-Control": "no-store",
                 "X-Content-Type-Options": "nosniff",

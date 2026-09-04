@@ -46,6 +46,48 @@ class HerdrAdapterAvailabilityTests(unittest.TestCase):
 
 
 class HerdrAdapterTaskTests(unittest.TestCase):
+    def test_prompt_targets_claimed_pane_and_preserves_identity(self):
+        calls = []
+
+        def request(method, params):
+            calls.append((method, params))
+            if method == "agent.start":
+                return {
+                    "type": "agent_started",
+                    "agent": self._agent_info(pane_id="pane-001", revision=1),
+                    "argv": ["qwen"],
+                }
+            if method == "agent.prompt":
+                agent = self._agent_info(pane_id="pane-001", revision=2)
+                agent["agent_status"] = "working"
+                return {
+                    "type": "agent_prompted",
+                    "agent": agent,
+                }
+            self.fail(f"unexpected method: {method}")
+
+        adapter = HerdrAdapter(request=request)
+        started = adapter.spawn_task(
+            task_id="task-001", correlation_id="corr-001",
+            agent_name="forma-task-001", agent_kind="qwen", pane_id="pane-001",
+        )
+        prompted = adapter.prompt_task(
+            run_id=started.run_id, text="reply exactly READY", timeout_ms=5000
+        )
+
+        self.assertEqual(prompted.run_id, started.run_id)
+        self.assertEqual(prompted.workspace_id, started.workspace_id)
+        self.assertEqual(prompted.terminal_id, started.terminal_id)
+        self.assertEqual(prompted.state, "running")
+        self.assertEqual(prompted.revision, 2)
+        self.assertEqual(calls[-1], (
+            "agent.prompt",
+            {
+                "target": "pane-001", "text": "reply exactly READY",
+                "wait": {"until": ["working", "blocked", "idle"], "timeout_ms": 5000},
+            },
+        ))
+
     def test_spawn_waits_for_detected_idle_agent_when_launch_is_pending(self):
         calls = []
 

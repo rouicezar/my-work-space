@@ -57,6 +57,18 @@
       "data_path": "${APP_SUPPORT}/data/herdr"
     },
     {
+      "id": "qwen-code",
+      "version": "v0.23.0",
+      "install_mode": "verified_official_artifact",
+      "runtime": "native_agent_binary",
+      "start_order": 35,
+      "port": null,
+      "health_contract": "pending-adapter-verification",
+      "update_owner": "product_compatibility_gate",
+      "allow_self_update": false,
+      "data_path": "${APP_SUPPORT}/data/qwen-code"
+    },
+    {
       "id": "holaos",
       "version": "latest",
       "install_mode": "external_user_install_pending_license_clearance",

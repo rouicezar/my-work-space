@@ -113,7 +113,7 @@ def herdr_process_spec(
     if not session_name or "/" in session_name or session_name in {".", ".."}:
         raise ProcessPolicyError("Herdr session name must be a plain non-empty identifier")
 
-    isolated_home = root / "state" / "homes" / "herdr"
+    isolated_home = root / "h"
     runtime_path = root / "state" / "runtime" / "herdr"
 
     return ProcessSpec(

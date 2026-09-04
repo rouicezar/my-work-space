@@ -51,6 +51,27 @@
       ]
     },
     {
+      "id": "qwen-code",
+      "repository": "https://github.com/QwenLM/qwen-code",
+      "release": "v0.23.0",
+      "license": "Apache-2.0",
+      "distribution_policy": "product_managed_external_runtime_candidate",
+      "reason": "The user approved Qwen Code as the candidate Herdr interactive Agent adapter; Forma must pin and verify the standalone archive, isolate its configuration, disable non-governed built-in tools, and retain separate upgrade, rollback, uninstall, notice, and compatibility gates.",
+      "artifacts": [
+        {
+          "id": "macos-aarch64",
+          "name": "qwen-code-darwin-arm64.tar.gz",
+          "platform": "macos",
+          "architecture": "aarch64",
+          "minimum_macos_major": 11,
+          "maximum_macos_major": 99,
+          "size_bytes": 78321474,
+          "sha256": "0e88da71c981deb88bcfc4ac5a67e5b76fa505c830cfcbe942506d1175b4fcfa",
+          "url": "https://github.com/QwenLM/qwen-code/releases/download/v0.23.0/qwen-code-darwin-arm64.tar.gz"
+        }
+      ]
+    },
+    {
       "id": "omlx",
       "repository": "https://github.com/jundot/omlx",
       "release": "v0.6.3",

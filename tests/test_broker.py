@@ -98,15 +98,31 @@ class BrokerTests(unittest.TestCase):
         self.assertEqual(self.request("POST", "/v1/chat/completions", {"Content-Type": "application/json"}, b"x" * 129).status, 413)
         self.assertEqual(self.request("POST", "/v1/chat/completions", {"Content-Type": "text/plain"}, b"{}").status, 400)
         self.assertEqual(self.request("POST", "/v1/chat/completions", {"Content-Type": "application/json"}, b"[]").status, 400)
-        streaming = self.request(
-            "POST",
-            "/v1/chat/completions",
-            {"Content-Type": "application/json"},
-            b'{"stream":true}',
+        class StreamingUpstream:
+            def __init__(self):
+                self.requests = []
+
+            def request(self, method, path, body, correlation_id, max_response_bytes):
+                self.requests.append((method, path, body, correlation_id, max_response_bytes))
+                return BrokerResponse(
+                    200, {"Content-Type": "text/event-stream"},
+                    b'data: {"choices":[]}\n\ndata: [DONE]\n\n',
+                )
+
+        streaming_upstream = StreamingUpstream()
+        broker = OMLXBroker(
+            BrokerPolicy(TOKEN, frozenset({ORIGIN}), max_body_bytes=128),
+            streaming_upstream, self.audit,
         )
-        self.assertEqual(streaming.status, 422)
-        self.assertEqual(self.audit.events[-1]["outcome"], "streaming_not_supported")
-        self.assertEqual(self.upstream.requests, [])
+        streaming = broker.handle(BrokerRequest(
+            "POST", "/v1/chat/completions",
+            {"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"},
+            b'{"stream":true}',
+        ))
+        self.assertEqual(streaming.status, 200)
+        self.assertEqual(streaming.headers["Content-Type"], "text/event-stream")
+        self.assertEqual(self.audit.events[-1]["outcome"], "forwarded")
+        self.assertEqual(len(streaming_upstream.requests), 1)
 
     def test_exact_allowed_origin_and_preflight(self):
         response = self.request(headers={"Origin": ORIGIN})

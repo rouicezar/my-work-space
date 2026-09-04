@@ -96,11 +96,21 @@ class HerdrToolBridge:
             )
         proposals = ToolProposalStore(product_root)
         proposal = None
+        retain_proposal = False
         try:
             proposal, payload, _preview = router.propose(request, now=moment)
             proposals.save(proposal, payload)
             if proposal.approval_required:
-                router.approvals.approve(proposal, now=moment)
+                retain_proposal = True
+                return ToolCallArtifact(
+                    1,
+                    correlation_id,
+                    capability_id,
+                    operation,
+                    f"TOOL_APPROVAL_REQUIRED:{proposal.proposal_id}",
+                    True,
+                    None,
+                )
             result = router.execute(
                 proposal,
                 payload,
@@ -118,7 +128,7 @@ class HerdrToolBridge:
                 None,
             )
         finally:
-            if proposal is not None:
+            if proposal is not None and not retain_proposal:
                 proposals.discard(proposal.proposal_id)
         artifact = ToolCallArtifact(
             1,

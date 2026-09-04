@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import platform
 import subprocess
 import sys
 import urllib.error
@@ -77,7 +78,7 @@ from forma_ai.cloud_preferences import CloudPreferenceStore
 from forma_ai.local_profiles import load_local_profile
 from forma_ai.system_resources import measure_available_memory
 from forma_ai.task_orchestrator import (
-    MAXIMUM_UNIFIED_TASK_BYTES, local_task_from_unified, parse_unified_task,
+    MAXIMUM_UNIFIED_TASK_BYTES, parse_unified_task,
     plan_unified_task,
 )
 from forma_ai.herdr_adapter import HerdrAdapter
@@ -88,6 +89,7 @@ from forma_ai.herdr_transport import (
     resolve_socket_path,
 )
 from forma_ai.herdr_tool_bridge import HerdrToolBridge
+from forma_ai.qwen_code_runtime import QwenCodeInstallLayout, prepare_qwen_agent_environment
 from forma_ai.tool_e2e_runner import ToolE2ERunner
 from forma_ai.tool_routing import (
     RegistryMCPCaller,
@@ -104,7 +106,7 @@ DEFAULT_UPSTREAMS = REPOSITORY_ROOT / "config/upstreams.json"
 DEFAULT_MODELS = REPOSITORY_ROOT / "config/models.json"
 DEFAULT_MODEL_ID = "qwen3-0.6b-4bit-alpha"
 DEFAULT_EMBEDDING_MODEL_ID = "multilingual-e5-small-mlx-alpha"
-HERDR_SESSION_NAME = "forma-workbench"
+HERDR_SESSION_NAME = "f"
 DEFAULT_CLOUD_PROVIDERS = REPOSITORY_ROOT / "config/cloud-providers.json"
 DEFAULT_LOCAL_PROFILES = REPOSITORY_ROOT / "config/local-model-profiles.json"
 DEFAULT_HARDWARE_PROFILES = REPOSITORY_ROOT / "config/hardware-profiles.yaml"
@@ -250,6 +252,7 @@ def parser() -> argparse.ArgumentParser:
         "--local-profile-id", default="qwen3-0.6b-4bit-apple-silicon-alpha",
     )
     task_submit.add_argument("--cloud-catalog", type=Path, default=DEFAULT_CLOUD_PROVIDERS)
+    task_submit.add_argument("--upstreams", type=Path, default=DEFAULT_UPSTREAMS)
     herdr_snapshot = commands.add_parser("herdr-snapshot")
     herdr_snapshot.add_argument("--root", type=Path, required=True)
     for name in ("mcp-list-tools", "mcp-call-tool"):
@@ -324,9 +327,95 @@ def _herdr_adapter_for_root(product_root: Path) -> HerdrAdapter | None:
     status = RuntimeManager(product_root).status()
     if not status.get("herdr_alive"):
         return None
-    socket_path = resolve_socket_path(environ={"HERDR_SESSION": HERDR_SESSION_NAME})
-    transport = HerdrSocketTransport(socket_path=socket_path, environ={})
+    socket_path = _herdr_socket_path(product_root)
+    transport = HerdrSocketTransport(
+        socket_path=socket_path, environ={}, request_timeout=45.0
+    )
     return HerdrAdapter(request=transport, probe=transport.probe)
+
+
+def _herdr_socket_path(product_root: Path) -> str:
+    return resolve_socket_path(
+        environ={"HERDR_SESSION": HERDR_SESSION_NAME},
+        home=str(product_root / "h"),
+    )
+
+
+def _qwen_agent_environment(
+    *, root: Path, upstreams: Path, broker_port: int, broker_token: str,
+) -> dict[str, str]:
+    release = platform.mac_ver()[0]
+    if not release:
+        raise LocalTaskError("QWEN_PLATFORM_UNAVAILABLE", "macOS version unavailable")
+    architecture = platform.machine()
+    if architecture == "arm64":
+        architecture = "aarch64"
+    try:
+        expected = select_artifact(
+            load_component(upstreams, "qwen-code"),
+            platform="macos",
+            os_major=int(release.split(".", 1)[0]),
+            architecture=architecture,
+        )
+        return prepare_qwen_agent_environment(
+            QwenCodeInstallLayout(root),
+            expected=expected,
+            broker_token=broker_token,
+            broker_port=broker_port,
+            model_id="Qwen3-0.6B-4bit",
+        )
+    except Exception as exc:
+        raise LocalTaskError("QWEN_CODE_UNAVAILABLE", str(exc)) from exc
+
+
+def _dispatch_local_agent_task(
+    *, root: Path, request_id: str, task: object, model_id: str,
+    qwen_environment: dict[str, str],
+) -> dict[str, object]:
+    adapter = _herdr_adapter_for_root(root)
+    if adapter is None:
+        raise LocalTaskError("HERDR_NOT_RUNNING", "Herdr is required for local tasks")
+    workspace_dir = root / "data" / "tasks" / request_id
+    try:
+        workspace_dir.mkdir(parents=True, mode=0o700, exist_ok=True)
+        if any(workspace_dir.iterdir()):
+            raise LocalTaskError(
+                "LOCAL_TASK_ALREADY_EXISTS",
+                f"task workspace is not empty: {request_id}",
+            )
+        workspace = adapter.open_workspace(
+            cwd=str(workspace_dir), label=f"forma-{request_id[:8]}", env=qwen_environment
+        )
+        started = adapter.spawn_task(
+            task_id=request_id,
+            correlation_id=request_id,
+            agent_name=f"forma-{request_id[:8]}",
+            agent_kind="qwen",
+            pane_id=workspace.root_pane_id,
+        )
+        prompted = adapter.prompt_task(
+            run_id=started.run_id, text=task.prompt, timeout_ms=30_000
+        )
+    except LocalTaskError:
+        raise
+    except Exception as exc:
+        raise LocalTaskError("LOCAL_AGENT_VALIDATION_FAILED", str(exc)) from exc
+    return {
+        "schema_version": 1,
+        "route": "local",
+        "correlation_id": request_id,
+        "model": model_id,
+        "runtime_authority": "herdr",
+        "task_id": prompted.task_id,
+        "run_id": prompted.run_id,
+        "workspace_id": prompted.workspace_id,
+        "pane_id": prompted.pane_id,
+        "terminal_id": prompted.terminal_id,
+        "state": prompted.state,
+        "revision": prompted.revision,
+        "output": None,
+        "finish_reason": "accepted",
+    }
 
 
 def _recovery_error_envelope(*, command: str, request_id: str, exc: TaskHistoryRecoveryError) -> dict[str, object]:
@@ -584,7 +673,7 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
                     "agents": [],
                 },
             )
-        socket_path = resolve_socket_path(environ={"HERDR_SESSION": HERDR_SESSION_NAME})
+        socket_path = _herdr_socket_path(args.root)
         transport = HerdrSocketTransport(socket_path=socket_path, environ={})
         snapshot = HerdrAdapter(request=transport, probe=transport.probe).snapshot()
         return envelope(
@@ -667,7 +756,7 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
         status = RuntimeManager(args.root).status()
         snapshot_source = None
         if status.get("herdr_alive"):
-            socket_path = resolve_socket_path(environ={"HERDR_SESSION": HERDR_SESSION_NAME})
+            socket_path = _herdr_socket_path(args.root)
             transport = HerdrSocketTransport(socket_path=socket_path, environ={})
             snapshot_source = HerdrAdapter(request=transport, probe=transport.probe)
         payload = build_history_snapshot(
@@ -759,11 +848,19 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
             "cloud_unavailable_code": None,
         }
         if plan.route == "local":
-            _, broker_token, _ = _runtime_secrets()
             try:
-                result = _local_task(
-                    args.broker_port, broker_token, request_id,
-                    local_task_from_unified(task), profile.runtime_model_ids,
+                _, broker_token, _ = _runtime_secrets()
+                result = _dispatch_local_agent_task(
+                    root=args.root,
+                    request_id=request_id,
+                    task=task,
+                    model_id=next(iter(sorted(profile.runtime_model_ids))),
+                    qwen_environment=_qwen_agent_environment(
+                        root=args.root,
+                        upstreams=args.upstreams,
+                        broker_port=args.broker_port,
+                        broker_token=broker_token,
+                    ),
                 )
             except LocalTaskError:
                 plan = replace(
@@ -781,7 +878,7 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
             else:
                 return envelope(
                     command=args.command, request_id=request_id, status="ok",
-                    payload={**common, "result": asdict(result), "proposal": None},
+                    payload={**common, "result": result, "proposal": None},
                 )
         if plan.route == "cloud_proposal_required":
             try:
@@ -1217,7 +1314,7 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
                 "working_directory": args.root / "state/runtime/memory",
                 "log_path": args.root / "logs/memory/server.log",
             },
-            herdr_probe=_herdr_probe(HERDR_SESSION_NAME),
+            herdr_probe=_herdr_probe(args.root, HERDR_SESSION_NAME),
             omlx_probe=lambda: _http_ready(args.omlx_port, omlx_key),
             broker_probe=lambda: _http_ready(args.broker_port, broker_token),
             memory_probe=lambda: _http_ready(args.memory_port, memory_token, "/live"),
@@ -1534,9 +1631,9 @@ def _http_ready(port: int, token: str, path: str = "/health") -> bool:
         return False
 
 
-def _herdr_probe(session_name: str) -> Callable[[], bool]:
+def _herdr_probe(root: Path, session_name: str) -> Callable[[], bool]:
     def probe() -> bool:
-        socket_path = resolve_socket_path(environ={"HERDR_SESSION": session_name})
+        socket_path = _herdr_socket_path(root)
         try:
             HerdrSocketTransport(socket_path=socket_path, environ={}).probe()
             return True

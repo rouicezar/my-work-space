@@ -51,6 +51,18 @@ class ArtifactTests(unittest.TestCase):
             "ab50262c8190cd7aa9056d249d255c08c328c3e8716de9cfa29db4f131b8e2c1",
         )
 
+    def test_selects_pinned_qwen_code_aarch64_artifact(self):
+        component = load_component(ROOT / "config/upstreams.json", "qwen-code")
+        selected = select_artifact(
+            component, platform="macos", os_major=26, architecture="aarch64"
+        )
+        self.assertEqual(selected.release, "v0.23.0")
+        self.assertEqual(selected.size_bytes, 78321474)
+        self.assertEqual(
+            selected.sha256,
+            "0e88da71c981deb88bcfc4ac5a67e5b76fa505c830cfcbe942506d1175b4fcfa",
+        )
+
     def test_herdr_selection_requires_an_architecture_discriminator(self):
         component = load_component(ROOT / "config/upstreams.json", "herdr")
         with self.assertRaisesRegex(ArtifactError, "got 0"):

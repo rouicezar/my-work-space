@@ -62,7 +62,8 @@ class HerdrProcessSpecTests(unittest.TestCase):
         )
         self.assertEqual(spec.arguments, ("--session", "forma-workbench", "server"))
         self.assertEqual(spec.environment["HERDR_SESSION"], "forma-workbench")
-        self.assertEqual(spec.environment["HOME"], str(self.root / "state" / "homes" / "herdr"))
+        self.assertEqual(spec.environment["HOME"], str(self.root / "h"))
+        self.assertNotIn("HERDR_SOCKET_PATH", spec.environment)
         self.assertEqual(spec.working_directory, self.root / "state" / "runtime" / "herdr")
         self.assertEqual(spec.secret_environment_names, ())
 

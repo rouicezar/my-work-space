@@ -379,6 +379,42 @@ class HerdrAdapter:
         self._tasks_by_run_id[task.run_id] = task
         return task
 
+    def prompt_task(
+        self,
+        *,
+        run_id: str,
+        text: str,
+        timeout_ms: int | None = None,
+    ) -> HerdrTask:
+        if not text.strip() or "\x00" in text:
+            raise ValueError("Herdr task prompt is invalid")
+        task = self._claimed_task(run_id)
+        params: dict[str, object] = {"target": task.pane_id, "text": text}
+        if timeout_ms is not None:
+            if timeout_ms <= 0:
+                raise ValueError("Herdr task prompt timeout must be positive")
+            params["wait"] = {
+                "until": ["working", "blocked", "idle"],
+                "timeout_ms": timeout_ms,
+            }
+        response = self._send("agent.prompt", params)
+        if response.get("type") != "agent_prompted":
+            raise ValueError("unexpected Herdr agent.prompt response")
+        prompted = self._task_from_agent(
+            task_id=task.task_id,
+            run_id=run_id,
+            agent=response.get("agent"),
+        )
+        if (
+            prompted.workspace_id != task.workspace_id
+            or prompted.pane_id != task.pane_id
+            or prompted.terminal_id != task.terminal_id
+            or prompted.revision < task.revision
+        ):
+            raise ValueError("Herdr task identity changed while prompting")
+        self._tasks_by_run_id[run_id] = prompted
+        return prompted
+
     def start_fresh_task(
         self,
         *,

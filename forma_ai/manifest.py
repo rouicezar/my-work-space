@@ -27,7 +27,7 @@ def validate_manifest(data: dict[str, Any]) -> None:
     ids = [item.get("id") for item in components]
     if len(ids) != len(set(ids)) or any(not item for item in ids):
         raise ManifestError("component ids must be unique and non-empty")
-    expected = {"semantica", "holaos", "herdr", "omlx"}
+    expected = {"semantica", "holaos", "herdr", "qwen-code", "omlx"}
     if set(ids) != expected:
         raise ManifestError(f"component set must be {sorted(expected)}")
 
