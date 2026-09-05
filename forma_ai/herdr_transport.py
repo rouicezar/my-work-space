@@ -65,8 +65,12 @@ def resolve_socket_path(
 
 def _connect_unix_socket(path: str, timeout: float) -> socket.socket:
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    sock.settimeout(timeout)
-    sock.connect(path)
+    try:
+        sock.settimeout(timeout)
+        sock.connect(path)
+    except BaseException:
+        sock.close()
+        raise
     return sock
 
 

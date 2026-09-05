@@ -461,6 +461,13 @@ struct DailyWorkbenchShell: View {
                             Text(copy.runtimeCheckingRoute)
                                 .foregroundStyle(.secondary)
                         }
+                    case .accepted(let model, let correlation):
+                        taskBubble(currentTaskPrompt)
+                        resultCard(title: copy.taskAccepted, icon: "clock", color: .blue) {
+                            Text(copy.taskAcceptedHistoryHint)
+                            metadata(copy.localModelRoute(model), correlation: correlation, copy: copy)
+                            Button(copy[.history]) { destination = .history }
+                        }
                     case .localResult(let text, let model, let correlation):
                         taskBubble(currentTaskPrompt)
                         resultCard(title: copy.taskCompletedLocal, icon: "checkmark.circle.fill", color: .green) {
@@ -765,7 +772,13 @@ struct DailyWorkbenchShell: View {
                     guard let result = payload.result else {
                         return .failed("The local route returned no validated result.")
                     }
-                    return .localResult(result.output, result.model, result.correlationID)
+                    if result.finishReason == "accepted" {
+                        return .accepted(result.model, result.correlationID)
+                    }
+                    guard let output = result.output else {
+                        return .failed("Local response contained neither acceptance nor output.")
+                    }
+                    return .localResult(output, result.model, result.correlationID)
                 case "cloud_proposal_required":
                     guard let proposal = payload.proposal else {
                         return .failed("The cloud route returned no approval proposal.")

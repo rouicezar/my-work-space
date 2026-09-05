@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from datetime import datetime, timezone
 from typing import Any, Callable, Protocol
 
 from forma_ai.herdr_adapter import HerdrAdapter, HerdrSessionAgent, HerdrSessionSnapshot
@@ -78,7 +79,9 @@ def find_linked_agent(
     if not metadata.herdr_pane_id:
         return None
     for agent in agents:
-        if agent.pane_id == metadata.herdr_pane_id:
+        if (agent.pane_id == metadata.herdr_pane_id
+            and (metadata.herdr_terminal_id is None or agent.terminal_id == metadata.herdr_terminal_id)
+            and (metadata.herdr_workspace_id is None or agent.workspace_id == metadata.herdr_workspace_id)):
             return agent
     return None
 
@@ -158,6 +161,14 @@ def build_reconcile_payload(
         metadata = store.load_optional(current_id)
         if metadata is None:
             continue
+        agent = find_linked_agent(metadata, reconcile.agents)
+        if (reconcile.freshness == 'fresh' and agent is not None
+            and metadata.last_accepted_revision is not None
+            and agent.revision > metadata.last_accepted_revision):
+            metadata = store.save(replace(
+                metadata, last_accepted_revision=agent.revision,
+                updated_at=datetime.now(timezone.utc).isoformat(),
+            ))
         view = reconcile_task_view(metadata, reconcile)
         tasks.append({
             **projected_view_to_dict(view),

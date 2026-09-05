@@ -136,6 +136,7 @@ extension LifecycleContract.SettingsSection {
 enum WorkbenchTaskState: Sendable {
     case idle
     case submitting(String)
+    case accepted(String, String)
     case localResult(String, String, String)
     case cloudProposal(CloudProposalPayload)
     case cloudExecuting

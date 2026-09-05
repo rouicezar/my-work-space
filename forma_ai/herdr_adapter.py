@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from shutil import which
+import time
 from typing import Callable
 
 from .adapter_contract import AdapterIdentity, HealthEnvelope
@@ -299,15 +300,21 @@ class HerdrAdapter:
         pane_id: str,
         startup_timeout_ms: int = 30_000,
     ) -> HerdrTask:
-        response = self._send(
-            "agent.start",
-            {
-                "name": agent_name,
-                "kind": agent_kind,
-                "pane_id": pane_id,
-                "timeout_ms": startup_timeout_ms,
-            },
-        )
+        deadline = time.monotonic() + min(startup_timeout_ms / 1000, 3.0)
+        while True:
+            try:
+                response = self._send(
+                    "agent.start",
+                    {"name": agent_name, "kind": agent_kind, "pane_id": pane_id,
+                     "timeout_ms": startup_timeout_ms},
+                )
+                break
+            except HerdrRequestError as exc:
+                # workspace.open can return before its shell is available. Only an
+                # explicit pre-launch rejection is retryable; never replay timeouts.
+                if exc.code != "agent_pane_busy" or time.monotonic() >= deadline:
+                    raise
+                time.sleep(0.05)
         if response["type"] != "agent_started":
             raise ValueError("unexpected Herdr agent.start response")
         agent = response.get("agent")

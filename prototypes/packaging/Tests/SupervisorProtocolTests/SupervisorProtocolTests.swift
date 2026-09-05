@@ -3,6 +3,13 @@ import Testing
 import RuntimeSecurity
 @testable import SupervisorProtocol
 
+@Test func acceptedHerdrSubmissionIsNotACompletedTextResult() throws {
+    let data = Data(#"{"schema_version":1,"route":"local","correlation_id":"task-1","model":"Qwen3-4B-4bit","task_id":"task-1","run_id":"run-1","state":"running","revision":2,"output":null,"finish_reason":"accepted"}"#.utf8)
+    let result = try JSONDecoder().decode(LocalTaskPayload.self, from: data)
+    #expect(result.finishReason == "accepted")
+    #expect(result.output == nil)
+}
+
 @Test func decodesAndCorrelatesRealProcessEnvelope() throws {
     let temporary = FileManager.default.temporaryDirectory
         .appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -523,11 +530,12 @@ func realKeychainRuntimeSampleAuditAndStop() throws {
         memoryToken: secrets.memoryToken
     )
     #expect(local.route == "local")
-    #expect(!local.output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+    let localOutput = try #require(local.output)
+    #expect(!localOutput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
     let updatedAuditText = try String(contentsOf: audit, encoding: .utf8)
     #expect(updatedAuditText.contains(local.correlationID))
     #expect(!updatedAuditText.contains(privatePrompt))
-    #expect(!updatedAuditText.contains(local.output))
+    #expect(!updatedAuditText.contains(localOutput))
 
     let stopped = try client.stopRuntime(rootURL: root)
     #expect(stopped.runtime.phase == "stopped")
@@ -551,4 +559,3 @@ func realKeychainRuntimeSampleAuditAndStop() throws {
     #expect(payload.pendingCandidates.count == 1)
     #expect(payload.confirmedRecords.first?.semanticaID == "sem-1")
 }
-

@@ -1,6 +1,7 @@
 import SwiftUI
 import LifecycleContract
 import SupervisorProtocol
+import RuntimeSecurity
 
 enum HistoryRecoveryViewState: Sendable {
     case loading
@@ -17,7 +18,8 @@ struct HistoryRecoveryPanel: View {
 
     @State private var state: HistoryRecoveryViewState = .loading
     @State private var selectedTaskID: String?
-    @State private var freshPaneID: String = ""
+    @State private var pendingFreshTaskID: String?
+    @State private var confirmFreshRun = false
 
     private let binding = HistoryRecoveryServiceBinding.productDefault
 
@@ -59,6 +61,14 @@ struct HistoryRecoveryPanel: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .task { await refresh() }
+        .confirmationDialog(
+            copy.freshRunConfirmation,
+            isPresented: $confirmFreshRun, titleVisibility: .visible
+        ) {
+            Button(copy.startFreshRun) {
+                if let taskID = pendingFreshTaskID { Task { await freshRun(taskID: taskID) } }
+            }
+        }
     }
 
     @ViewBuilder
@@ -138,16 +148,12 @@ struct HistoryRecoveryPanel: View {
                 .disabled(task.reconciliationRequired || snapshot.freshness != "fresh" || !isCancellable(task))
             }
             HStack(spacing: 8) {
-                TextField(copy.freshRunPanePlaceholder, text: $freshPaneID)
-                    .textFieldStyle(.roundedBorder)
                 Button(copy.startFreshRun) {
-                    Task { await freshRun(taskID: task.taskID) }
+                    pendingFreshTaskID = task.taskID
+                    confirmFreshRun = true
                 }
                 .disabled(
-                    freshPaneID.isEmpty
-                        || freshPaneID == task.herdrPaneID
-                        || task.reconciliationRequired
-                        || snapshot.freshness != "fresh"
+                    !["succeeded", "failed", "cancelled", "blocked", "unknown"].contains(task.runtimeState)
                 )
             }
             Text(copy.recoveryRevisionHint)
@@ -170,8 +176,11 @@ struct HistoryRecoveryPanel: View {
     private func refresh() async {
         state = .loading
         do {
-            let snapshot = try SupervisorClient(executableURL: supervisorURL)
-                .taskMetadataReconcile(rootURL: rootURL)
+            let supervisor = supervisorURL
+            let root = rootURL
+            let snapshot = try await Task.detached {
+                try SupervisorClient(executableURL: supervisor).taskMetadataReconcile(rootURL: root)
+            }.value
             state = .ready(snapshot)
         } catch {
             state = .unavailable(String(describing: error))
@@ -182,8 +191,11 @@ struct HistoryRecoveryPanel: View {
     private func reclaim(taskID: String) async {
         state = .acting
         do {
-            _ = try SupervisorClient(executableURL: supervisorURL)
-                .taskHistoryReclaim(rootURL: rootURL, taskID: taskID)
+            let supervisor = supervisorURL
+            let root = rootURL
+            _ = try await Task.detached {
+                try SupervisorClient(executableURL: supervisor).taskHistoryReclaim(rootURL: root, taskID: taskID)
+            }.value
             await refresh()
         } catch {
             state = .failed(String(describing: error))
@@ -198,8 +210,12 @@ struct HistoryRecoveryPanel: View {
         }
         state = .acting
         do {
-            _ = try SupervisorClient(executableURL: supervisorURL)
-                .taskHistoryCancel(rootURL: rootURL, taskID: task.taskID, expectedRevision: revision)
+            let supervisor = supervisorURL
+            let root = rootURL
+            _ = try await Task.detached {
+                try SupervisorClient(executableURL: supervisor)
+                    .taskHistoryCancel(rootURL: root, taskID: task.taskID, expectedRevision: revision)
+            }.value
             await refresh()
         } catch {
             state = .failed(String(describing: error))
@@ -210,8 +226,15 @@ struct HistoryRecoveryPanel: View {
     private func freshRun(taskID: String) async {
         state = .acting
         do {
-            _ = try SupervisorClient(executableURL: supervisorURL)
-                .taskHistoryFreshRun(rootURL: rootURL, taskID: taskID, freshPaneID: freshPaneID)
+            let supervisor = supervisorURL
+            let root = rootURL
+            _ = try await Task.detached {
+                let secrets = try RuntimeSecretCoordinator().ensure()
+                return try SupervisorClient(executableURL: supervisor)
+                    .taskHistoryFreshRun(rootURL: root, taskID: taskID,
+                        omlxAPIKey: secrets.omlxAPIKey, brokerToken: secrets.brokerToken,
+                        memoryToken: secrets.memoryToken)
+            }.value
             await refresh()
         } catch {
             state = .failed(String(describing: error))

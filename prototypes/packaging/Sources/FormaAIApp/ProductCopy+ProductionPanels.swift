@@ -1,6 +1,7 @@
 import LifecycleContract
 
 extension ProductCopy {
+    var freshRunConfirmation: String { language == .simplifiedChinese ? "重新执行会创建新任务，并可能重复原有操作。继续吗？" : "A fresh run creates a new task and may repeat previous actions. Continue?" }
     var historyLoading: String { language == .simplifiedChinese ? "正在加载已对账任务历史…" : "Loading reconciled task history…" }
     var historyUnavailable: String { language == .simplifiedChinese ? "任务历史不可用" : "Task history unavailable" }
     var historyStartRuntimeHint: String {

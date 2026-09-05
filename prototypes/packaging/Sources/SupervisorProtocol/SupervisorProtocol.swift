@@ -547,12 +547,12 @@ public struct LocalTaskPayload: Decodable, Sendable {
     public let route: String
     public let correlationID: String
     public let model: String
-    public let output: String
+    public let output: String?
     public let finishReason: String
     public let promptTokens: Int?
     public let completionTokens: Int?
     public let totalTokens: Int?
-    public let auditPath: String
+    public let auditPath: String?
 
     enum CodingKeys: String, CodingKey {
         case schemaVersion = "schema_version"
@@ -1294,7 +1294,9 @@ public struct SupervisorClient: Sendable {
     public func taskHistoryFreshRun(
         rootURL: URL,
         taskID: String,
-        freshPaneID: String,
+        omlxAPIKey: String,
+        brokerToken: String,
+        memoryToken: String,
         requestID: UUID = UUID()
     ) throws -> TaskHistoryRecoveryPayload {
         try request(
@@ -1302,9 +1304,13 @@ public struct SupervisorClient: Sendable {
             arguments: [
                 "--root", rootURL.path,
                 "--task-id", taskID,
-                "--fresh-pane-id", freshPaneID,
             ],
-            requestID: requestID
+            requestID: requestID,
+            environmentOverrides: [
+                "OMLX_API_KEY": omlxAPIKey,
+                "FORMA_AI_BROKER_TOKEN": brokerToken,
+                "FORMA_AI_MEMORY_TOKEN": memoryToken,
+            ]
         )
     }
 

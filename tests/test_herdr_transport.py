@@ -4,6 +4,18 @@ import subprocess
 import time
 import unittest
 import uuid
+from unittest.mock import Mock, patch
+from forma_ai.herdr_transport import _connect_unix_socket
+
+
+class FailedConnectionCleanupTests(unittest.TestCase):
+    def test_failed_reconnect_closes_allocated_socket(self):
+        sock = Mock()
+        sock.connect.side_effect = FileNotFoundError('runtime stopped')
+        with patch('forma_ai.herdr_transport.socket.socket', return_value=sock):
+            with self.assertRaises(FileNotFoundError):
+                _connect_unix_socket('/fixture/missing.sock', 1)
+        sock.close.assert_called_once()
 
 from forma_ai.herdr_transport import (
     SUPPORTED_PROTOCOL,

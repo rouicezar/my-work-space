@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import platform
+import stat
 import subprocess
 import sys
 import urllib.error
@@ -57,6 +58,8 @@ from forma_ai.task_history_recovery import (
 )
 from forma_ai.task_metadata_reconcile import build_reconcile_payload
 from forma_ai.task_metadata_store import TaskMetadataStore, TaskMetadataStoreError
+from forma_ai.task_metadata_projection import TaskMetadataRecord
+from forma_ai.models import _atomic_json
 from forma_ai.memory_service import (
     GovernedMemoryService,
     MemoryServicePolicy,
@@ -211,7 +214,7 @@ def parser() -> argparse.ArgumentParser:
         if name == "task-history-cancel":
             command.add_argument("--expected-revision", type=int, required=True)
         if name == "task-history-fresh-run":
-            command.add_argument("--fresh-pane-id", required=True)
+            command.add_argument("--fresh-pane-id", default=None)
     cloud_preview = commands.add_parser("cloud-preview")
     cloud_preview.add_argument("--root", type=Path, required=True)
     cloud_preview.add_argument("--catalog", type=Path, default=DEFAULT_CLOUD_PROVIDERS)
@@ -385,12 +388,27 @@ def _dispatch_local_agent_task(
         raise LocalTaskError("HERDR_NOT_RUNNING", "Herdr is required for local tasks")
     workspace_dir = root / "data" / "tasks" / request_id
     try:
-        workspace_dir.mkdir(parents=True, mode=0o700, exist_ok=True)
-        if any(workspace_dir.iterdir()):
+        store = TaskMetadataStore(root)
+        if store.load_optional(request_id) is not None or workspace_dir.exists():
             raise LocalTaskError(
                 "LOCAL_TASK_ALREADY_EXISTS",
-                f"task workspace is not empty: {request_id}",
+                f"task already exists: {request_id}",
             )
+        workspace_dir.mkdir(parents=True, mode=0o700, exist_ok=False)
+        now = datetime.now(timezone.utc).isoformat()
+        metadata = store.save(TaskMetadataRecord(
+            task_id=request_id, correlation_id=request_id,
+            intent_label=' '.join(task.prompt.split())[:160],
+            recorded_at=now, updated_at=now,
+        ))
+        request_dir = root / 'state/task-intents'
+        request_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+        _atomic_json(request_dir / f'{request_id}.json', {
+            'schema_version': 1, 'prompt': task.prompt,
+            'maximum_output_tokens': task.maximum_output_tokens,
+            'required_capabilities': sorted(task.required_capabilities),
+            'data_classes': sorted(task.data_classes),
+        })
         task_environment = dict(qwen_environment)
         task_environment["FORMA_TASK_CORRELATION_ID"] = request_id
         task_environment["FORMA_TASK_WORKSPACE"] = str(workspace_dir)
@@ -404,9 +422,19 @@ def _dispatch_local_agent_task(
             agent_kind="qwen",
             pane_id=workspace.root_pane_id,
         )
+        metadata = store.save(replace(
+            metadata, run_id=started.run_id,
+            herdr_pane_id=started.pane_id,
+            herdr_workspace_id=started.workspace_id,
+            herdr_terminal_id=started.terminal_id,
+            last_accepted_revision=started.revision,
+            updated_at=datetime.now(timezone.utc).isoformat(),
+        ))
         prompted = adapter.prompt_task(
             run_id=started.run_id, text=task.prompt, timeout_ms=30_000
         )
+        store.save(replace(metadata, last_accepted_revision=prompted.revision,
+                           updated_at=datetime.now(timezone.utc).isoformat()))
     except LocalTaskError:
         raise
     except Exception as exc:
@@ -704,6 +732,33 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
 
     if args.command in {"task-history-reclaim", "task-history-cancel", "task-history-fresh-run"}:
         _validate_product_root(args.root)
+        if args.command == 'task-history-fresh-run' and args.fresh_pane_id is None:
+            try:
+                original = TaskMetadataStore(args.root).load(args.task_id)
+                request_path = args.root / 'state/task-intents' / f'{args.task_id}.json'
+                if (not request_path.is_file() or request_path.is_symlink()
+                    or request_path.resolve() != args.root.resolve() / 'state/task-intents' / f'{args.task_id}.json'
+                    or stat.S_IMODE(request_path.stat().st_mode) & 0o077
+                    or request_path.stat().st_size > MAXIMUM_UNIFIED_TASK_BYTES):
+                    raise TaskHistoryRecoveryError('RECOVERY_INTENT_UNAVAILABLE', 'saved request is missing or unsafe')
+                submit_args = parser().parse_args([
+                    '--request-id', request_id, 'task-submit', '--root', str(args.root),
+                ])
+                response = run(submit_args, input_data=request_path.read_bytes())
+                result = (response.get('payload') or {}).get('result')
+                if result is None:
+                    raise TaskHistoryRecoveryError('RECOVERY_FRESH_RUN_UNAVAILABLE', 'local task was not accepted')
+                JsonlAuditSink(args.root / TASK_HISTORY_RECOVERY_AUDIT_PATH).record({
+                    'schema_version': 1, 'event': 'task_history_recovery', 'action': 'fresh_run',
+                    'correlation_id': request_id, 'previous_task_id': original.task_id,
+                    'previous_run_id': original.run_id, 'task_id': result['task_id'],
+                    'run_id': result['run_id'], 'outcome': 'accepted',
+                })
+                return envelope(command=args.command, request_id=request_id, status='ok',
+                                payload={**result, 'action': 'fresh_run', 'previous_task_id': original.task_id})
+            except (TaskHistoryRecoveryError, TaskMetadataStoreError, OSError, ValueError) as exc:
+                return _recovery_error_envelope(command=args.command, request_id=request_id,
+                    exc=TaskHistoryRecoveryError(getattr(exc, 'code', 'RECOVERY_INTENT_UNAVAILABLE'), str(exc)))
         status = RuntimeManager(args.root).status()
         snapshot_source = _herdr_adapter_for_root(args.root)
         if snapshot_source is None:
@@ -875,7 +930,10 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
                         model_id=next(iter(sorted(profile.runtime_model_ids))),
                     ),
                 )
-            except LocalTaskError:
+            except LocalTaskError as exc:
+                if (args.root / 'state/task-metadata' / f'{request_id}.json').exists():
+                    return envelope(command=args.command, request_id=request_id, status='error',
+                        error={'code': exc.code, 'message': 'Task retained in History; reconcile before retrying.'})
                 plan = replace(
                     plan,
                     route="cloud_proposal_required" if cloud.valid and cloud.enabled

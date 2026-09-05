@@ -1,6 +1,8 @@
 import LifecycleContract
 
 extension ProductCopy {
+    var taskAccepted: String { language == .simplifiedChinese ? "任务已接受" : "Task accepted" }
+    var taskAcceptedHistoryHint: String { language == .simplifiedChinese ? "尚未确认完成。请在历史中查看 Herdr 最新状态。" : "Completion is not yet confirmed. Check History for the latest Herdr state." }
 
     var runtimeCheckingRoute: String {
         language == .simplifiedChinese ? "正在检查最安全的可用路线…" : "Checking the safest available route…"
