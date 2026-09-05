@@ -17,6 +17,7 @@ HUGGINGFACE_DOWNLOAD_HOSTS = frozenset({
     "cdn-lfs.huggingface.co",
     "cdn-lfs.hf.co",
     "cas-bridge.xethub.hf.co",
+    "us.aws.cdn.hf.co",
 })
 
 

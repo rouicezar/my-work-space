@@ -93,6 +93,14 @@ class QwenCodeRuntimeTests(unittest.TestCase):
         self.assertEqual(environment["OPENAI_BASE_URL"], "http://127.0.0.1:43110/v1")
         self.assertEqual(environment["OPENAI_MODEL"], "Qwen3-0.6B-4bit")
         self.assertEqual(environment["QWEN_TELEMETRY_ENABLED"], "false")
+        self.assertEqual(environment["PATH"].split(":", 1)[0], str(layout.herdr_launcher.parent))
+        self.assertEqual(
+            environment["FORMA_QWEN_REAL_EXECUTABLE"],
+            str(layout.executable("v0.23.0")),
+        )
+        self.assertTrue(os.access(layout.herdr_launcher, os.X_OK))
+        self.assertNotIn(" exec ", layout.herdr_launcher.read_text(encoding="utf-8"))
+        self.assertIn("< /dev/tty &", layout.herdr_launcher.read_text(encoding="utf-8"))
         self.assertNotIn("HTTPS_PROXY", environment)
         settings = json.loads(layout.settings.read_text(encoding="utf-8"))
         self.assertTrue(settings["ui"]["showStatusInTitle"])
@@ -104,6 +112,24 @@ class QwenCodeRuntimeTests(unittest.TestCase):
         self.assertTrue({"Bash", "Read", "Edit", "WebFetch", "task", "skill"} <= denied)
         self.assertEqual(settings["mcpServers"], {})
         self.assertEqual(layout.settings.stat().st_mode & 0o777, 0o600)
+
+    def test_only_product_governed_mcp_server_is_exposed(self):
+        archive = self.archive()
+        layout = QwenCodeInstallLayout(self.root)
+        QwenCodeInstaller(layout, self.expected(archive)).install_archive(archive)
+        server = self.base / "governed.py"
+        server.write_text("# fixture\n", encoding="utf-8")
+        prepare_qwen_agent_environment(
+            layout, expected=self.expected(archive), broker_token="broker-token",
+            broker_port=43110, model_id="Qwen3-4B-4bit",
+            mcp_server_path=server, repository_root=self.base,
+        )
+        settings = json.loads(layout.settings.read_text(encoding="utf-8"))
+        self.assertEqual(set(settings["mcpServers"]), {"forma-governed-tools"})
+        configured = settings["mcpServers"]["forma-governed-tools"]
+        self.assertEqual(configured["includeTools"], ["forma_governed_tool"])
+        self.assertIs(configured["trust"], True)
+        self.assertIn(str(server), configured["args"])
 
     def test_non_loopback_or_invalid_broker_port_fails_closed(self):
         archive = self.archive()

@@ -89,7 +89,7 @@ def estimate_input_tokens(prompt: str) -> int:
 def plan_unified_task(
     task: UnifiedTaskRequest, *, profile: VerifiedLocalProfile,
     runtime_healthy: bool, available_memory_mb: int,
-    cloud: CloudPreferenceState,
+    cloud: CloudPreferenceState, allow_provisional_validation: bool = False,
 ) -> tuple[UnifiedTaskPlan, TaskRequirements, RouteDecision]:
     requirements = TaskRequirements(
         estimated_input_tokens=estimate_input_tokens(task.prompt),
@@ -99,7 +99,13 @@ def plan_unified_task(
         data_classes=task.data_classes,
     )
     local = LocalProfile(
-        verified=profile.evidence_status.startswith("verified_"),
+        verified=(
+            profile.evidence_status.startswith("verified_")
+            or (
+                allow_provisional_validation
+                and profile.evidence_status == "provisional_single_machine"
+            )
+        ),
         healthy=runtime_healthy,
         context_window_tokens=profile.context_window_tokens,
         capabilities=profile.capabilities,

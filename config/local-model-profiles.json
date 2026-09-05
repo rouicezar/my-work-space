@@ -13,6 +13,32 @@
       "validator": "nonempty-text-v1",
       "evidence_status": "verified_single_machine",
       "evidence_path": "evidence/runtime/private-local-task-2026-08-30.md"
+    },
+    {
+      "id": "qwen3-8b-4bit-apple-silicon-alpha",
+      "model_definition_id": "qwen3-8b-4bit-alpha",
+      "runtime_model_ids": ["Qwen3-8B-4bit"],
+      "hardware_profile_ids": ["apple-silicon-16gb", "apple-silicon-32gb", "apple-silicon-64gb"],
+      "capabilities": ["chat"],
+      "context_window_tokens": 96,
+      "maximum_output_tokens": 64,
+      "minimum_available_memory_mb": 6144,
+      "validator": "nonempty-text-v1",
+      "evidence_status": "provisional_single_machine",
+      "evidence_path": "evidence/runtime/private-local-agent-qwen3-8b-2026-09-05.md"
+    },
+    {
+      "id": "qwen3-4b-4bit-apple-silicon-alpha",
+      "model_definition_id": "qwen3-4b-4bit-alpha",
+      "runtime_model_ids": ["Qwen3-4B-4bit"],
+      "hardware_profile_ids": ["apple-silicon-16gb", "apple-silicon-32gb", "apple-silicon-64gb"],
+      "capabilities": ["chat", "tools"],
+      "context_window_tokens": 512,
+      "maximum_output_tokens": 64,
+      "minimum_available_memory_mb": 2048,
+      "validator": "nonempty-text-v1",
+      "evidence_status": "verified_single_machine",
+      "evidence_path": "evidence/runtime/private-local-agent-qwen3-4b-2026-09-05.md"
     }
   ]
 }

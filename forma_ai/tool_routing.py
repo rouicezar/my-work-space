@@ -158,6 +158,10 @@ class ToolApprovalStore:
         _atomic_json(path, asdict(consumed))
         return consumed
 
+    def has_record(self, proposal_id: str) -> bool:
+        path = self._path(proposal_id)
+        return path.is_file() and not path.is_symlink()
+
     def _path(self, proposal_id: str) -> Path:
         if not proposal_id or Path(proposal_id).name != proposal_id:
             raise ToolRoutingError("TOOL_PROPOSAL_ID_INVALID", proposal_id)
@@ -249,6 +253,33 @@ class ToolProposalStore:
         ):
             raise ToolRoutingError("TOOL_PROPOSAL_INVALID", proposal_id)
         return proposal, payload
+
+    def find_matching(
+        self,
+        request: ToolCapabilityRequest,
+    ) -> tuple[ToolCallProposal, bytes] | None:
+        if not self.directory.exists():
+            return None
+        self._validate_directory()
+        matches: list[tuple[ToolCallProposal, bytes]] = []
+        for metadata in sorted(self.directory.glob("*.json")):
+            proposal, payload = self.load(metadata.stem)
+            if (
+                proposal.correlation_id != request.correlation_id
+                or proposal.capability_id != request.capability_id
+                or proposal.operation != request.operation
+                or proposal.data_classes != tuple(sorted(request.data_classes))
+            ):
+                continue
+            try:
+                body = json.loads(payload)
+            except (TypeError, ValueError, json.JSONDecodeError) as exc:
+                raise ToolRoutingError("TOOL_PROPOSAL_INVALID", proposal.proposal_id) from exc
+            if body.get("arguments") == dict(request.arguments):
+                matches.append((proposal, payload))
+        if len(matches) > 1:
+            raise ToolRoutingError("TOOL_PROPOSAL_AMBIGUOUS", request.correlation_id)
+        return matches[0] if matches else None
 
     def discard(self, proposal_id: str) -> None:
         self._validate_directory()

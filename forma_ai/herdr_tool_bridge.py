@@ -76,10 +76,11 @@ class HerdrToolBridge:
             repository_root=self.repository_root,
             local_paths=local_paths,
         )
+        approvals = ToolApprovalStore(product_root)
         router = ToolRouter(
             registry,
             catalog_path=catalog_path,
-            approvals=ToolApprovalStore(product_root),
+            approvals=approvals,
             audit=audit,
             caller=RegistryMCPCaller(),
         )
@@ -98,9 +99,13 @@ class HerdrToolBridge:
         proposal = None
         retain_proposal = False
         try:
-            proposal, payload, _preview = router.propose(request, now=moment)
-            proposals.save(proposal, payload)
-            if proposal.approval_required:
+            retained = proposals.find_matching(request)
+            if retained is None:
+                proposal, payload, _preview = router.propose(request, now=moment)
+                proposals.save(proposal, payload)
+            else:
+                proposal, payload = retained
+            if proposal.approval_required and not approvals.has_record(proposal.proposal_id):
                 retain_proposal = True
                 return ToolCallArtifact(
                     1,

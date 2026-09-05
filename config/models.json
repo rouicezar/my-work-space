@@ -24,6 +24,50 @@
       }
     },
     {
+      "id": "qwen3-8b-4bit-alpha",
+      "repository": "mlx-community/Qwen3-8B-4bit",
+      "revision": "545dc4251c05440727734bcd94334791f6ab0192",
+      "license": "Apache-2.0",
+      "license_url": "https://huggingface.co/Qwen/Qwen3-8B/blob/main/LICENSE",
+      "model_type": "qwen3",
+      "architecture": "Qwen3ForCausalLM",
+      "capabilities": ["chat"],
+      "quantization_bits": 4,
+      "files": {
+        "added_tokens.json": {"size_bytes": 707, "sha256": "c0284b582e14987fbd3d5a2cb2bd139084371ed9acbae488829a1c900833c680"},
+        "config.json": {"size_bytes": 939, "sha256": "e5485285fd7e289e76e9cffa112f6dc2e3426519082f7db9b69041589f81a218"},
+        "merges.txt": {"size_bytes": 1671853, "sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5"},
+        "model.safetensors": {"size_bytes": 4607835174, "sha256": "f2d29621aab300336ad645567ff38c42aac755513006ef4e8a579cf7ef5256d8"},
+        "model.safetensors.index.json": {"size_bytes": 64065, "sha256": "3fb25463b4078b1fc27159daa605190029c2e965f533bf0b1b594f96cbfceb8a"},
+        "special_tokens_map.json": {"size_bytes": 613, "sha256": "76862e765266b85aa9459767e33cbaf13970f327a0e88d1c65846c2ddd3a1ecd"},
+        "tokenizer.json": {"size_bytes": 11422654, "sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"},
+        "tokenizer_config.json": {"size_bytes": 9706, "sha256": "253153d0738ceb4c668d2eff957714dd2bea0b56de772a9fdccd96cbf517e6a0"},
+        "vocab.json": {"size_bytes": 2776833, "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"}
+      }
+    },
+    {
+      "id": "qwen3-4b-4bit-alpha",
+      "repository": "mlx-community/Qwen3-4B-4bit",
+      "revision": "4dcb3d101c2a062e5c1d4bb173588c54ea6c4d25",
+      "license": "Apache-2.0",
+      "license_url": "https://huggingface.co/Qwen/Qwen3-4B/blob/main/LICENSE",
+      "model_type": "qwen3",
+      "architecture": "Qwen3ForCausalLM",
+      "capabilities": ["chat", "tools"],
+      "quantization_bits": 4,
+      "files": {
+        "added_tokens.json": {"size_bytes": 707, "sha256": "c0284b582e14987fbd3d5a2cb2bd139084371ed9acbae488829a1c900833c680"},
+        "config.json": {"size_bytes": 937, "sha256": "b5efdcf3b0035a3638e7228dad4d85f5c4a23f156eb7cdb0b44c8366a5d34d9b"},
+        "merges.txt": {"size_bytes": 1671853, "sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5"},
+        "model.safetensors": {"size_bytes": 2263022529, "sha256": "e240c0bdc0ebb0681bf0da0f98d9719fd6ebe269a3633f81542c13e81345651d"},
+        "model.safetensors.index.json": {"size_bytes": 63924, "sha256": "f7825defe5865d179c3b593173d37056be5f202dcb7153985cf74e75ecf1628b"},
+        "special_tokens_map.json": {"size_bytes": 613, "sha256": "76862e765266b85aa9459767e33cbaf13970f327a0e88d1c65846c2ddd3a1ecd"},
+        "tokenizer.json": {"size_bytes": 11422654, "sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"},
+        "tokenizer_config.json": {"size_bytes": 9706, "sha256": "253153d0738ceb4c668d2eff957714dd2bea0b56de772a9fdccd96cbf517e6a0"},
+        "vocab.json": {"size_bytes": 2776833, "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"}
+      }
+    },
+    {
       "id": "multilingual-e5-small-mlx-alpha",
       "repository": "mlx-community/multilingual-e5-small-mlx",
       "revision": "5030c7625865046d350eeea28f427d80353d0ac0",

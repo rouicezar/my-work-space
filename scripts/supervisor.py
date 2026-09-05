@@ -82,6 +82,7 @@ from forma_ai.task_orchestrator import (
     plan_unified_task,
 )
 from forma_ai.herdr_adapter import HerdrAdapter
+from forma_ai.herdr_detection import prepare_herdr_detection_policy
 from forma_ai.herdr_transport import (
     HerdrProtocolError,
     HerdrSocketTransport,
@@ -104,7 +105,7 @@ from forma_ai.tool_routing import (
 SCHEMA_VERSION = 1
 DEFAULT_UPSTREAMS = REPOSITORY_ROOT / "config/upstreams.json"
 DEFAULT_MODELS = REPOSITORY_ROOT / "config/models.json"
-DEFAULT_MODEL_ID = "qwen3-0.6b-4bit-alpha"
+DEFAULT_MODEL_ID = "qwen3-4b-4bit-alpha"
 DEFAULT_EMBEDDING_MODEL_ID = "multilingual-e5-small-mlx-alpha"
 HERDR_SESSION_NAME = "f"
 DEFAULT_CLOUD_PROVIDERS = REPOSITORY_ROOT / "config/cloud-providers.json"
@@ -249,7 +250,11 @@ def parser() -> argparse.ArgumentParser:
     task_submit.add_argument("--local-profiles", type=Path, default=DEFAULT_LOCAL_PROFILES)
     task_submit.add_argument("--evidence-root", type=Path, default=REPOSITORY_ROOT)
     task_submit.add_argument(
-        "--local-profile-id", default="qwen3-0.6b-4bit-apple-silicon-alpha",
+        "--local-profile-id", default="qwen3-4b-4bit-apple-silicon-alpha",
+    )
+    task_submit.add_argument(
+        "--allow-provisional-local-validation", action="store_true",
+        help="explicitly route one provisional profile for live acceptance evidence",
     )
     task_submit.add_argument("--cloud-catalog", type=Path, default=DEFAULT_CLOUD_PROVIDERS)
     task_submit.add_argument("--upstreams", type=Path, default=DEFAULT_UPSTREAMS)
@@ -343,6 +348,7 @@ def _herdr_socket_path(product_root: Path) -> str:
 
 def _qwen_agent_environment(
     *, root: Path, upstreams: Path, broker_port: int, broker_token: str,
+    model_id: str,
 ) -> dict[str, str]:
     release = platform.mac_ver()[0]
     if not release:
@@ -362,7 +368,9 @@ def _qwen_agent_environment(
             expected=expected,
             broker_token=broker_token,
             broker_port=broker_port,
-            model_id="Qwen3-0.6B-4bit",
+            model_id=model_id,
+            mcp_server_path=REPOSITORY_ROOT / "scripts/qwen_governed_mcp.py",
+            repository_root=REPOSITORY_ROOT,
         )
     except Exception as exc:
         raise LocalTaskError("QWEN_CODE_UNAVAILABLE", str(exc)) from exc
@@ -383,8 +391,11 @@ def _dispatch_local_agent_task(
                 "LOCAL_TASK_ALREADY_EXISTS",
                 f"task workspace is not empty: {request_id}",
             )
+        task_environment = dict(qwen_environment)
+        task_environment["FORMA_TASK_CORRELATION_ID"] = request_id
+        task_environment["FORMA_TASK_WORKSPACE"] = str(workspace_dir)
         workspace = adapter.open_workspace(
-            cwd=str(workspace_dir), label=f"forma-{request_id[:8]}", env=qwen_environment
+            cwd=str(workspace_dir), label=f"forma-{request_id[:8]}", env=task_environment
         )
         started = adapter.spawn_task(
             task_id=request_id,
@@ -829,6 +840,7 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
         plan, requirements, _ = plan_unified_task(
             task, profile=profile, runtime_healthy=runtime["phase"] == "running",
             available_memory_mb=memory.available_memory_mb, cloud=cloud,
+            allow_provisional_validation=args.allow_provisional_local_validation,
         )
         audit = JsonlAuditSink(args.root / "logs/audit/tasks.jsonl")
         audit.record({
@@ -860,6 +872,7 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
                         upstreams=args.upstreams,
                         broker_port=args.broker_port,
                         broker_token=broker_token,
+                        model_id=next(iter(sorted(profile.runtime_model_ids))),
                     ),
                 )
             except LocalTaskError:
@@ -1219,6 +1232,9 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
         )
         herdr_spec = herdr_process_spec(
             executable=herdr_executable, root=args.root, session_name=HERDR_SESSION_NAME,
+        )
+        prepare_herdr_detection_policy(
+            Path(herdr_spec.environment["HOME"]), repository_root=REPOSITORY_ROOT,
         )
         for path in (Path(herdr_spec.working_directory), Path(herdr_spec.environment["HOME"])):
             path.mkdir(parents=True, exist_ok=True)

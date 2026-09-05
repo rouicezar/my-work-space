@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 from forma_ai.downloads import ResumableDownloader
-from forma_ai.model_downloads import download_model_snapshot
+from forma_ai.model_downloads import HUGGINGFACE_DOWNLOAD_HOSTS, download_model_snapshot
 from forma_ai.models import ModelDefinition, ModelError, ModelFile
 from tests.test_downloads import FakeOpen, FakeResponse
 
@@ -29,6 +29,9 @@ def model() -> ModelDefinition:
 
 
 class ModelDownloadTests(unittest.TestCase):
+    def test_current_hugging_face_xet_redirect_host_is_explicitly_pinned(self):
+        self.assertIn("us.aws.cdn.hf.co", HUGGINGFACE_DOWNLOAD_HOSTS)
+
     def test_downloads_all_files_to_exact_snapshot_then_verifies(self):
         opened = FakeOpen([
             FakeResponse(CONFIG, url="https://huggingface.co/fixture/config.json"),

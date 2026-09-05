@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import sys
 import tarfile
 import tempfile
 from dataclasses import asdict, dataclass
@@ -48,6 +49,10 @@ class QwenCodeInstallLayout:
     @property
     def settings(self) -> Path:
         return self.agent_home / ".qwen" / "settings.json"
+
+    @property
+    def herdr_launcher(self) -> Path:
+        return self.agent_home / "bin" / "qwen"
 
     def version_root(self, release: str) -> Path:
         return self.component_root / release
@@ -215,6 +220,38 @@ _DENIED_QWEN_TOOLS = (
 )
 
 
+_HERDR_QWEN_LAUNCHER = b'''#!/bin/sh
+set -eu
+: "${FORMA_QWEN_REAL_EXECUTABLE:?missing verified Qwen executable}"
+"$FORMA_QWEN_REAL_EXECUTABLE" "$@" < /dev/tty &
+child=$!
+trap 'kill -TERM "$child" 2>/dev/null || true' HUP INT TERM
+wait "$child"
+'''
+
+
+def _prepare_herdr_launcher(layout: QwenCodeInstallLayout, executable: Path) -> Path:
+    launcher = layout.herdr_launcher
+    launcher.parent.mkdir(parents=True, exist_ok=True)
+    if launcher.is_symlink() or (launcher.exists() and not launcher.is_file()):
+        raise QwenCodeInstallError("QWEN_LAUNCHER_UNSAFE", str(launcher))
+    descriptor, name = tempfile.mkstemp(prefix=".qwen-launcher-", dir=launcher.parent)
+    temporary = Path(name)
+    os.fchmod(descriptor, 0o700)
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(_HERDR_QWEN_LAUNCHER)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, launcher)
+    except Exception:
+        temporary.unlink(missing_ok=True)
+        raise
+    if executable.is_symlink() or not executable.is_file() or not os.access(executable, os.X_OK):
+        raise QwenCodeInstallError("QWEN_EXECUTABLE_INVALID", str(executable))
+    return launcher
+
+
 def prepare_qwen_agent_environment(
     layout: QwenCodeInstallLayout,
     *,
@@ -222,6 +259,8 @@ def prepare_qwen_agent_environment(
     broker_token: str,
     broker_port: int,
     model_id: str,
+    mcp_server_path: Path | None = None,
+    repository_root: Path | None = None,
 ) -> dict[str, str]:
     if not 1024 <= broker_port <= 65535:
         raise QwenCodeInstallError("QWEN_PROVIDER_NOT_LOCAL", str(broker_port))
@@ -229,6 +268,27 @@ def prepare_qwen_agent_environment(
         raise QwenCodeInstallError("QWEN_CONFIGURATION_INVALID", "missing token or model")
     active = QwenCodeInstaller(layout, expected).load_active()
     layout.settings.parent.mkdir(parents=True, exist_ok=True)
+    if mcp_server_path is None:
+        mcp_servers = {}
+    else:
+        if (
+            not mcp_server_path.is_absolute() or not mcp_server_path.is_file()
+            or mcp_server_path.is_symlink() or repository_root is None
+            or not repository_root.is_absolute()
+        ):
+            raise QwenCodeInstallError("QWEN_MCP_SERVER_INVALID", str(mcp_server_path))
+        mcp_servers = {
+            "forma-governed-tools": {
+                "command": sys.executable,
+                "args": [
+                    str(mcp_server_path), "--root", str(layout.root),
+                    "--repository-root", str(repository_root),
+                    "--catalog", str(repository_root / "config/tool-routing.json"),
+                ],
+                "includeTools": ["forma_governed_tool"],
+                "trust": True,
+            }
+        }
     settings = {
         "$version": 4,
         "general": {"chatRecording": False},
@@ -243,14 +303,16 @@ def prepare_qwen_agent_environment(
         },
         "tools": {"approvalMode": "plan"},
         "permissions": {"allow": [], "ask": [], "deny": list(_DENIED_QWEN_TOOLS)},
-        "mcpServers": {},
+        "mcpServers": mcp_servers,
         "disableAllHooks": True,
     }
     _atomic_json(layout.settings, settings)
     executable = Path(active.executable_path)
+    launcher = _prepare_herdr_launcher(layout, executable)
     return {
         "HOME": str(layout.agent_home),
-        "PATH": f"{executable.parent}:/usr/bin:/bin:/usr/sbin:/sbin",
+        "PATH": f"{launcher.parent}:/usr/bin:/bin:/usr/sbin:/sbin",
+        "FORMA_QWEN_REAL_EXECUTABLE": str(executable),
         "NO_PROXY": "127.0.0.1,localhost,::1",
         "OPENAI_API_KEY": broker_token,
         "OPENAI_BASE_URL": f"http://127.0.0.1:{broker_port}/v1",

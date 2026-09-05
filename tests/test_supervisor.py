@@ -189,14 +189,19 @@ class SupervisorProtocolTests(unittest.TestCase):
         self.assertEqual(response["payload"]["skills"][0]["name"], "excel-merge")
         self.assertNotIn("Secret", json.dumps(response["payload"]))
 
-    def task_submit_args(self, root: Path, cloud_catalog: Path, request_id: str):
-        return supervisor.parser().parse_args([
+    def task_submit_args(
+        self, root: Path, cloud_catalog: Path, request_id: str, *, provisional=False,
+    ):
+        arguments = [
             "--request-id", request_id, "task-submit", "--root", str(root),
             "--model-catalog", str(ROOT / "config/models.json"),
             "--hardware-profiles", str(ROOT / "config/hardware-profiles.yaml"),
             "--local-profiles", str(ROOT / "config/local-model-profiles.json"),
             "--evidence-root", str(ROOT), "--cloud-catalog", str(cloud_catalog),
-        ])
+        ]
+        if provisional:
+            arguments.append("--allow-provisional-local-validation")
+        return supervisor.parser().parse_args(arguments)
 
     def task_submit_body(self, *, prompt="短任务", output=32, capabilities=("chat",), classes=("user_text",)):
         return json.dumps({
@@ -214,23 +219,27 @@ class SupervisorProtocolTests(unittest.TestCase):
                 "schema_version": 1,
                 "route": "local",
                 "correlation_id": request_id,
-                "model": "Qwen3-0.6B-4bit",
+                "model": "Qwen3-4B-4bit",
                 "runtime_authority": "herdr",
                 "state": "running",
             }
             with patch.object(supervisor.RuntimeManager, "status", return_value={"phase": "running"}), \
-                 patch.object(supervisor, "measure_available_memory", return_value=MemoryEvidence(2048, True, "AVAILABLE_MEMORY_MEASURED")), \
+                 patch.object(supervisor, "measure_available_memory", return_value=MemoryEvidence(8192, True, "AVAILABLE_MEMORY_MEASURED")), \
                  patch.object(supervisor, "_runtime_secrets", return_value=("a", "b", "c")), \
-                 patch.object(supervisor, "_qwen_agent_environment", return_value={"HOME": "/qwen"}), \
+                 patch.object(supervisor, "_qwen_agent_environment", return_value={"HOME": "/qwen"}) as qwen_env, \
                  patch.object(supervisor, "_dispatch_local_agent_task", return_value=expected) as execute, \
                  patch.object(supervisor, "create_cloud_proposal") as cloud:
                 response = supervisor.run(
-                    self.task_submit_args(root, catalog, request_id),
+                    self.task_submit_args(root, catalog, request_id, provisional=True),
                     input_data=self.task_submit_body(),
                 )
             self.assertEqual(response["payload"]["plan"]["route"], "local")
             self.assertEqual(response["payload"]["result"]["runtime_authority"], "herdr")
-            self.assertEqual(execute.call_args.kwargs["model_id"], "Qwen3-0.6B-4bit")
+            self.assertEqual(execute.call_args.kwargs["model_id"], "Qwen3-4B-4bit")
+            self.assertEqual(
+                qwen_env.call_args.kwargs["model_id"],
+                "Qwen3-4B-4bit",
+            )
             cloud.assert_not_called()
 
     def test_dispatch_wraps_herdr_failure_and_rejects_nonempty_retry_workspace(self):
@@ -292,7 +301,7 @@ class SupervisorProtocolTests(unittest.TestCase):
                     "terminal-1", "running", 2,
                 )
                 response = supervisor.run(
-                    self.task_submit_args(root, catalog, request_id),
+                    self.task_submit_args(root, catalog, request_id, provisional=True),
                     input_data=self.task_submit_body(),
                 )
 

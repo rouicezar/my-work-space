@@ -81,6 +81,7 @@ class MemoryReviewBindingTests(unittest.TestCase):
             finally:
                 server.shutdown()
                 thread.join(timeout=2)
+                server.server_close()
 
 
 class SupervisorMemoryReviewTests(unittest.TestCase):
@@ -129,6 +130,7 @@ class SupervisorMemoryReviewTests(unittest.TestCase):
             finally:
                 server.shutdown()
                 thread.join(timeout=2)
+                server.server_close()
 
 
 if __name__ == "__main__":
