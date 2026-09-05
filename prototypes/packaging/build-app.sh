@@ -86,6 +86,14 @@ install -m 0644 "$REPOSITORY_ROOT/config/cloud-providers.json" "$APP/Contents/Re
 install -m 0644 "$REPOSITORY_ROOT/config/local-model-profiles.json" "$APP/Contents/Resources/local-model-profiles.json"
 mkdir -p "$APP/Contents/Resources/evidence/runtime"
 install -m 0644 "$REPOSITORY_ROOT/evidence/runtime/private-local-task-2026-08-30.md" "$APP/Contents/Resources/evidence/runtime/private-local-task-2026-08-30.md"
+for EVIDENCE in private-local-agent-qwen3-4b-2026-09-05.md private-local-agent-qwen3-8b-2026-09-05.md; do
+  install -m 0644 "$REPOSITORY_ROOT/evidence/runtime/$EVIDENCE" "$APP/Contents/Resources/evidence/runtime/$EVIDENCE"
+done
+mkdir -p "$APP/Contents/Resources/config" "$APP/Contents/Resources/scripts"
+for CATALOG in upstreams.json models.json hardware-profiles.yaml cloud-providers.json local-model-profiles.json tool-routing.json; do
+  install -m 0644 "$REPOSITORY_ROOT/config/$CATALOG" "$APP/Contents/Resources/config/$CATALOG"
+done
+install -m 0644 "$REPOSITORY_ROOT/scripts/qwen_governed_mcp.py" "$APP/Contents/Resources/scripts/qwen_governed_mcp.py"
 "$SCRIPT_DIR/build-supervisor.sh" "$APP/Contents/Helpers/Supervisor"
 
 MEMORY_RUNTIME="$APP/Contents/Helpers/MemoryRuntime"

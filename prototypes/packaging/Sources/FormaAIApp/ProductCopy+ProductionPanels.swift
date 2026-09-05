@@ -1,6 +1,11 @@
 import LifecycleContract
 
 extension ProductCopy {
+    var productionHistoryHint: String { language == .simplifiedChinese ? "任务结果和恢复操作以历史页的最新对账为准。" : "Use the latest History reconciliation for task results and recovery." }
+    var taskOutputTitle: String { language == .simplifiedChinese ? "任务输出（Herdr 会话记录）" : "Task output (Herdr transcript)" }
+    var taskOutputLive: String { language == .simplifiedChinese ? "刚从权威会话读取；包含终端上下文" : "Read from the authoritative session; includes terminal context" }
+    var taskOutputCached: String { language == .simplifiedChinese ? "历史记录，不代表当前运行状态" : "Historical capture, not current runtime state" }
+    var taskOutputUnavailable: String { language == .simplifiedChinese ? "暂时无法取得输出，请刷新重试。" : "Output unavailable. Refresh to retry." }
     var freshRunConfirmation: String { language == .simplifiedChinese ? "重新执行会创建新任务，并可能重复原有操作。继续吗？" : "A fresh run creates a new task and may repeat previous actions. Continue?" }
     var historyLoading: String { language == .simplifiedChinese ? "正在加载已对账任务历史…" : "Loading reconciled task history…" }
     var historyUnavailable: String { language == .simplifiedChinese ? "任务历史不可用" : "Task history unavailable" }

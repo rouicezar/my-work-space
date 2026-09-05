@@ -107,6 +107,7 @@ class QwenCodeRuntimeTests(unittest.TestCase):
         self.assertEqual(settings["tools"]["approvalMode"], "plan")
         self.assertFalse(settings["telemetry"]["enabled"])
         self.assertFalse(settings["general"]["chatRecording"])
+        self.assertEqual(settings['context']['fileName'], ['.forma-context.md'])
         self.assertFalse(settings["memory"]["enableManagedAutoMemory"])
         denied = set(settings["permissions"]["deny"])
         self.assertTrue({"Bash", "Read", "Edit", "WebFetch", "task", "skill"} <= denied)

@@ -361,6 +361,12 @@ public struct TaskHistoryRecoveryPayload: Decodable, Sendable {
     }
 }
 
+public struct TaskHistoryOutputPayload: Decodable, Sendable {
+    public let text: String
+    public let freshness: String
+    public let truncated: Bool
+}
+
 public struct MemoryReviewSnapshotPayload: Decodable, Sendable {
     public let schemaVersion: Int
     public let correlationID: String
@@ -1272,6 +1278,11 @@ public struct SupervisorClient: Sendable {
             arguments: ["--root", rootURL.path, "--task-id", taskID],
             requestID: requestID
         )
+    }
+
+    public func taskHistoryOutput(rootURL: URL, taskID: String) throws -> TaskHistoryOutputPayload {
+        try request(command: "task-history-output",
+            arguments: ["--root", rootURL.path, "--task-id", taskID], requestID: UUID())
     }
 
     public func taskHistoryCancel(

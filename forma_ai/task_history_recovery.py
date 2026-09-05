@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
+import json
+from pathlib import Path
+from forma_ai.models import _atomic_json
 
 from forma_ai.herdr_adapter import HerdrAdapter, HerdrTask
 from forma_ai.herdr_presentation import HerdrPresentedAgent
@@ -19,6 +22,34 @@ from forma_ai.task_metadata_store import TaskMetadataStore, TaskMetadataStoreErr
 
 
 CANCELLABLE_RUNTIME_STATES = frozenset({"running", "starting", "blocked", "queued"})
+
+
+def read_history_output(product_root, task_id, *, runtime_status, snapshot_source):
+    """Archive an identity-checked Herdr transcript, never a second runtime status."""
+    metadata = TaskMetadataStore(product_root).load(task_id)
+    path = Path(product_root) / 'state/task-output' / f'{task_id}.json'
+    try:
+        context = load_recovery_context(product_root, task_id,
+            runtime_status=runtime_status, snapshot_source=snapshot_source)
+        if context.view.freshness != 'fresh' or context.view.reconciliation_required:
+            raise TaskHistoryRecoveryError('RECOVERY_STALE_SNAPSHOT', 'fresh identity required')
+        task = herdr_task_from_projection(metadata, context.agent)
+        snapshot_source.reclaim_task(task=task)
+        output = snapshot_source.read_task_output(run_id=task.run_id, source='recent', lines=200)
+        result = {'schema_version': 1, 'task_id': task_id, 'run_id': task.run_id,
+                  'terminal_id': task.terminal_id, 'revision': task.revision,
+                  'text': output.text, 'truncated': output.truncated, 'freshness': 'fresh'}
+        path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        _atomic_json(path, result)
+        return result
+    except Exception:
+        if path.is_file() and not path.is_symlink() and path.stat().st_size <= 1024 * 1024:
+            cached = json.loads(path.read_text())
+            if (cached.get('run_id') == metadata.run_id
+                and cached.get('terminal_id') == metadata.herdr_terminal_id):
+                return {**cached, 'freshness': 'cached'}
+        return {'schema_version': 1, 'task_id': task_id, 'text': '',
+                'truncated': False, 'freshness': 'unavailable'}
 
 
 class TaskHistoryRecoveryError(RuntimeError):

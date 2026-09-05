@@ -18,7 +18,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+def resource_root(*, frozen: bool, executable: Path, source: Path) -> Path:
+    return executable.resolve().parents[2] / 'Resources' if frozen else source.resolve().parents[1]
+
+
+REPOSITORY_ROOT = resource_root(frozen=bool(getattr(sys, 'frozen', False)),
+                              executable=Path(sys.executable), source=Path(__file__))
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
@@ -55,6 +60,7 @@ from forma_ai.task_history_recovery import (
     execute_fresh_run,
     execute_reclaim,
     load_recovery_context,
+    read_history_output,
 )
 from forma_ai.task_metadata_reconcile import build_reconcile_payload
 from forma_ai.task_metadata_store import TaskMetadataStore, TaskMetadataStoreError
@@ -207,7 +213,7 @@ def parser() -> argparse.ArgumentParser:
     task_metadata_reconcile = commands.add_parser("task-metadata-reconcile")
     task_metadata_reconcile.add_argument("--root", type=Path, required=True)
     task_metadata_reconcile.add_argument("--task-id", default=None)
-    for name in ("task-history-reclaim", "task-history-cancel", "task-history-fresh-run"):
+    for name in ("task-history-reclaim", "task-history-cancel", "task-history-fresh-run", "task-history-output"):
         command = commands.add_parser(name)
         command.add_argument("--root", type=Path, required=True)
         command.add_argument("--task-id", required=True)
@@ -467,6 +473,12 @@ def _recovery_error_envelope(*, command: str, request_id: str, exc: TaskHistoryR
 
 def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, Any]:
     request_id = validate_request_id(args.request_id)
+    if args.command == 'task-history-output':
+        _validate_product_root(args.root)
+        payload = read_history_output(args.root, args.task_id,
+            runtime_status=lambda: RuntimeManager(args.root).status(),
+            snapshot_source=_herdr_adapter_for_root(args.root))
+        return envelope(command=args.command, request_id=request_id, status='ok', payload=payload)
     if args.command in {"mcp-list-tools", "mcp-call-tool"}:
         spec = MCPServerSpec(command=args.server_command, args=tuple(args.server_arg))
         client = connect_stdio_server(spec)
@@ -1097,6 +1109,23 @@ def run(args: argparse.Namespace, input_data: bytes | None = None) -> dict[str, 
         if not args.catalog.is_absolute() or not args.catalog.is_file():
             raise ValueError("model catalog must be an existing absolute file")
         model = load_model(args.catalog, args.model_id)
+        if args.command in {'model-plan', 'link-model'}:
+            # Reuse only an already product-linked snapshot, rechecking pinned hashes.
+            # Never scan or assume the developer's global Hugging Face cache.
+            link = args.root / 'data/omlx/models' / model.repository
+            reference_path = args.root / 'state/models' / f'{model.id}.json'
+            if link.is_symlink() and reference_path.is_file() and not reference_path.is_symlink():
+                try:
+                    reference = json.loads(reference_path.read_text())
+                    source = link.resolve(strict=True)
+                    cache = source.parents[2]
+                    if (reference.get('model_id') == model.id
+                        and reference.get('revision') == model.revision
+                        and Path(reference['source_path']).resolve() == source
+                        and verify_snapshot(cache, model).resolve() == source):
+                        args.cache_root = cache
+                except (OSError, ValueError, KeyError, IndexError):
+                    pass
         if args.command in {
             "embedding-plan", "download-embedding", "activate-embedding",
         } and "embedding" not in model.capabilities:
@@ -1838,6 +1867,9 @@ def _local_task(
 
 def main(argv: list[str] | None = None) -> int:
     raw = list(sys.argv[1:] if argv is None else argv)
+    if raw and raw[0] == 'internal-qwen-mcp':
+        from scripts import qwen_governed_mcp
+        return qwen_governed_mcp.run(qwen_governed_mcp.parser().parse_args(raw[1:]))
     command = next(
         (
             item

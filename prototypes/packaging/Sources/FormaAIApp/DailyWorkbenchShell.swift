@@ -261,6 +261,11 @@ struct DailyWorkbenchShell: View {
             VStack(alignment: .leading, spacing: 10) {
                 Text(copy[.recentTasks].uppercased())
                     .font(.caption2.monospaced().weight(.bold)).foregroundStyle(.secondary)
+                if presentation == .production {
+                    Button(copy.persistedTasks) { destination = .history }
+                        .buttonStyle(.plain)
+                    Text(copy.productionHistoryHint).font(.caption).foregroundStyle(.secondary)
+                } else {
                 Text(copy[.noRealHistory]).font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 VStack(alignment: .leading, spacing: 7) {
@@ -274,6 +279,7 @@ struct DailyWorkbenchShell: View {
                 }
                 .padding(12)
                 .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+                }
             }
             Spacer()
         }
@@ -309,6 +315,7 @@ struct DailyWorkbenchShell: View {
                 }
                 .buttonStyle(.plain).help(copy[.collapseSupervision])
             }
+            if presentation == .preview || destination == .settings {
             VStack(alignment: .leading, spacing: 8) {
                 Image(systemName: destination == .settings ? settingsSectionSymbol : (destination == .history ? "clock.arrow.circlepath" : (transitionStage == .compose ? "pause.circle" : "play.circle.fill")))
                     .font(.title).foregroundStyle(destination == .settings || destination == .history || transitionStage != .compose ? Color.blue : Color.secondary)
@@ -329,8 +336,13 @@ struct DailyWorkbenchShell: View {
                 destination == .history ? copy.lastVerified(historySelection) : (transitionStage == .validation || transitionStage == .result ? copy[.valid] : copy[.nothingProduced]),
                 "checkmark.seal"
             )
+            } else {
+                Text(copy.productionHistoryHint).font(.callout).foregroundStyle(.secondary)
+            }
             if presentation == .production {
                 productionAgentActivity(copy)
+                    .task(id: destination) { await loadAgentActivity() }
+                Button(copy.refreshReconcile) { Task { await loadAgentActivity() } }
             }
             Spacer()
         }

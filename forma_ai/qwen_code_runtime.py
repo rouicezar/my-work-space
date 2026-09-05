@@ -281,7 +281,8 @@ def prepare_qwen_agent_environment(
             "forma-governed-tools": {
                 "command": sys.executable,
                 "args": [
-                    str(mcp_server_path), "--root", str(layout.root),
+                    *(["internal-qwen-mcp"] if getattr(sys, "frozen", False) else [str(mcp_server_path)]),
+                    "--root", str(layout.root),
                     "--repository-root", str(repository_root),
                     "--catalog", str(repository_root / "config/tool-routing.json"),
                 ],
@@ -292,6 +293,9 @@ def prepare_qwen_agent_environment(
     settings = {
         "$version": 4,
         "general": {"chatRecording": False},
+        "context": {"fileName": [".forma-context.md"], "includeDirectories": [],
+                    "loadFromIncludeDirectories": False,
+                    "fileFiltering": {"enableRecursiveFileSearch": False}},
         "ui": {"showStatusInTitle": True},
         "telemetry": {"enabled": False, "logPrompts": False},
         "memory": {

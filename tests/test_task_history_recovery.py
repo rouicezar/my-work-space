@@ -15,6 +15,7 @@ from forma_ai.task_history_recovery import (
     execute_reclaim,
     load_recovery_context,
     validate_cancel_eligibility,
+    read_history_output,
 )
 from forma_ai.task_metadata_projection import TaskMetadataRecord
 from forma_ai.task_metadata_reconcile import build_herdr_reconcile_snapshot, reconcile_task_view
@@ -72,6 +73,31 @@ def sample_snapshot(**agent_overrides) -> HerdrSessionSnapshot:
 
 
 class TaskHistoryRecoveryTests(unittest.TestCase):
+    def test_output_is_read_from_matching_herdr_and_available_as_historical_capture(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / 'Product'
+            TaskMetadataStore(root).save(sample_record(herdr_terminal_id='terminal-1'))
+            adapter = Mock()
+            adapter.snapshot.return_value = sample_snapshot()
+            adapter.read_task_output.return_value = Mock(text='材料总结：交付延迟两天。', truncated=False)
+            result = read_history_output(root, 'task-1', runtime_status=lambda: {'herdr_alive': True}, snapshot_source=adapter)
+            self.assertEqual(result['freshness'], 'fresh')
+            self.assertEqual(result['text'], '材料总结：交付延迟两天。')
+            adapter.reclaim_task.assert_called_once()
+            reopened = read_history_output(root, 'task-1', runtime_status=lambda: {'herdr_alive': False}, snapshot_source=None)
+            self.assertEqual(reopened['text'], result['text'])
+            self.assertEqual(reopened['freshness'], 'cached')
+            self.assertNotIn('runtime_state', reopened)
+
+    def test_output_rejects_replacement_terminal(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / 'Product'
+            TaskMetadataStore(root).save(sample_record(herdr_terminal_id='original'))
+            adapter = Mock(snapshot=Mock(return_value=sample_snapshot(terminal_id='other')))
+            result = read_history_output(root, 'task-1', runtime_status=lambda: {'herdr_alive': True}, snapshot_source=adapter)
+            self.assertEqual(result['freshness'], 'unavailable')
+            adapter.read_task_output.assert_not_called()
+
     def test_binding_contract_declares_supervisor_recovery_routes(self):
         contract = binding_contract()
         self.assertEqual(contract["recovery_actions"]["cancel"], "task-history-cancel")

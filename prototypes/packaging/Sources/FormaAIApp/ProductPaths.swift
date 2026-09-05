@@ -67,18 +67,18 @@ enum ProductPaths {
         )
     }
 
-    static func taskContext(evidenceRelative: String = "evidence/runtime") -> TaskContext? {
+    static func taskContext(evidenceRelative: String = ".") -> TaskContext? {
         guard let installation = installationContext(),
               let models = bundledResourceURL(name: "models", ext: "json")
                 ?? developmentResourceURL("config/models.json"),
               let hardware = bundledResourceURL(name: "hardware-profiles", ext: "json")
-                ?? developmentResourceURL("config/hardware-profiles.json"),
+                ?? developmentResourceURL("config/hardware-profiles.yaml"),
               let localProfiles = bundledResourceURL(name: "local-model-profiles", ext: "json")
                 ?? developmentResourceURL("config/local-model-profiles.json"),
               let cloud = bundledResourceURL(name: "cloud-providers", ext: "json")
                 ?? developmentResourceURL("config/cloud-providers.json")
         else { return nil }
-        let evidenceRoot = bundledResourceURL(name: "private-local-task-2026-08-30", ext: "md")
+        let evidenceRoot = bundledResourceURL(name: "local-model-profiles", ext: "json")
             .map { $0.deletingLastPathComponent() }
             ?? developmentResourceURL(evidenceRelative)
         guard let evidenceRoot else { return nil }

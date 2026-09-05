@@ -20,6 +20,7 @@ struct HistoryRecoveryPanel: View {
     @State private var selectedTaskID: String?
     @State private var pendingFreshTaskID: String?
     @State private var confirmFreshRun = false
+    @State private var taskOutput: TaskHistoryOutputPayload?
 
     private let binding = HistoryRecoveryServiceBinding.productDefault
 
@@ -124,8 +125,23 @@ struct HistoryRecoveryPanel: View {
                         .font(.callout).foregroundStyle(.orange)
                 }
                 recoveryActions(for: task, snapshot: snapshot, copy: copy)
+                Text(copy.taskOutputTitle).font(.headline)
+                if let output = taskOutput {
+                    Text(output.freshness == "fresh" ? copy.taskOutputLive : copy.taskOutputCached)
+                        .font(.caption).foregroundStyle(.secondary)
+                    ScrollViewReader { proxy in
+                    ScrollView {
+                        Text(output.text.isEmpty ? copy.taskOutputUnavailable : output.text)
+                            .font(.system(.body, design: .monospaced)).textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .id("transcript-end")
+                    }.frame(minHeight: 140, maxHeight: 300)
+                        .onAppear { proxy.scrollTo("transcript-end", anchor: .bottom) }
+                    }
+                } else { Text(copy.taskOutputUnavailable).foregroundStyle(.secondary) }
             }
             .padding(16)
+            .task(id: task.taskID) { await loadOutput(taskID: task.taskID) }
         } else {
             Text(copy.selectTaskHint)
                 .font(.callout).foregroundStyle(.secondary)
@@ -170,6 +186,17 @@ struct HistoryRecoveryPanel: View {
 
     private func isCancellable(_ task: TaskHistoryTaskPayload) -> Bool {
         ["running", "starting", "blocked", "queued"].contains(task.runtimeState)
+    }
+
+    @MainActor
+    private func loadOutput(taskID: String) async {
+        taskOutput = nil
+        let supervisor = supervisorURL
+        let root = rootURL
+        let output = try? await Task.detached {
+            try SupervisorClient(executableURL: supervisor).taskHistoryOutput(rootURL: root, taskID: taskID)
+        }.value
+        if selectedTaskID == taskID { taskOutput = output }
     }
 
     @MainActor
